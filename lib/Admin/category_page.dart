@@ -641,9 +641,21 @@ class _CategoryPageState extends State<CategoryPage> {
         return ListView(
           padding: const EdgeInsets.all(12),
           children: [
-            _buildMeterExpandableSection("Residential Main Meters", resMeters, Icons.home_outlined, Colors.green),
-            const SizedBox(height: 12),
-            _buildMeterExpandableSection("Commercial Main Meters", comMeters, Icons.business_outlined, Colors.orange),
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.indigo.shade100)),
+              child: ExpansionTile(
+                leading: const Icon(Icons.settings_input_component, color: Colors.indigo),
+                title: const Text("Main Meters", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.indigo)),
+                subtitle: Text("${meters.length} total meters found", style: const TextStyle(fontSize: 12)),
+                children: [
+                  _buildMeterExpandableSection("Residential Meter", resMeters, Icons.home_outlined, Colors.green),
+                  const SizedBox(height: 8),
+                  _buildMeterExpandableSection("Commercial Meter", comMeters, Icons.business_outlined, Colors.orange),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 8),
