@@ -252,7 +252,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   });
                 },
               ),
-              CategoryPage(initialSubTabIndex: _categoryInitialSubTab),
+              CategoryPage(
+                key: ValueKey(_categoryInitialSubTab),
+                initialSubTabIndex: _categoryInitialSubTab
+              ),
               const SettingsPage(),
             ],
           ),

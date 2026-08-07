@@ -585,144 +585,149 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildMainVsSubTable(List<QueryDocumentSnapshot> mainMeters) {
+    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
+    final dataStyle = Theme.of(context).textTheme.bodyMedium;
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Table(
-          columnWidths: const {
-            0: FlexColumnWidth(0.5),
-            1: FlexColumnWidth(1.1),
-            2: FlexColumnWidth(1.1),
-            3: FlexColumnWidth(1.1),
-            4: FlexColumnWidth(1.1),
-            5: FlexColumnWidth(0.8),
-          },
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: [
-            const TableRow(
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Container(
+            alignment: Alignment.center,
+            width: MediaQuery.of(context).size.width > 500 ? null : MediaQuery.of(context).size.width - 24,
+            child: Table(
+              defaultColumnWidth: const IntrinsicColumnWidth(),
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
               children: [
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("#", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Meter\nNo", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Main Meter\nUsed Units", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Total Sub-Meter\nUnits", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("This Month\nUnit Rate", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Balance\nUnits", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12), textAlign: TextAlign.center))),
+                TableRow(
+                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+                  children: [
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("#", textAlign: TextAlign.center, style: textStyle))),
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Main Meter\nUsed Units", textAlign: TextAlign.center, style: textStyle))),
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Total Sub-Meter\nUnits", textAlign: TextAlign.center, style: textStyle))),
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("This Month\nUnit Rate", textAlign: TextAlign.center, style: textStyle))),
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Balance\nUnits", textAlign: TextAlign.center, style: textStyle))),
+                  ],
+                ),
+                ...List.generate(mainMeters.length, (index) {
+                  var doc = mainMeters[index];
+                  var data = doc.data() as Map<String, dynamic>;
+                  String meterNo = data['meterNo'] ?? 'N/A';
+                  double last = (data['lastReading'] as num?)?.toDouble() ?? 0;
+                  double present = (data['presentReading'] ?? last).toDouble();
+                  double mainUsed = present - last;
+                  double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
+                  double unitRate = (data['unitRate'] as num?)?.toDouble() ?? 0;
+                  final rowColor = index % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
+                  double balance = mainUsed - totalSubPaid;
+
+                  return TableRow(
+                    decoration: BoxDecoration(color: rowColor),
+                    children: [
+                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${index + 1}", textAlign: TextAlign.center, style: dataStyle))),
+                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(meterNo, textAlign: TextAlign.center, style: textStyle, overflow: TextOverflow.ellipsis))),
+                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(mainUsed.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle))),
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Center(
+                          child: Text(totalSubPaid.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle),
+                        ),
+                      ),
+                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("৳${unitRate.toStringAsFixed(2)}", textAlign: TextAlign.center, style: dataStyle))),
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Center(
+                          child: Text(
+                            balance.toStringAsFixed(1),
+                            textAlign: TextAlign.center,
+                            style: (dataStyle ?? const TextStyle()).copyWith(
+                              color: balance > 0 ? Colors.red : Colors.green,
+                              fontWeight: balance > 0 ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
               ],
             ),
-            ...List.generate(mainMeters.length, (index) {
-              var doc = mainMeters[index];
-              var data = doc.data() as Map<String, dynamic>;
-              String meterNo = data['meterNo'] ?? 'N/A';
-              double last = (data['lastReading'] as num?)?.toDouble() ?? 0;
-              double present = (data['presentReading'] as num?)?.toDouble() ?? 0;
-              double mainUsed = present - last;
-              double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
-              double unitRate = (data['unitRate'] as num?)?.toDouble() ?? 0;
-              final rowColor = index % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
-              double balance = mainUsed - totalSubPaid;
-
-              return TableRow(
-                decoration: BoxDecoration(color: rowColor),
-                children: [
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("${index + 1}", style: const TextStyle(fontSize: 13), textAlign: TextAlign.center))),
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text(meterNo, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis, textAlign: TextAlign.center))),
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text(mainUsed.toStringAsFixed(1), style: const TextStyle(fontSize: 13), textAlign: TextAlign.center))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: Center(
-                      child: Text(totalSubPaid.toStringAsFixed(1), style: const TextStyle(fontSize: 13), textAlign: TextAlign.center),
-                    ),
-                  ),
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("৳${unitRate.toStringAsFixed(2)}", style: const TextStyle(fontSize: 13), textAlign: TextAlign.center))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: Center(
-                      child: Text(
-                        balance.toStringAsFixed(1),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: balance > 0 ? Colors.red : Colors.green,
-                          fontWeight: balance > 0 ? FontWeight.bold : FontWeight.normal,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildMainVsGovtTable(List<QueryDocumentSnapshot> mainMeters) {
+    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
+    final dataStyle = Theme.of(context).textTheme.bodyMedium;
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Table(
-          columnWidths: const {
-            0: FlexColumnWidth(1),
-            1: FlexColumnWidth(1.2),
-            2: FlexColumnWidth(1.2),
-            3: FlexColumnWidth(1.2),
-            4: FlexColumnWidth(0.8),
-          },
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: [
-            const TableRow(
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Container(
+            alignment: Alignment.center,
+            width: MediaQuery.of(context).size.width > 500 ? null : MediaQuery.of(context).size.width - 24,
+            child: Table(
+              defaultColumnWidth: const IntrinsicColumnWidth(),
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
               children: [
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("#", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Meter\nNo", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Main Meter\nReadings", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Govt.Bill\nReadings", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Balance\nUnit", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center))),
+                TableRow(
+                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+                  children: [
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("#", textAlign: TextAlign.center, style: textStyle))),
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Main Meter\nReadings", textAlign: TextAlign.center, style: textStyle))),
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt. Bill\nReadings", textAlign: TextAlign.center, style: textStyle))),
+                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Balance\nUnits", textAlign: TextAlign.center, style: textStyle))),
+                  ],
+                ),
+                ...List.generate(mainMeters.length, (index) {
+                  var doc = mainMeters[index];
+                  var data = doc.data() as Map<String, dynamic>;
+                  String meterNo = data['meterNo'] ?? 'N/A';
+                  double present = (data['presentReading'] as num?)?.toDouble() ?? 0;
+                  double govtPresent = (data['govtBillReading'] as num?)?.toDouble() ?? 0;
+                  double balance = govtPresent - present;
+                  final rowColor = index % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
+                  bool isAlert = balance < -5 || balance > 100;
+
+                  return TableRow(
+                    decoration: BoxDecoration(color: rowColor),
+                    children: [
+                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${index + 1}", textAlign: TextAlign.center, style: dataStyle))),
+                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(meterNo, textAlign: TextAlign.center, style: textStyle, overflow: TextOverflow.ellipsis))),
+                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(present.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle))),
+                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(govtPresent.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle))),
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Center(
+                          child: Text(
+                            balance.toStringAsFixed(1),
+                            textAlign: TextAlign.center,
+                            style: (dataStyle ?? const TextStyle()).copyWith(
+                              color: isAlert ? Colors.red : Colors.green,
+                              fontWeight: isAlert ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
               ],
             ),
-            ...List.generate(mainMeters.length, (index) {
-              var doc = mainMeters[index];
-              var data = doc.data() as Map<String, dynamic>;
-              String meterNo = data['meterNo'] ?? 'N/A';
-              double present = (data['presentReading'] as num?)?.toDouble() ?? 0;
-              double govtPresent = (data['govtBillReading'] as num?)?.toDouble() ?? 0;
-              double balance = govtPresent - present;
-              final rowColor = index % 2 == 0 ? Colors.orange.shade50.withValues(alpha: 0.3) : Colors.transparent;
-              bool isAlert = balance < -5 || balance > 100;
-
-              return TableRow(
-                decoration: BoxDecoration(color: rowColor),
-                children: [
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("${index + 1}", style: const TextStyle(fontSize: 13), textAlign: TextAlign.center))),
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text(meterNo, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis, textAlign: TextAlign.center))),
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text(present.toStringAsFixed(1), style: const TextStyle(fontSize: 13), textAlign: TextAlign.center))),
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text(govtPresent.toStringAsFixed(1), style: const TextStyle(fontSize: 13), textAlign: TextAlign.center))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: Center(
-                      child: Text(
-                        balance.toStringAsFixed(1),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isAlert ? Colors.red : Colors.green,
-                          fontWeight: isAlert ? FontWeight.bold : FontWeight.normal,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
-          ],
+          ),
         ),
       ),
     );

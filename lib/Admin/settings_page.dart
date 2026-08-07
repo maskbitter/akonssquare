@@ -672,6 +672,9 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildUsersTable() {
+    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
+    final dataStyle = Theme.of(context).textTheme.bodyMedium;
+
     return StreamBuilder<QuerySnapshot>(
       stream: _dbService.getUsersStream(),
       builder: (context, snapshot) {
@@ -681,78 +684,91 @@ class _SettingsPageState extends State<SettingsPage> {
         var users = snapshot.data!.docs;
         if (users.isEmpty) return const Text("No accounts found. Use the button above to create one.", style: TextStyle(fontSize: 11, color: Colors.grey));
 
-        return Table(
-          columnWidths: const {
-            0: FlexColumnWidth(1),
-            1: FlexColumnWidth(1.2),
-            2: FlexColumnWidth(1.2),
-            3: FlexColumnWidth(0.8),
-          },
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: [
-            const TableRow(
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
-              children: [
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Role", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Username", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Password", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center))),
-                Padding(padding: EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("Action", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center))),
-              ],
-            ),
-            ...users.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              final String role = (data['role'] ?? 'viewer').toString().toUpperCase();
-              final String username = data['username'] ?? '';
-              final String password = data['password'] ?? '';
-
-              return TableRow(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
-                        decoration: BoxDecoration(
-                          color: role == 'ADMIN' ? Colors.red.shade50 : role == 'OPERATOR' ? Colors.teal.shade50 : Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          role, 
-                          style: TextStyle(
-                            fontSize: 11, 
-                            fontWeight: FontWeight.bold, 
-                            color: role == 'ADMIN' ? Colors.red : role == 'OPERATOR' ? Colors.teal : Colors.blue
-                          )
-                        ),
-                      ),
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Container(
+                alignment: Alignment.center,
+                width: MediaQuery.of(context).size.width > 500 ? null : MediaQuery.of(context).size.width - 40,
+                child: Table(
+                  defaultColumnWidth: const IntrinsicColumnWidth(),
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: [
+                    TableRow(
+                      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+                      children: [
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Role", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Username", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Password", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Action", textAlign: TextAlign.center, style: textStyle))),
+                      ],
                     ),
-                  ),
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text(username, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis, textAlign: TextAlign.center))),
-                  Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text(password, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis, textAlign: TextAlign.center))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
+                    ...users.asMap().entries.map((entry) {
+                      int idx = entry.key;
+                      var doc = entry.value;
+                      final data = doc.data() as Map<String, dynamic>;
+                      final String role = (data['role'] ?? 'viewer').toString().toUpperCase();
+                      final String username = data['username'] ?? '';
+                      final String password = data['password'] ?? '';
+                      final rowColor = idx % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
+
+                      return TableRow(
+                        decoration: BoxDecoration(color: rowColor),
                         children: [
-                          InkWell(
-                            onTap: () => _showUserDialog(context, docId: doc.id, currentData: data),
-                            child: const Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: role == 'ADMIN' ? Colors.red.shade50 : role == 'OPERATOR' ? Colors.teal.shade50 : Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  role, 
+                                  style: (textStyle ?? const TextStyle()).copyWith(
+                                    fontSize: 11,
+                                    color: role == 'ADMIN' ? Colors.red : role == 'OPERATOR' ? Colors.teal : Colors.blue
+                                  )
+                                ),
+                              ),
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          InkWell(
-                            onTap: () => _confirmRemove(doc.id, username),
-                            child: const Icon(Icons.remove_circle_outline, size: 18, color: Colors.orange),
+                          Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(username, textAlign: TextAlign.center, style: dataStyle, overflow: TextOverflow.ellipsis))),
+                          Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(password, textAlign: TextAlign.center, style: dataStyle, overflow: TextOverflow.ellipsis))),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  InkWell(
+                                    onTap: () => _showUserDialog(context, docId: doc.id, currentData: data),
+                                    child: const Icon(Icons.edit_outlined, size: 20, color: Colors.blue),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  InkWell(
+                                    onTap: () => _confirmRemove(doc.id, username),
+                                    child: const Icon(Icons.remove_circle_outline, size: 20, color: Colors.orange),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
-          ],
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       },
     );

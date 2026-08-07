@@ -640,6 +640,10 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color) {
+    bool isOp = widget.isOperator;
+    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
+    final dataStyle = Theme.of(context).textTheme.bodyMedium;
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -654,97 +658,100 @@ class _CategoryPageState extends State<CategoryPage> {
           else 
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Theme(
-                data: Theme.of(context).copyWith(dividerColor: Colors.grey.shade300),
-                child: DataTable(
-                  columnSpacing: 12,
-                  headingRowColor: WidgetStateProperty.all(color.withOpacity(0.05)),
-                  headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 11),
-                  dataTextStyle: const TextStyle(fontSize: 12, color: Colors.black87),
-                  columns: const [
-                    DataColumn(label: Text("#")),
-                    DataColumn(label: Text("Meter No")),
-                    DataColumn(label: Text("Last\nReading")),
-                    DataColumn(label: Text("Present\nReading")),
-                    DataColumn(label: Text("Last Govt.\nReading")),
-                    DataColumn(label: Text("New Govt.\nReading")),
-                    DataColumn(label: Text("Govt. Bill\nAmount")),
-                    DataColumn(label: Text("Govt. Bill\nUnit")),
-                    DataColumn(label: Text("Last Month\nRate")),
-                    DataColumn(label: Text("This Month\nRate")),
-                    DataColumn(label: Text("Govt Due/Adv\nUnits")),
-                    DataColumn(label: Text("Main Meter\nUsed")),
-                    DataColumn(label: Text("Total Sub\nUnits")),
-                    DataColumn(label: Text("Balance\nUnits")),
-                    DataColumn(label: Text("Actions")),
-                  ],
-                  rows: meters.asMap().entries.map((entry) {
-                    int index = entry.key + 1;
-                    var mDoc = entry.value;
-                    var data = mDoc.data() as Map<String, dynamic>;
-                    String meterNo = data['meterNo'] ?? 'N/A';
-                    
-                    double last = (data['lastReading'] ?? 0).toDouble();
-                    double pres = (data['presentReading'] ?? 0).toDouble();
-                    double mainUsed = pres - last;
-                    
-                    double lastGovt = (data['lastGovtReading'] ?? 0).toDouble();
-                    double newGovt = (data['govtBillReading'] ?? 0).toDouble();
-                    double govtAmt = (data['govtBillAmount'] ?? 0).toDouble();
-                    double govtUnit = newGovt - lastGovt;
-                    
-                    double lastRate = (data['lastMonthUnitRate'] ?? 0).toDouble();
-                    double thisRate = (data['unitRate'] ?? 0).toDouble();
-                    
-                    double govtDueAdv = newGovt - pres;
-                    double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
-                    double balance = mainUsed - totalSubPaid;
-
-                    return DataRow(
-                      onSelectChanged: (_) => CategoryDialogs.showUpdateMainMeterDialog(context: context, data: data, docId: mDoc.id),
-                      cells: [
-                        DataCell(Text("$index")),
-                        DataCell(Text(meterNo, style: const TextStyle(fontWeight: FontWeight.bold))),
-                        DataCell(Text(last.toStringAsFixed(1))),
-                        DataCell(Text(pres.toStringAsFixed(1))),
-                        DataCell(Text(lastGovt.toStringAsFixed(1))),
-                        DataCell(Text(newGovt.toStringAsFixed(1))),
-                        DataCell(Text("৳${govtAmt.toStringAsFixed(0)}")),
-                        DataCell(Text(govtUnit.toStringAsFixed(1))),
-                        DataCell(Text("৳${lastRate.toStringAsFixed(2)}")),
-                        DataCell(Text("৳${thisRate.toStringAsFixed(2)}")),
-                        DataCell(Text(govtDueAdv.toStringAsFixed(1), style: TextStyle(color: govtDueAdv.abs() > 5 ? Colors.orange : Colors.black87, fontWeight: govtDueAdv.abs() > 5 ? FontWeight.bold : FontWeight.normal))),
-                        DataCell(Text(mainUsed.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold))),
-                        DataCell(Text(totalSubPaid.toStringAsFixed(1))),
-                        DataCell(
-                          Text(
-                            balance.toStringAsFixed(1),
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: balance > 0 ? Colors.red : Colors.green,
-                            ),
-                          ),
-                        ),
-                        if (!widget.isOperator)
-                          DataCell(
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                              onPressed: () => CategoryDialogs.showConfirmDialog(
-                                context: context, 
-                                title: "Remove Meter?", 
-                                content: "Are you sure you want to remove meter '$meterNo'?", 
-                                onConfirm: () async {
-                                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                                  await _dbService.removeMainMeter(mDoc.id, prefs.getString('username') ?? "Admin");
-                                }
-                              ),
-                              constraints: const BoxConstraints(),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                child: Table(
+                  defaultColumnWidth: const IntrinsicColumnWidth(),
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: [
+                    TableRow(
+                      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+                      children: [
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("#", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last\nReadings", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Present\nReadings", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last Govt.\nBill Readings", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("New Govt.\nBill Readings", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt. Bill\nAmounts", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt. Bill\nUnits", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last Month\nUnit Rate", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("This Month\nUnit Rate", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt.\nDue/Adv Units", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Main Meter\nUsed Units", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Total Sub-Meter\nUnits", textAlign: TextAlign.center, style: textStyle))),
+                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Balance Units\n(Main-Sub)", textAlign: TextAlign.center, style: textStyle))),
+                        if (!isOp)
+                          Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Action", textAlign: TextAlign.center, style: textStyle))),
                       ],
-                    );
-                  }).toList(),
+                    ),
+                    ...meters.asMap().entries.map((entry) {
+                      int idx = entry.key;
+                      var mDoc = entry.value;
+                      var data = mDoc.data() as Map<String, dynamic>;
+                      String meterNo = data['meterNo'] ?? 'N/A';
+                      double last = (data['lastReading'] ?? 0).toDouble();
+                      double pres = (data['presentReading'] ?? last).toDouble();
+                      double mainUsed = pres - last;
+                      double lastGovt = (data['lastGovtReading'] ?? 0).toDouble();
+                      double newGovt = (data['govtBillReading'] ?? lastGovt).toDouble();
+                      double govtAmt = (data['govtBillAmount'] ?? 0).toDouble();
+                      double govtUnit = newGovt - lastGovt;
+                      double lastRate = (data['lastMonthUnitRate'] ?? 0).toDouble();
+                      double thisRate = (data['unitRate'] ?? 0).toDouble();
+                      double govtDueAdv = newGovt - pres;
+                      double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
+                      double balance = mainUsed - totalSubPaid;
+                      final rowColor = idx % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
+
+                      Widget wrapCell(Widget child) {
+                        return InkWell(
+                          onTap: () => CategoryDialogs.showUpdateMainMeterDialog(context: context, data: data, docId: mDoc.id),
+                          child: Padding(padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12), child: Center(child: child)),
+                        );
+                      }
+
+                      return TableRow(
+                        decoration: BoxDecoration(color: rowColor),
+                        children: [
+                          wrapCell(Text("${idx + 1}", textAlign: TextAlign.center, style: dataStyle)),
+                          wrapCell(Text(meterNo, textAlign: TextAlign.center, style: textStyle?.copyWith(color: Colors.blue))),
+                          wrapCell(Text(last.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
+                          wrapCell(Text(pres.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
+                          wrapCell(Text(lastGovt.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
+                          wrapCell(Text(newGovt.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
+                          wrapCell(Text(govtAmt.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
+                          wrapCell(Text(govtUnit.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
+                          wrapCell(Text(lastRate.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle)),
+                          wrapCell(Text(thisRate.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle)),
+                          wrapCell(Text(govtDueAdv.toStringAsFixed(0), textAlign: TextAlign.center, style: (dataStyle ?? const TextStyle()).copyWith(color: govtDueAdv.abs() > 5 ? Colors.orange : null, fontWeight: govtDueAdv.abs() > 5 ? FontWeight.bold : null))),
+                          wrapCell(Text(mainUsed.toStringAsFixed(0), textAlign: TextAlign.center, style: textStyle)),
+                          wrapCell(Text(totalSubPaid.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
+                          wrapCell(Text(balance.toStringAsFixed(0), textAlign: TextAlign.center, style: (textStyle ?? const TextStyle()).copyWith(color: balance > 0 ? Colors.red : Colors.green))),
+                          if (!isOp)
+                            Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Center(
+                                child: IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                                  onPressed: () => CategoryDialogs.showConfirmDialog(
+                                    context: context, 
+                                    title: "Remove Meter?", 
+                                    content: "Are you sure you want to remove meter '$meterNo'?", 
+                                    onConfirm: () async {
+                                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                                      await _dbService.removeMainMeter(mDoc.id, prefs.getString('username') ?? "Admin");
+                                    }
+                                  ),
+                                  constraints: const BoxConstraints(),
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    }).toList(),
+                  ],
                 ),
               ),
             ),
@@ -754,6 +761,10 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget _buildSubMeterExpandableSection() {
+    bool isOp = widget.isOperator;
+    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
+    final dataStyle = Theme.of(context).textTheme.bodyMedium;
+
     return StreamBuilder<QuerySnapshot>(
       stream: _dbService.getSubMetersStream(),
       builder: (context, snapshot) {
@@ -762,6 +773,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
         return Card(
           elevation: 2,
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey.shade200)),
           child: ExpansionTile(
             leading: const CircleAvatar(backgroundColor: Colors.blueGrey, child: Icon(Icons.cable, color: Colors.white)),
@@ -773,50 +785,67 @@ class _CategoryPageState extends State<CategoryPage> {
               else
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columnSpacing: 16,
-                    columns: const [
-                      DataColumn(label: Text("#")),
-                      DataColumn(label: Text("Sub-Meter No")),
-                      DataColumn(label: Text("Main-Meter No")),
-                      DataColumn(label: Text("Last Reading")),
-                      DataColumn(label: Text("Present Reading")),
-                      DataColumn(label: Text("Used Unit")),
-                      DataColumn(label: Text("Actions")),
-                    ],
-                    rows: subMeters.asMap().entries.map((entry) {
-                      int index = entry.key + 1;
-                      var sDoc = entry.value;
-                      var sData = sDoc.data() as Map<String, dynamic>;
-                      double last = (sData['lastReading'] ?? 0).toDouble();
-                      double pres = (sData['presentReading'] ?? 0).toDouble();
-                      
-                      return DataRow(
-                        cells: [
-                          DataCell(Text("$index")),
-                          DataCell(Text(sData['subMeterNo'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold))),
-                          DataCell(Text(sData['mainMeterNo'] ?? '')),
-                          DataCell(Text(last.toStringAsFixed(1))),
-                          DataCell(Text(pres.toStringAsFixed(1))),
-                          DataCell(Text((pres - last).toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
-                          if (!widget.isOperator)
-                            DataCell(
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                                onPressed: () => CategoryDialogs.showConfirmDialog(
-                                  context: context, 
-                                  title: "Remove Sub-Meter?", 
-                                  content: "Are you sure you want to remove '${sData['subMeterNo']}'?", 
-                                  onConfirm: () async {
-                                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                                    await _dbService.removeSubMeter(sDoc.id, prefs.getString('username') ?? "Admin");
-                                  }
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    child: Table(
+                      defaultColumnWidth: const IntrinsicColumnWidth(),
+                      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                      children: [
+                        TableRow(
+                          decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+                          children: [
+                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("#", textAlign: TextAlign.center, style: textStyle))),
+                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Sub-Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
+                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Main-Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
+                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last\nReadings", textAlign: TextAlign.center, style: textStyle))),
+                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Present\nReadings", textAlign: TextAlign.center, style: textStyle))),
+                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Used\nUnits", textAlign: TextAlign.center, style: textStyle))),
+                            if (!isOp)
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Action", textAlign: TextAlign.center, style: textStyle))),
+                          ],
+                        ),
+                        ...subMeters.asMap().entries.map((entry) {
+                          int idx = entry.key;
+                          var sDoc = entry.value;
+                          var sData = sDoc.data() as Map<String, dynamic>;
+                          double last = (sData['lastReading'] ?? 0).toDouble();
+                          double pres = (sData['presentReading'] ?? last).toDouble();
+                          final rowColor = idx % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
+
+                          return TableRow(
+                            decoration: BoxDecoration(color: rowColor),
+                            children: [
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${idx + 1}", textAlign: TextAlign.center, style: dataStyle))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['subMeterNo'] ?? '', textAlign: TextAlign.center, style: textStyle))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['mainMeterNo'] ?? '', textAlign: TextAlign.center, style: dataStyle))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(last.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(pres.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text((pres - last).toStringAsFixed(0), textAlign: TextAlign.center, style: (textStyle ?? const TextStyle()).copyWith(color: Colors.blue)))),
+                              if (!isOp)
+                                Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Center(
+                                    child: IconButton(
+                                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                      onPressed: () => CategoryDialogs.showConfirmDialog(
+                                        context: context, 
+                                        title: "Remove Sub-Meter?", 
+                                        content: "Are you sure you want to remove '${sData['subMeterNo']}'?", 
+                                        onConfirm: () async {
+                                          SharedPreferences prefs = await SharedPreferences.getInstance();
+                                          await _dbService.removeSubMeter(sDoc.id, prefs.getString('username') ?? "Admin");
+                                        }
+                                      ),
+                                      constraints: const BoxConstraints(),
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                        ],
-                      );
-                    }).toList(),
+                            ],
+                          );
+                        }).toList(),
+                      ],
+                    ),
                   ),
                 ),
             ],

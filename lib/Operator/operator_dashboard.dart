@@ -207,6 +207,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
             ),
             // 2. Manage Tab (Same as Category Manager, with restrictions)
             CategoryPage(
+              key: ValueKey(_categoryInitialSubTab),
               initialSubTabIndex: _categoryInitialSubTab,
               isOperator: true,
             ),

@@ -380,7 +380,7 @@ class CategoryDialogs {
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text("Government Bill Details", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                    child: Text("Govt. Bill Details", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                   ),
                   _buildReadOnlyRow("Last Govt. Bill Reading", lastGovtReading.toStringAsFixed(1)),
                   const SizedBox(height: 8),
