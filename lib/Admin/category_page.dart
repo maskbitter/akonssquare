@@ -96,7 +96,7 @@ class _CategoryPageState extends State<CategoryPage> {
               tabs: [
                 Tab(icon: Icon(Icons.door_front_door, size: 20), text: "Occupied"),
                 Tab(icon: Icon(Icons.meeting_room, size: 20), text: "Vacant"),
-                Tab(icon: Icon(Icons.electric_bolt, size: 20), text: "Main Meters"),
+                Tab(icon: Icon(Icons.electric_bolt, size: 20), text: "Meters"),
               ],
             ),
           ),

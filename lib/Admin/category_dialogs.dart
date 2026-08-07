@@ -670,20 +670,6 @@ class CategoryDialogs {
                     ),
                   ),
                 StreamBuilder<QuerySnapshot>(
-                  stream: _dbService.getMainMetersStream(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const SizedBox.shrink();
-                    var meters = snapshot.data!.docs;
-                    return DropdownButtonFormField<String>(
-                      value: selectedMainMeter,
-                      decoration: const InputDecoration(labelText: "Main Meter", border: OutlineInputBorder(), isDense: true),
-                      items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text("Main Meter: ${doc['meterNo']}"))).toList(),
-                      onChanged: isOperator ? null : (v) => setDialogState(() => selectedMainMeter = v),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                StreamBuilder<QuerySnapshot>(
                   stream: _dbService.getSubMetersStream(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox.shrink();
@@ -697,10 +683,11 @@ class CategoryDialogs {
                     return DropdownButtonFormField<String>(
                       value: selectedSubMeter,
                       decoration: const InputDecoration(labelText: "Sub-meter No", border: OutlineInputBorder(), isDense: true),
-                      items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text("Sub-meter: ${doc['subMeterNo']}"))).toList(),
+                      items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text("Sub-meter: ${doc['subMeterNo']} (Main: ${doc['mainMeterNo']})"))).toList(),
                       onChanged: isOperator ? null : (v) => setDialogState(() {
                         selectedSubMeter = v;
                         var match = available.firstWhere((d) => d['subMeterNo'] == v);
+                        selectedMainMeter = match['mainMeterNo']?.toString();
                         lastReadingController.text = (match['presentReading'] ?? 0).toString();
                       }),
                     );
