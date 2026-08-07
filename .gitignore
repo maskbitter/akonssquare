@@ -1,0 +1,67 @@
+# https://dart.dev/guides/libraries/private-files
+# Created by https://www.toptal.com/developers/gitignore/api/flutter,android,intellij+all,visualstudiocode
+
+### Android ###
+# Built-in Android Studio / IntelliJ ignore list
+.gradle/
+build/
+**/build/
+captures/
+externalNativeBuild/
+.cxx/
+local.properties
+key.properties
+*.keystore
+*.jks
+google-services.json
+
+### Flutter ###
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Android build artifacts
+android/app/build/
+android/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# iOS build artifacts
+ios/Flutter/App.framework
+ios/Flutter/App.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/GeneratedPluginRegistrant.h
+ios/Flutter/GeneratedPluginRegistrant.m
+ios/Flutter/.last_build_id
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/App.framework.zip
+ios/Flutter/Flutter.framework.zip
+
+### IntelliJ ###
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+### VisualStudioCode ###
+.vscode/
+
+### Miscellaneous ###
+*.log
+*.swp
+.DS_Store
+
+# Local Agent Artifacts
+.artifacts/
