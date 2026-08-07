@@ -319,19 +319,28 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       const Text("Welcome", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 30),
-                      DropdownButtonFormField<Map<String, dynamic>>(
-                        value: _selectedSubItem,
-                        decoration: InputDecoration(
-                          labelText: "Select User Name", 
-                          prefixIcon: const Icon(Icons.meeting_room_outlined), 
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: DropdownButtonFormField<Map<String, dynamic>>(
+                          value: _selectedSubItem,
+                          alignment: Alignment.center,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: "Select User Name", 
+                            prefixIcon: const Icon(Icons.meeting_room_outlined), 
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))
+                          ),
+                          items: _subItems.map((item) {
+                            String displayText = "${item['subItemName'] ?? 'Unnamed'} (${item['TenantName'] ?? ''})";
+                            return DropdownMenuItem<Map<String, dynamic>>(
+                              value: item, 
+                              alignment: Alignment.center,
+                              child: Center(child: Text(displayText, textAlign: TextAlign.center))
+                            );
+                          }).toList(),
+                          onChanged: (v) => setState(() => _selectedSubItem = v),
+                          hint: const Center(child: Text("Select User Name")),
                         ),
-                        items: _subItems.map((item) {
-                          String displayText = "${item['subItemName'] ?? 'Unnamed'} (${item['TenantName'] ?? ''})";
-                          return DropdownMenuItem<Map<String, dynamic>>(value: item, child: Text(displayText));
-                        }).toList(),
-                        onChanged: (v) => setState(() => _selectedSubItem = v),
-                        hint: const Text("Select User Name"),
                       ),
                       const SizedBox(height: 25),
                       SizedBox(

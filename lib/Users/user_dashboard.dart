@@ -408,7 +408,7 @@ class _UserDashboardState extends State<UserDashboard> {
                     const SizedBox(height: 6),
                     if (ed != null && !isElectricStopped)
                       Card(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                         child: ExpansionTile(
                           visualDensity: VisualDensity.compact,
                           leading: const Icon(Icons.electric_bolt, color: Colors.amber, size: 22),
@@ -466,7 +466,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
   Widget _buildDetailCard({required IconData icon, required Color color, required String title, required double amount, String? subtitle, VoidCallback? onTap}) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: ListTile(
         onTap: onTap,
         dense: true,

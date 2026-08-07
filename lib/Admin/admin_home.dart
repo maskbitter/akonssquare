@@ -218,7 +218,7 @@ class _AdminHomeState extends State<AdminHome> {
                 return Column(
                   children: [
                     Card(
-                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       color: Colors.blue.shade900,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                       child: Padding(
@@ -441,7 +441,7 @@ class _AdminHomeState extends State<AdminHome> {
         return Column(
           children: [
             Card(
-              margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               color: Colors.teal.shade900,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               child: Padding(
@@ -547,7 +547,7 @@ class _AdminHomeState extends State<AdminHome> {
             children: [
               if (showMainVsSub) ...[
                 const Padding(
-                  padding: EdgeInsets.fromLTRB(24, 8, 16, 4),
+                  padding: EdgeInsets.fromLTRB(20, 8, 16, 4),
                   child: Row(
                     children: [
                       Icon(Icons.balance, size: 16, color: Colors.indigo),
@@ -563,7 +563,7 @@ class _AdminHomeState extends State<AdminHome> {
               ],
               if (showMainVsGovt) ...[
                 const Padding(
-                  padding: EdgeInsets.fromLTRB(24, 16, 16, 4),
+                  padding: EdgeInsets.fromLTRB(20, 16, 16, 4),
                   child: Row(
                     children: [
                       Icon(Icons.receipt_long, size: 16, color: Colors.indigo),
@@ -590,7 +590,7 @@ class _AdminHomeState extends State<AdminHome> {
 
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -669,7 +669,7 @@ class _AdminHomeState extends State<AdminHome> {
 
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),

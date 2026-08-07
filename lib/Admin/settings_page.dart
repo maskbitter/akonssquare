@@ -687,7 +687,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
         return Card(
           elevation: 2,
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),

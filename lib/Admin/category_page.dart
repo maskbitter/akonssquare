@@ -187,7 +187,7 @@ class _CategoryPageState extends State<CategoryPage> {
               if (categoryDocs.isEmpty) return const Center(child: Text("No categories found."));
 
               return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: categoryDocs.length,
                 itemBuilder: (context, i) {
                   var catDoc = categoryDocs[i];
@@ -209,6 +209,17 @@ class _CategoryPageState extends State<CategoryPage> {
 
                       subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
 
+                      final List<Color> cardColors = [
+                        Colors.blue.shade50,
+                        Colors.green.shade50,
+                        Colors.orange.shade50,
+                        Colors.purple.shade50,
+                        Colors.teal.shade50,
+                        Colors.pink.shade50,
+                        Colors.amber.shade50,
+                        Colors.cyan.shade50,
+                      ];
+
                       double catTotal = 0;
                       for (var doc in subDocs) {
                         var d = doc.data() as Map<String, dynamic>;
@@ -221,47 +232,51 @@ class _CategoryPageState extends State<CategoryPage> {
                         catTotal += (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal);
                       }
 
+                      final List<Color> catCardColors = [
+                        Colors.indigo.shade50,
+                        Colors.teal.shade50,
+                        Colors.deepPurple.shade50,
+                        Colors.blueGrey.shade50,
+                        Colors.brown.shade50,
+                        Colors.cyan.shade50,
+                      ];
+                      final Color catColor = catCardColors[i % catCardColors.length];
+                      final Color accentColor = Colors.primaries[(i * 3) % Colors.primaries.length];
+
                       return Card(
-                        elevation: 0,
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey.shade200)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(catName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 24, letterSpacing: 0.5)),
-                                        Text("${subDocs.length} units | ${assignedServices.length} assigned services", style: const TextStyle(fontSize: 13, color: Colors.blueGrey)),
-                                        const SizedBox(height: 4),
-                                        Text("Grand Total: ৳${catTotal.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.deepPurple)),
-                                      ],
-                                    ),
+                        elevation: 3,
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        color: catColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accentColor.withOpacity(0.2))),
+                        child: ExpansionTile(
+                          leading: CircleAvatar(backgroundColor: accentColor, child: const Icon(Icons.category_outlined, color: Colors.white, size: 20)),
+                          title: Text(catName.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 0.5, color: accentColor)),
+                          subtitle: Text("${subDocs.length} units | Total: ৳${catTotal.toStringAsFixed(2)}", style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(icon: Icon(Icons.settings, color: accentColor, size: 20), onPressed: () => CategoryDialogs.showCategorySettingsDialog(context: context, categoryId: catId, categoryName: catName, dynamicAssignedServices: assignedServices)),
+                              if (!widget.isOperator) 
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.orangeAccent, size: 20), 
+                                  onPressed: () => CategoryDialogs.showConfirmDialog(
+                                    context: context, 
+                                    title: "Remove '$catName'?", 
+                                    content: "Are you sure you want to remove this category?", 
+                                    onConfirm: () async { 
+                                      SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                      await _dbService.removeCategory(catId, prefs.getString('username') ?? "Admin"); 
+                                    },
                                   ),
-                                  IconButton(icon: const Icon(Icons.settings, color: Colors.blueAccent), onPressed: () => CategoryDialogs.showCategorySettingsDialog(context: context, categoryId: catId, categoryName: catName, dynamicAssignedServices: assignedServices)),
-                                  if (!widget.isOperator) 
-                                    IconButton(
-                                      icon: const Icon(Icons.remove_circle_outline, color: Colors.orangeAccent), 
-                                      onPressed: () => CategoryDialogs.showConfirmDialog(
-                                        context: context, 
-                                        title: "Remove '$catName'?", 
-                                        content: "Are you sure you want to remove this category?", 
-                                        onConfirm: () async { 
-                                          SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                          await _dbService.removeCategory(catId, prefs.getString('username') ?? "Admin"); 
-                                        },
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const Divider(height: 1, indent: 16, endIndent: 16),
-                            ...subDocs.map((subDoc) {
+                                ),
+                              const Icon(Icons.expand_more),
+                            ],
+                          ),
+                          children: [
+                            const Divider(height: 1),
+                            ...subDocs.asMap().entries.map((entry) {
+                              int subIdx = entry.key;
+                              var subDoc = entry.value;
                               var d = subDoc.data() as Map<String, dynamic>;
                               String subId = subDoc.id;
                               String subName = d['subItemName'] ?? 'Unnamed';
@@ -272,6 +287,7 @@ class _CategoryPageState extends State<CategoryPage> {
                               double eBillAmount = 0;
                               if (ed != null && ed['isStopped'] != true) eBillAmount = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
                               double total = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillAmount;
+                              Color itemColor = cardColors[subIdx % cardColors.length];
 
                               if (status == 'Vacant') {
                                 return InkWell(
@@ -283,12 +299,11 @@ class _CategoryPageState extends State<CategoryPage> {
                                     currentTenant: tenant, 
                                     currentNid: d['nidNumber'] ?? ''
                                   ),
-                                  borderRadius: BorderRadius.circular(12),
                                   child: Card(
-                                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    color: Colors.red.shade50.withOpacity(0.3),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.red.shade100, width: 0.5)),
+                                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    color: itemColor,
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.red.shade100, width: 0.8)),
                                     child: ExpansionTile(
                                       tilePadding: const EdgeInsets.symmetric(horizontal: 12),
                                       title: Row(
@@ -388,14 +403,13 @@ class _CategoryPageState extends State<CategoryPage> {
                                       currentTenant: tenant, 
                                       currentNid: d['nidNumber'] ?? ''
                                     ),
-                                    borderRadius: BorderRadius.circular(12),
                                     child: Card(
-                                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      color: isPaid ? Colors.green.shade50.withOpacity(0.5) : (i % 2 == 0 ? Colors.blue.shade50.withOpacity(0.4) : Colors.green.shade50.withOpacity(0.4)),
-                                      elevation: 0,
+                                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                      color: isPaid ? Colors.green.shade50 : itemColor,
+                                      elevation: 2,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        side: isPaid ? const BorderSide(color: Colors.green, width: 0.5) : BorderSide.none
+                                        side: BorderSide(color: isPaid ? Colors.green.shade200 : Colors.blue.shade100, width: 0.8)
                                       ),
                                       child: ExpansionTile(
                                         tilePadding: const EdgeInsets.symmetric(horizontal: 12),
@@ -506,7 +520,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                if (d['nidNumber'] != null && d['nidNumber'] != 'No Number' && d['nidNumber'].toString().isNotEmpty)
+                                                if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
                                                   _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Colors.indigo),
 
                                                 if ((d['notes'] ?? '').toString().isNotEmpty)
@@ -535,15 +549,16 @@ class _CategoryPageState extends State<CategoryPage> {
                                   );
                                 }
                               );
-                            }).toList(),
+                            }),
                             const SizedBox(height: 12),
                             Center(
                               child: TextButton.icon(
                                 onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
-                                icon: const Icon(Icons.add_circle_outline, size: 22),
-                                label: Text("Add New $catName", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                icon: const Icon(Icons.add_circle_outline, size: 22, color: Colors.indigo),
+                                label: Text("Add New $catName", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.indigo)),
                               ),
                             ),
+                            const SizedBox(height: 12),
                           ],
                         ),
                       );
@@ -639,14 +654,16 @@ class _CategoryPageState extends State<CategoryPage> {
         var comMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Commercial').toList();
 
         return ListView(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           children: [
             Card(
               elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.indigo.shade100)),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Colors.indigo.shade50,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.indigo.shade200, width: 1)),
               child: ExpansionTile(
-                leading: const Icon(Icons.settings_input_component, color: Colors.indigo),
-                title: const Text("Main Meters", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.indigo)),
+                leading: const CircleAvatar(backgroundColor: Colors.indigo, child: Icon(Icons.settings_input_component, color: Colors.white, size: 20)),
+                title: const Text("Main Meters List", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.indigo)),
                 subtitle: Text("${meters.length} total meters found", style: const TextStyle(fontSize: 12)),
                 children: [
                   _buildMeterExpandableSection("Residential Meter", resMeters, Icons.home_outlined, Colors.green),
@@ -656,9 +673,6 @@ class _CategoryPageState extends State<CategoryPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 8),
             _buildSubMeterExpandableSection(),
           ],
         );
@@ -666,18 +680,19 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color) {
+  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, MaterialColor color) {
     bool isOp = widget.isOperator;
     final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
 
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey.shade200)),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      color: color.shade50,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: color.shade200, width: 1)),
       child: ExpansionTile(
-        leading: CircleAvatar(backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        leading: CircleAvatar(backgroundColor: color, child: Icon(icon, color: Colors.white, size: 20)),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: color.shade800)),
         subtitle: Text("${meters.length} meters found", style: const TextStyle(fontSize: 12)),
         children: [
           if (meters.isEmpty) 
@@ -729,7 +744,7 @@ class _CategoryPageState extends State<CategoryPage> {
                       double govtDueAdv = newGovt - pres;
                       double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
                       double balance = mainUsed - totalSubPaid;
-                      final rowColor = idx % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
+                      final rowColor = idx % 2 == 0 ? Colors.white.withOpacity(0.4) : Colors.transparent;
 
                       Widget wrapCell(Widget child) {
                         return InkWell(
@@ -799,12 +814,13 @@ class _CategoryPageState extends State<CategoryPage> {
         var subMeters = snapshot.data!.docs;
 
         return Card(
-          elevation: 2,
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey.shade200)),
+          elevation: 3,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Colors.teal.shade50,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.teal.shade200, width: 1)),
           child: ExpansionTile(
-            leading: const CircleAvatar(backgroundColor: Colors.blueGrey, child: Icon(Icons.cable, color: Colors.white)),
-            title: const Text("Sub-Meters List", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+            leading: const CircleAvatar(backgroundColor: Colors.teal, child: Icon(Icons.cable, color: Colors.white, size: 20)),
+            title: const Text("Sub-Meters List", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.teal)),
             subtitle: Text("${subMeters.length} sub-meters registered", style: const TextStyle(fontSize: 12)),
             children: [
               if (subMeters.isEmpty) 
@@ -837,7 +853,7 @@ class _CategoryPageState extends State<CategoryPage> {
                           var sData = sDoc.data() as Map<String, dynamic>;
                           double last = (sData['lastReading'] ?? 0).toDouble();
                           double pres = (sData['presentReading'] ?? last).toDouble();
-                          final rowColor = idx % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
+                          final rowColor = idx % 2 == 0 ? Colors.white.withOpacity(0.4) : Colors.transparent;
 
                           return TableRow(
                             decoration: BoxDecoration(color: rowColor),
