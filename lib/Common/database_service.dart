@@ -126,19 +126,15 @@ class DatabaseService {
     return duplicateCheck.docs.isNotEmpty;
   }
 
-  Future<void> addSubItem(String categoryId, String name, String actor, {String? TenantName, String? nidNumber, String? notes}) async {
-    String rName = (TenantName == null || TenantName.isEmpty) ? 'No Tenant' : TenantName;
-    String nNumber = (nidNumber == null || nidNumber.isEmpty) ? 'No Number' : nidNumber;
-    bool isOccupied = rName != 'No Tenant';
-    
+  Future<void> addSubItem(String categoryId, String name, String actor) async {
     DocumentReference doc = await _db.collection('sub_items').add({
       'categoryId': categoryId,
       'subItemName': name,
-      'TenantName': rName,
-      'nidNumber': nNumber,
-      'notes': notes ?? '',
-      'status': isOccupied ? 'Occupied' : 'Vacant',
-      'occupiedAt': isOccupied ? FieldValue.serverTimestamp() : null,
+      'TenantName': 'No Tenant',
+      'nidNumber': 'No Number',
+      'notes': '',
+      'status': 'Vacant',
+      'occupiedAt': null,
       'excludedServices': [],
       'overriddenServices': [],
       'createdAt': FieldValue.serverTimestamp(),
@@ -147,7 +143,7 @@ class DatabaseService {
     await logActivity(
       actor: actor,
       action: "Add Unit",
-      details: "Added unit '$name' to category ID: $categoryId. Tenant: $rName",
+      details: "Added unit '$name' to category ID: $categoryId. Status: Vacant",
       category: "Units",
     );
   }

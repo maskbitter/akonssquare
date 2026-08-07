@@ -390,20 +390,19 @@ class _CategoryPageState extends State<CategoryPage> {
                                             Expanded(child: Text(subName, style: TextStyle(fontWeight: FontWeight.w900, color: isPaid ? Colors.green.shade700 : Colors.blue, fontSize: 18), overflow: TextOverflow.ellipsis)),
                                             Text("৳${displayTotal.toStringAsFixed(2)}", style: TextStyle(fontWeight: FontWeight.w900, color: isPaid ? Colors.green.shade700 : Colors.blue, fontSize: 18)),
                                             const SizedBox(width: 8),
-                                            if (!isPaid)
-                                              IconButton(
-                                                padding: EdgeInsets.zero,
-                                                constraints: const BoxConstraints(),
-                                                icon: const Icon(Icons.edit, size: 18, color: Colors.blueGrey),
-                                                onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
-                                                  context: context, 
-                                                  subItemId: subId, 
-                                                  currentName: subName, 
-                                                  currentTenantName: tenant, 
-                                                  currentNidNumber: d['nidNumber'] ?? 'No Number', 
-                                                  currentNotes: d['notes'] ?? ''
-                                                ),
+                                            IconButton(
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                              icon: const Icon(Icons.edit, size: 18, color: Colors.blueGrey),
+                                              onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
+                                                context: context, 
+                                                subItemId: subId, 
+                                                currentName: subName, 
+                                                currentTenantName: tenant, 
+                                                currentNidNumber: d['nidNumber'] ?? 'No Number', 
+                                                currentNotes: d['notes'] ?? ''
                                               ),
+                                            ),
                                           ],
                                         ),
                                         subtitle: Row(

@@ -213,8 +213,7 @@ class CategoryDialogs {
   }
 
   static void showAddSubItemDialog({required BuildContext context, required String categoryId, required String categoryName}) {
-    final subItemController = TextEditingController(); final tenantNameController = TextEditingController();
-    final nidController = TextEditingController(); final notesController = TextEditingController();
+    final subItemController = TextEditingController(); 
     bool isLoading = false;
     showDialog(
       context: context,
@@ -223,12 +222,6 @@ class CategoryDialogs {
         title: Center(child: Text("Add Unit to $categoryName", style: const TextStyle(fontWeight: FontWeight.bold))),
         content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(controller: subItemController, textAlign: TextAlign.center, decoration: InputDecoration(labelText: "$categoryName No", border: const OutlineInputBorder())),
-          const SizedBox(height: 12),
-          TextField(controller: tenantNameController, textAlign: TextAlign.center, decoration: const InputDecoration(labelText: "Tenant Name (Optional)", border: OutlineInputBorder())),
-          const SizedBox(height: 12),
-          TextField(controller: nidController, textAlign: TextAlign.center, decoration: const InputDecoration(labelText: "NID Number (Optional)", border: OutlineInputBorder())),
-          const SizedBox(height: 12),
-          TextField(controller: notesController, textAlign: TextAlign.center, decoration: const InputDecoration(labelText: "Notes", border: OutlineInputBorder()), maxLines: 2),
         ])),
         actions: [
           Row(children: [
@@ -238,7 +231,7 @@ class CategoryDialogs {
               String name = subItemController.text.trim(); if (name.isEmpty) return;
               setDialogState(() => isLoading = true);
               SharedPreferences prefs = await SharedPreferences.getInstance();
-              await _dbService.addSubItem(categoryId, name, prefs.getString('username') ?? "Admin", TenantName: tenantNameController.text.trim(), nidNumber: nidController.text.trim(), notes: notesController.text.trim());
+              await _dbService.addSubItem(categoryId, name, prefs.getString('username') ?? "Admin");
               if (context.mounted) Navigator.pop(ctx);
             }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Save"))),
           ]),
