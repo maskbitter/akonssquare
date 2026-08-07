@@ -16,6 +16,13 @@ import 'package:akonssquare/Common/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  
+  // Explicitly enable and configure persistence
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+
   runApp(const MyApp());
 }
 
@@ -53,13 +60,14 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   String _appName = ""; 
+  String _currentVersion = "";
   List<Map<String, dynamic>> _subItems = DatabaseService.cachedSubItems;
   Map<String, dynamic>? _selectedSubItem;
 
   @override
   void initState() {
     super.initState();
-    _fetchAppName();
+    _fetchAppDetails();
     if (_subItems.isEmpty) {
       _fetchSubItems();
     }
@@ -85,9 +93,12 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _fetchAppName() async {
+  Future<void> _fetchAppDetails() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    setState(() { _appName = packageInfo.appName; });
+    setState(() { 
+      _appName = packageInfo.appName; 
+      _currentVersion = "${packageInfo.version}+${packageInfo.buildNumber}";
+    });
   }
 
   void _showErrorDialog(String message) {
@@ -140,9 +151,15 @@ class _LoginPageState extends State<LoginPage> {
                   String last4 = storedNid.length >= 4 ? storedNid.substring(storedNid.length - 4) : storedNid;
                   if (input == last4 && storedNid.isNotEmpty && storedNid != "No Number") {
                     String subId = _selectedSubItem!['id']; String catId = _selectedSubItem!['categoryId'] ?? '';
+                    String sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+                    
+                    await DatabaseService().updateUserSession('sub_items', subId, sessionId);
+
                     SharedPreferences prefs = await SharedPreferences.getInstance();
                     await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'user');
                     await prefs.setString('subItemId', subId); await prefs.setString('categoryId', catId);
+                    await prefs.setString('sessionId', sessionId);
+
                     if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboard(subItemId: subId, categoryId: catId))); }
                   } else {
                     if (context.mounted) DatabaseService.showToast(context, "Incorrect password!", backgroundColor: Colors.red);
@@ -191,10 +208,18 @@ class _LoginPageState extends State<LoginPage> {
                   }
                   QuerySnapshot userQuery = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: u).where('password', isEqualTo: p).limit(1).get();
                   if (userQuery.docs.isNotEmpty) {
-                    var userData = userQuery.docs.first.data() as Map<String, dynamic>; String role = (userData['role'] ?? 'viewer').toString();
+                    var userDoc = userQuery.docs.first;
+                    var userData = userDoc.data() as Map<String, dynamic>; String role = (userData['role'] ?? 'viewer').toString();
+                    String sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+                    
+                    await DatabaseService().updateUserSession('users', userDoc.id, sessionId);
+
                     SharedPreferences prefs = await SharedPreferences.getInstance();
                     await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', role);
                     await prefs.setString('username', u); await prefs.setString('savedPassword', p);
+                    await prefs.setString('userDocId', userDoc.id);
+                    await prefs.setString('sessionId', sessionId);
+
                     if (mounted) {
                       Navigator.pop(ctx);
                       if (role == 'admin') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
@@ -253,6 +278,27 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(children: [
                 GestureDetector(onLongPress: _showMasterKeyDialog, child: Text(_appName.isEmpty ? "AKONS SQUARE" : _appName, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue.shade900, letterSpacing: 1.5))),
                 const SizedBox(height: 4),
+                // Version Info moved here
+                StreamBuilder<DocumentSnapshot>(
+                  stream: DatabaseService().getAppConfigStream(),
+                  builder: (context, snapshot) {
+                    String latestVer = "";
+                    if (snapshot.hasData && snapshot.data!.exists) {
+                      latestVer = (snapshot.data!.data() as Map)['requiredVersion'] ?? "";
+                    }
+                    
+                    String versionText = "V: $_currentVersion";
+                    if (latestVer.isNotEmpty && latestVer != _currentVersion) {
+                      versionText += " | Latest: $latestVer";
+                    }
+
+                    return Text(
+                      versionText,
+                      style: const TextStyle(fontSize: 10, color: Colors.blueGrey, fontWeight: FontWeight.bold),
+                    );
+                  }
+                ),
+                const SizedBox(height: 2),
                 StreamBuilder<DocumentSnapshot>(
                   stream: DatabaseService().getDatabaseInfoStream(),
                   initialData: null,
@@ -265,26 +311,67 @@ class _LoginPageState extends State<LoginPage> {
               ]),
             ),
             Expanded(
-              child: Center(child: SingleChildScrollView(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Text("Welcome", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 30),
-                DropdownButtonFormField<Map<String, dynamic>>(
-                  initialValue: _selectedSubItem,
-                  decoration: InputDecoration(labelText: "Select User Name", prefixIcon: const Icon(Icons.meeting_room_outlined), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                  items: _subItems.map((item) {
-                    String displayText = "${item['subItemName'] ?? 'Unnamed'} (${item['TenantName'] ?? ''})";
-                    return DropdownMenuItem<Map<String, dynamic>>(value: item, child: Text(displayText));
-                  }).toList(),
-                  onChanged: (v) => setState(() => _selectedSubItem = v),
-                  hint: const Text("Select User Name"),
-                ),
-                const SizedBox(height: 25),
-                SizedBox(width: 250, height: 50, child: ElevatedButton(
-                  onPressed: () { HapticFeedback.mediumImpact(); _loginBasicUser(); },
-                  onLongPress: () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
-                  child: const Text("LOGIN"),
-                )),
-              ]))),
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center, 
+                    children: [
+                      const Text("Welcome", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 30),
+                      DropdownButtonFormField<Map<String, dynamic>>(
+                        value: _selectedSubItem,
+                        decoration: InputDecoration(
+                          labelText: "Select User Name", 
+                          prefixIcon: const Icon(Icons.meeting_room_outlined), 
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))
+                        ),
+                        items: _subItems.map((item) {
+                          String displayText = "${item['subItemName'] ?? 'Unnamed'} (${item['TenantName'] ?? ''})";
+                          return DropdownMenuItem<Map<String, dynamic>>(value: item, child: Text(displayText));
+                        }).toList(),
+                        onChanged: (v) => setState(() => _selectedSubItem = v),
+                        hint: const Text("Select User Name"),
+                      ),
+                      const SizedBox(height: 25),
+                      SizedBox(
+                        width: double.infinity, 
+                        height: 55, 
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.login_outlined),
+                          label: const Text("LOGIN TO DASHBOARD", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                          onPressed: () { HapticFeedback.mediumImpact(); _loginBasicUser(); },
+                          onLongPress: () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        )
+                      ),
+                    ]
+                  )
+                )
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                children: [
+                  Image.asset('assets/images/signature.png', height: 40, errorBuilder: (c, e, s) => const SizedBox.shrink()),
+                  const SizedBox(height: 4),
+                  const Text(
+                    "AkonsAutomation by AkonS",
+                    style: TextStyle(
+                      fontSize: 11, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.indigo,
+                      letterSpacing: 0.5,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

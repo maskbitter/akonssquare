@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:akonssquare/Common/database_service.dart';
+import 'package:akonssquare/main.dart';
 
 class UpdateGuard extends StatefulWidget {
   final Widget child;
@@ -19,11 +21,71 @@ class _UpdateGuardState extends State<UpdateGuard> {
   String? _localVersion;
   String? _remoteVersion;
   bool _isPopupEnabled = true;
+  StreamSubscription? _sessionSubscription;
 
   @override
   void initState() {
     super.initState();
     _initVersioning();
+    _initSessionCheck();
+  }
+
+  Future<void> _initSessionCheck() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? role = prefs.getString('userRole');
+    String? localSessionId = prefs.getString('sessionId');
+    String? subItemId = prefs.getString('subItemId');
+    String? userDocId = prefs.getString('userDocId');
+
+    if (role == null || localSessionId == null) return;
+
+    String collection = (role == 'user') ? 'sub_items' : 'users';
+    String? docId = (role == 'user') ? subItemId : userDocId;
+
+    if (docId == null) return;
+
+    _sessionSubscription = _dbService.getSessionStream(collection, docId).listen((snapshot) {
+      if (snapshot.exists) {
+        var data = snapshot.data() as Map<String, dynamic>;
+        String? remoteSessionId = data['currentSessionId'];
+        if (remoteSessionId != null && remoteSessionId != localSessionId) {
+          _handleForceLogout();
+        }
+      }
+    });
+  }
+
+  void _handleForceLogout() async {
+    _sessionSubscription?.cancel();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Center(child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.warning_amber_rounded, color: Colors.red), SizedBox(width: 8), Text("Logged Out")])),
+          content: const Text("You have been logged out because someone else logged in using this account on another device.", textAlign: TextAlign.center),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
+                child: const Text("Back to Login"),
+              ),
+            )
+          ],
+        ),
+      );
+    }
   }
 
   Future<void> _initVersioning() async {
@@ -169,6 +231,7 @@ class _UpdateGuardState extends State<UpdateGuard> {
   @override
   void dispose() {
     _nagTimer?.cancel();
+    _sessionSubscription?.cancel();
     super.dispose();
   }
 

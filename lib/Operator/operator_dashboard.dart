@@ -113,6 +113,10 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
 
   Future<void> _handleLogout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userDocId = prefs.getString('userDocId');
+    if (userDocId != null) {
+      await DatabaseService().updateUserSession('users', userDocId, null);
+    }
     await prefs.clear();
     if (mounted) {
       Navigator.pushReplacement(

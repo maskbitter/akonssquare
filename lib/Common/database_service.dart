@@ -28,6 +28,7 @@ class DatabaseService {
       'details': details,
       'category': category,
       'timestamp': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     });
   }
 
@@ -57,6 +58,7 @@ class DatabaseService {
       'categoryNameLower': name.toLowerCase(),
       'assignedServices': [],
       'createdAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     });
     await logActivity(
       actor: actor,
@@ -72,6 +74,8 @@ class DatabaseService {
     
     await _db.collection('categories').doc(categoryId).update({
       'assignedServices': assignedServices,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     });
 
     await logActivity(
@@ -95,6 +99,7 @@ class DatabaseService {
       'serviceName': name,
       'amount': amount,
       'createdAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     });
 
     await logActivity(
@@ -138,6 +143,7 @@ class DatabaseService {
       'excludedServices': [],
       'overriddenServices': [],
       'createdAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     });
 
     await logActivity(
@@ -162,6 +168,8 @@ class DatabaseService {
       if (nidNumber != null) data['nidNumber'] = nidNumber.isEmpty ? 'No Number' : nidNumber;
       data['occupiedAt'] = FieldValue.serverTimestamp();
     }
+    data['updatedAt'] = FieldValue.serverTimestamp();
+    data['clientTimestamp'] = DateTime.now().toIso8601String();
     await _db.collection('sub_items').doc(subItemId).update(data);
 
     await logActivity(
@@ -194,6 +202,8 @@ class DatabaseService {
       String nid = data['nidNumber'] ?? '';
       if (nid.isEmpty) data['nidNumber'] = 'No Number';
     }
+    data['updatedAt'] = FieldValue.serverTimestamp();
+    data['clientTimestamp'] = DateTime.now().toIso8601String();
     await _db.collection('sub_items').doc(subItemId).update(data);
 
     await logActivity(
@@ -210,6 +220,8 @@ class DatabaseService {
 
     await _db.collection('sub_items').doc(subItemId).update({
       'excludedServices': excludedServices,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     });
 
     await logActivity(
@@ -226,6 +238,8 @@ class DatabaseService {
 
     await _db.collection('sub_items').doc(subItemId).update({
       'overriddenServices': overriddenServices,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     });
 
     await logActivity(
@@ -242,6 +256,8 @@ class DatabaseService {
 
     await _db.collection('sub_items').doc(subItemId).update({
       'electricityDetails': electricityDetails,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     });
 
     await logActivity(
@@ -258,6 +274,8 @@ class DatabaseService {
 
     await _db.collection('sub_items').doc(subItemId).update({
       'electricityDetails.isStopped': isStopped,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     });
 
     await logActivity(
@@ -283,6 +301,7 @@ class DatabaseService {
   Future<void> addMainMeter(Map<String, dynamic> data, String actor) async {
     data['createdAt'] = FieldValue.serverTimestamp();
     data['updatedAt'] = FieldValue.serverTimestamp();
+    data['clientTimestamp'] = DateTime.now().toIso8601String();
     DocumentReference doc = await _db.collection('main_meters').add(data);
 
     await logActivity(
@@ -295,6 +314,7 @@ class DatabaseService {
 
   Future<void> updateMainMeter(String docId, Map<String, dynamic> data, String actor) async {
     data['updatedAt'] = FieldValue.serverTimestamp();
+    data['clientTimestamp'] = DateTime.now().toIso8601String();
     // Reset paid units for the new month/cycle
     data['totalSubPaidUnits'] = 0.0;
     
@@ -314,6 +334,7 @@ class DatabaseService {
       await snap.docs.first.reference.update({
         'totalSubPaidUnits': FieldValue.increment(units),
         'updatedAt': FieldValue.serverTimestamp(),
+        'clientTimestamp': DateTime.now().toIso8601String(),
       });
     }
   }
@@ -329,6 +350,7 @@ class DatabaseService {
   Future<void> addSubMeter(Map<String, dynamic> data, String actor) async {
     data['createdAt'] = FieldValue.serverTimestamp();
     data['updatedAt'] = FieldValue.serverTimestamp();
+    data['clientTimestamp'] = DateTime.now().toIso8601String();
     data['isAssigned'] = false;
     data['lastReading'] = 0.0;
     data['presentReading'] = 0.0;
@@ -344,6 +366,7 @@ class DatabaseService {
 
   Future<void> updateSubMeter(String docId, Map<String, dynamic> data, String actor) async {
     data['updatedAt'] = FieldValue.serverTimestamp();
+    data['clientTimestamp'] = DateTime.now().toIso8601String();
     await _db.collection('sub_meters').doc(docId).update(data);
   }
 
@@ -371,6 +394,7 @@ class DatabaseService {
         'lastReading': (data['presentReading'] ?? 0).toDouble(),
         'presentReading': presentReading,
         'updatedAt': FieldValue.serverTimestamp(),
+        'clientTimestamp': DateTime.now().toIso8601String(),
       });
     }
   }
@@ -387,10 +411,23 @@ class DatabaseService {
     return _db.collection('app_config').doc('database_info').snapshots();
   }
 
+  Stream<DocumentSnapshot> getSessionStream(String collection, String docId) {
+    return _db.collection(collection).doc(docId).snapshots();
+  }
+
+  Future<void> updateUserSession(String collection, String docId, String? sessionId) async {
+    await _db.collection(collection).doc(docId).update({
+      'currentSessionId': sessionId,
+      'lastLoginAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
   Future<void> updateRequiredVersion(String version) async {
     await _db.collection('app_config').doc('settings').set({
       'requiredVersion': version,
       'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
   }
 
@@ -398,6 +435,7 @@ class DatabaseService {
     await _db.collection('app_config').doc('settings').set({
       'isPopupEnabled': isEnabled,
       'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
   }
 
@@ -405,6 +443,7 @@ class DatabaseService {
     await _db.collection('app_config').doc('visibility_$role').set({
       'settings': settings,
       'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
   }
 
@@ -416,6 +455,7 @@ class DatabaseService {
     await _db.collection('app_config').doc('database_info').set({
       'serverStatus': status,
       'statusUpdatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
   }
 
@@ -425,6 +465,7 @@ class DatabaseService {
 
   Future<void> addBillingRecord(Map<String, dynamic> data, String actor) async {
     data['createdAt'] = FieldValue.serverTimestamp();
+    data['clientTimestamp'] = DateTime.now().toIso8601String();
     await _db.collection('billing_history').add(data);
 
     await logActivity(
@@ -467,6 +508,7 @@ class DatabaseService {
       'password': password,
       'role': role,
       'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
     };
 
     if (docId == null) {
@@ -500,6 +542,7 @@ class DatabaseService {
       'originalData': originalData,
       'removedBy': removedBy,
       'removedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
       'reason': reason,
     });
 
@@ -692,6 +735,7 @@ class DatabaseService {
     await _db.collection('app_config').doc('database_info').set({
       'dbVersion': restoredVersion,
       'lastRestoreAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
       'lastRestoreBy': actor,
     }, SetOptions(merge: true));
 

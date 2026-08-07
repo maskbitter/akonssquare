@@ -88,6 +88,10 @@ class _UserDashboardState extends State<UserDashboard> {
 
   Future<void> _handleLogout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? subItemId = prefs.getString('subItemId');
+    if (subItemId != null) {
+      await DatabaseService().updateUserSession('sub_items', subItemId, null);
+    }
     await prefs.clear();
     if (mounted) {
       Navigator.pushReplacement(
@@ -421,7 +425,7 @@ class _UserDashboardState extends State<UserDashboard> {
                             const Divider(height: 1),
                             const SizedBox(height: 6),
                             _buildInfoRow("Main Meter No:", ed['mainMeterNo'] ?? 'N/A', icon: Icons.settings_input_component),
-                            _buildInfoRow("Sub-Meter No:", ed['mainSubMeterNo'] ?? 'N/A', icon: Icons.numbers),
+                            _buildInfoRow("Sub-Meter No:", ed['subMeterNo'] ?? 'N/A', icon: Icons.numbers),
                             _buildInfoRow("Last Readings:", "${(ed['lastReading'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.history),
                             _buildInfoRow("Present Readings:", "${(ed['presentReading'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.visibility),
                             _buildInfoRow("Used Units:", (((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)).toStringAsFixed(2), isBold: true, icon: Icons.electric_bolt),
