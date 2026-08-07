@@ -334,22 +334,24 @@ class _AdminHomeState extends State<AdminHome> {
     
     return PieChart(
       PieChartData(
-        sectionsSpace: 2,
+        sectionsSpace: 3,
         centerSpaceRadius: 20,
         sections: [
           PieChartSectionData(
             color: Colors.greenAccent,
             value: received,
             title: '${((received/total)*100).toStringAsFixed(0)}%',
-            radius: 30,
+            radius: 35,
             titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
+            borderSide: BorderSide(color: Colors.green.shade700, width: 2),
           ),
           PieChartSectionData(
             color: Colors.orangeAccent,
             value: due,
             title: '${((due/total)*100).toStringAsFixed(0)}%',
-            radius: 25,
+            radius: 30,
             titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
+            borderSide: BorderSide(color: Colors.orange.shade700, width: 2),
           ),
         ],
       ),
@@ -398,8 +400,14 @@ class _AdminHomeState extends State<AdminHome> {
         BarChartRodData(
           toY: y,
           color: color,
-          width: 12,
+          width: 14,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+          borderSide: BorderSide(color: color.withValues(alpha: 0.8), width: 1),
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true,
+            toY: y,
+            color: Colors.black12,
+          ),
         ),
       ],
     );
@@ -1007,18 +1015,27 @@ class _AdminHomeState extends State<AdminHome> {
                             future: _dbService.getCategoryById(catId),
                             builder: (context, catSnap) {
                               categoryName = catSnap.data?['categoryName'] ?? 'Unknown';
+                              String tName = data['TenantName'] ?? snap.data!['TenantName'] ?? 'No Name';
+                              
                               return _buildBillingTile(
-                                title: "$resolvedSubName (${data['tenantName']})",
+                                index: index,
+                                title: "$resolvedSubName ($tName)",
                                 subtitle: categoryName,
                                 amount: amountToShow,
                                 color: isRent ? Colors.lightBlue : Colors.orangeAccent.shade700,
                                 icon: isRent ? Icons.home_work : Icons.settings_suggest,
+                                paidBy: data['paidBy'],
+                                paidAt: data['paidAt'],
+                                notes: data['paymentNotes'],
+                                onTap: () => _showItemDetailDialog(context, data, resolvedSubName, tName, categoryName, mode: isRent ? 'rent' : 'utility'),
                               );
                             },
                           );
                         }
+                        String tName = data['TenantName'] ?? 'No Name';
                         return _buildBillingTile(
-                          title: "$resolvedSubName (${data['tenantName']})",
+                          index: index,
+                          title: "$resolvedSubName ($tName)",
                           subtitle: categoryName,
                           amount: amountToShow,
                           color: isRent ? Colors.lightBlue : Colors.orangeAccent.shade700,
@@ -1061,18 +1078,27 @@ class _AdminHomeState extends State<AdminHome> {
                 future: _dbService.getCategoryById(catId),
                 builder: (context, catSnap) {
                   categoryName = catSnap.data?['categoryName'] ?? 'Unknown';
+                  String tName = data['TenantName'] ?? snap.data!['TenantName'] ?? 'No Name';
+
                   return _buildBillingTile(
-                    title: "$resolvedSubName (${data['tenantName']})",
+                    index: index,
+                    title: "$resolvedSubName ($tName)",
                     subtitle: categoryName,
                     amount: (data['totalAmount'] as num).toDouble(),
                     color: Colors.green,
                     icon: Icons.check_circle,
+                    paidBy: data['paidBy'],
+                    paidAt: data['paidAt'],
+                    notes: data['paymentNotes'],
+                    onTap: () => _showItemDetailDialog(context, data, resolvedSubName, tName, categoryName, mode: 'all'),
                   );
                 },
               );
             }
+            String tName = data['TenantName'] ?? 'No Name';
             return _buildBillingTile(
-              title: "$resolvedSubName (${data['tenantName']})",
+              index: index,
+              title: "$resolvedSubName ($tName)",
               subtitle: categoryName,
               amount: (data['totalAmount'] as num).toDouble(),
               color: Colors.green,
@@ -1111,15 +1137,38 @@ class _AdminHomeState extends State<AdminHome> {
           future: _dbService.getCategoryById(catId),
           builder: (context, catSnap) {
             String categoryName = catSnap.data?['categoryName'] ?? 'Loading...';
+            String tName = data['TenantName'] ?? 'No Name'; // Capital T
             return FutureBuilder<double>(
               future: _calculateSingleDue(doc),
               builder: (context, amountSnap) {
+                double amount = amountSnap.data ?? 0;
                 return _buildBillingTile(
-                  title: "${data['subItemName']} (${data['tenantName']})",
+                  index: index,
+                  title: "${data['subItemName']} ($tName)",
                   subtitle: categoryName,
-                  amount: amountSnap.data ?? 0,
+                  amount: amount,
                   color: Colors.orange,
                   icon: Icons.pending,
+                  onTap: () async {
+                    // For Due items, we need to build a virtual billing record
+                    var catDoc = await _dbService.getCategoryById(catId);
+                    List catServices = (catDoc.data() as Map<String, dynamic>?)?['assignedServices'] ?? [];
+                    List excluded = data['excludedServices'] ?? [];
+                    List overridden = data['overriddenServices'] ?? [];
+                    List active = DatabaseService.getEffectiveServices(categoryServices: catServices, excludedServices: excluded, overriddenServices: overridden);
+                    
+                    Map<String, dynamic> virtualData = {
+                      'monthYear': _selectedMonthStr,
+                      'TenantName': tName,
+                      'nidNumber': data['nidNumber'] ?? '',
+                      'services': active,
+                      'electricityDetails': data['electricityDetails'],
+                      'electricityBill': (amount - active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble())),
+                      'totalAmount': amount,
+                      'houseRentTotal': amount - (amount - active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble())),
+                    };
+                    if (context.mounted) _showItemDetailDialog(context, virtualData, data['subItemName'] ?? 'Unnamed', tName, categoryName, mode: 'all');
+                  },
                 );
               },
             );
@@ -1129,23 +1178,220 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _buildBillingTile({required String title, required String subtitle, required double amount, required Color color, required IconData icon}) {
+  Widget _buildBillingTile({
+    required int index, 
+    required String title, 
+    required String subtitle, 
+    required double amount, 
+    required Color color, 
+    required IconData icon, 
+    VoidCallback? onTap,
+    String? paidBy,
+    Timestamp? paidAt,
+    String? notes,
+  }) {
+    final List<Color> pastelColors = [
+      Colors.blue.shade50,
+      Colors.green.shade50,
+      Colors.orange.shade50,
+      Colors.purple.shade50,
+      Colors.teal.shade50,
+      Colors.pink.shade50,
+      Colors.amber.shade50,
+      Colors.cyan.shade50,
+    ];
+    Color itemColor = pastelColors[index % pastelColors.length];
+
     return Card(
-      elevation: 1,
+      elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: itemColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: color.withValues(alpha: 0.1), width: 1)),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.1),
           child: Icon(icon, color: color, size: 20),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade600)),
-        trailing: Text(
-          "৳${amount.toStringAsFixed(2)}",
-          style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.blueGrey.shade700)),
+            if (paidBy != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text("Paid by: $paidBy", style: const TextStyle(fontSize: 10, color: Colors.indigo, fontWeight: FontWeight.bold)),
+              ),
+            if (paidAt != null)
+              Text("Paid at: ${DatabaseService.formatFullDateTime(paidAt)}", style: const TextStyle(fontSize: 9, color: Colors.blueGrey)),
+            if (notes != null && notes.isNotEmpty)
+              Text("Note: $notes", style: const TextStyle(fontSize: 9, color: Colors.brown, fontStyle: FontStyle.italic)),
+          ],
         ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "৳${amount.toStringAsFixed(2)}",
+              style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16),
+            ),
+            if (onTap != null) const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showItemDetailDialog(BuildContext context, Map<String, dynamic> data, String subName, String tenantName, String catName, {required String mode}) {
+    List allServices = data['services'] ?? [];
+    List displayServices = [];
+    double displayTotal = 0;
+    bool showElec = false;
+    
+    if (mode == 'rent') {
+      displayServices = allServices.where((s) => s['name'].toString().toLowerCase().contains('rent')).toList();
+      displayTotal = displayServices.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
+    } else if (mode == 'utility') {
+      displayServices = allServices.where((s) => !s['name'].toString().toLowerCase().contains('rent')).toList();
+      double elec = (data['electricityBill'] as num?)?.toDouble() ?? 0;
+      displayTotal = displayServices.fold(elec, (acc, s) => acc + (s['amount'] as num).toDouble());
+      showElec = true;
+    } else {
+      displayServices = allServices;
+      displayTotal = (data['totalAmount'] as num).toDouble();
+      showElec = true;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Column(
+          children: [
+            Text(subName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.indigo)),
+            Text("$tenantName | $catName", style: const TextStyle(fontSize: 13, color: Colors.blueGrey)),
+            const Divider(height: 24),
+          ],
+        ),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.9,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showElec && data['electricityDetails'] != null) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.flash_on, color: Colors.amber, size: 16),
+                      const SizedBox(width: 8),
+                      const Text("Electricity Breakdown", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDetailRow("Meter No:", data['electricityDetails']['subMeterNo'] ?? 'N/A'),
+                  _buildDetailRow("Reading:", "${data['electricityDetails']['lastReading']} -> ${data['electricityDetails']['presentReading']}"),
+                  _buildDetailRow("Unit Rate:", "৳${(data['electricityDetails']['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2)}"),
+                  _buildDetailRow("Bill Amount:", "৳${(data['electricityBill'] as num?)?.toDouble().toStringAsFixed(2)}", isBold: true, color: Colors.teal),
+                  const Divider(height: 24),
+                ],
+                if (displayServices.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.list_alt, color: Colors.indigo, size: 16),
+                      const SizedBox(width: 8),
+                      Text(mode == 'rent' ? "Rent Info" : "Services Info", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...displayServices.map((s) {
+                    String name = s['name'] ?? 'Service';
+                    if (name.toLowerCase().contains('wifi') && s['deviceQuantity'] != null) {
+                      name = "$name (Devices: ${s['deviceQuantity']})";
+                    }
+                    return _buildDetailRow(name, "৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}");
+                  }),
+                ],
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50, 
+                    borderRadius: BorderRadius.circular(12), 
+                    border: Border.all(color: Colors.indigo.shade200)
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Total", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                      Text("৳${displayTotal.toStringAsFixed(2)}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.indigo)),
+                    ],
+                  ),
+                ),
+                if (data['paidBy'] != null || data['paidAt'] != null || (data['paymentNotes'] ?? '').toString().isNotEmpty) ...[
+                  const Divider(height: 32),
+                  Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.blueGrey, size: 16),
+                      const SizedBox(width: 8),
+                      const Text("Payment Meta", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (data['paidBy'] != null) _buildDetailRow("Collected by:", data['paidBy']),
+                  if (data['paidAt'] != null) _buildDetailRow("Time:", DatabaseService.formatFullDateTime(data['paidAt'])),
+                  if ((data['paymentNotes'] ?? '').toString().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.brown.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.brown.shade100),
+                        ),
+                        child: Text(
+                          "Note: ${data['paymentNotes']}", 
+                          style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.brown)
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.close, size: 18),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red, width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: () => Navigator.pop(context), 
+              label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, {bool isBold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, color: Colors.blueGrey)),
+          Text(value, style: TextStyle(fontSize: 14, fontWeight: isBold ? FontWeight.bold : FontWeight.w600, color: color)),
+        ],
       ),
     );
   }

@@ -800,6 +800,12 @@ class DatabaseService {
     return effectiveList;
   }
 
+  static String formatFullDateTime(Timestamp? timestamp) {
+    if (timestamp == null) return "N/A";
+    DateTime dt = timestamp.toDate();
+    return "${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+  }
+
   static String formatDuration(Timestamp? updatedAt) {
     if (updatedAt == null) return "Never updated";
     DateTime lastUpdate = updatedAt.toDate();
