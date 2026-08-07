@@ -9,7 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminHome extends StatefulWidget {
-  final VoidCallback? onCategoryTap;
+  final Function(int)? onCategoryTap;
   final VoidCallback? onElectricityTap;
   final bool isReadOnly;
   const AdminHome({super.key, this.onCategoryTap, this.onElectricityTap, this.isReadOnly = false});
@@ -171,7 +171,6 @@ class _AdminHomeState extends State<AdminHome> {
           ),
         ),
         _buildCategoryOverviewCard(),
-        _buildCategoryGrid(),
       ],
     );
   }
@@ -222,7 +221,7 @@ class _AdminHomeState extends State<AdminHome> {
                       color: Colors.blue.shade900,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                       child: Padding(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(12),
                         child: Column(
                           children: [
                             Row(
@@ -234,7 +233,7 @@ class _AdminHomeState extends State<AdminHome> {
                                     const SizedBox(width: 8),
                                     Text(
                                       "$_selectedMonthStr Total Revenue",
-                                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
@@ -246,44 +245,44 @@ class _AdminHomeState extends State<AdminHome> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 4),
                             Text(
                               "৳${grandTotal.toStringAsFixed(2)}",
-                              style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
+                              style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900),
                             ),
                             
                             if (_showPieChart || _showBarChart) 
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 20),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
                                 child: Row(
                                   children: [
                                     if (_showPieChart)
-                                      Expanded(child: SizedBox(height: 140, child: _buildPieChart(receivedTotal, dueTotal))),
+                                      Expanded(child: SizedBox(height: 100, child: _buildPieChart(receivedTotal, dueTotal))),
                                     if (_showPieChart && _showBarChart) const SizedBox(width: 16),
                                     if (_showBarChart)
-                                      Expanded(child: SizedBox(height: 140, child: _buildBarChart(rentTotal, utilityTotal, dueTotal))),
+                                      Expanded(child: SizedBox(height: 100, child: _buildBarChart(rentTotal, utilityTotal, dueTotal))),
                                   ],
                                 ),
                               ),
 
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 _buildInteractiveStat("Received", receivedTotal, Colors.greenAccent, Icons.check_circle_outline,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 0)),
-                                Container(width: 1, height: 30, color: Colors.white24),
+                                Container(width: 1, height: 24, color: Colors.white24),
                                 _buildInteractiveStat("Due", dueTotal, Colors.orangeAccent, Icons.pending_actions,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 1)),
                               ],
                             ),
-                            const Divider(color: Colors.white12, height: 24),
+                            const Divider(color: Colors.white12, height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 _buildInteractiveStat("Rent", rentTotal, Colors.lightBlueAccent, Icons.home_work_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: true)),
-                                Container(width: 1, height: 30, color: Colors.white24),
+                                Container(width: 1, height: 24, color: Colors.white24),
                                 _buildInteractiveStat("Utility", utilityTotal, Colors.yellowAccent, Icons.settings_suggest_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: false)),
                               ],
@@ -411,7 +410,7 @@ class _AdminHomeState extends State<AdminHome> {
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
       child: Container(
-        height: 180,
+        height: 140,
         margin: const EdgeInsets.all(16),
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
       ),
@@ -438,62 +437,169 @@ class _AdminHomeState extends State<AdminHome> {
           }
         }
 
+        return Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 16, bottom: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.dashboard_customize_outlined, size: 20, color: Colors.blueGrey),
+                  SizedBox(width: 8),
+                  Text(
+                    "Units Overview (Category Wise)",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blueGrey, letterSpacing: 0.8),
+                  ),
+                ],
+              ),
+            ),
+            Center(
+              child: Text(
+                "$totalDocs Total Units Registered in System",
+                style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontStyle: FontStyle.italic),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Overall Summary Row (Static Cards)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildSubOverviewCard(
+                      title: "Total Occupied",
+                      count: occupiedCount,
+                      color: Colors.green,
+                      icon: Icons.door_front_door_outlined,
+                      onTap: () {
+                        DatabaseService.vibrate();
+                        widget.onCategoryTap?.call(0);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSubOverviewCard(
+                      title: "Total Vacant",
+                      count: vacantCount,
+                      color: Colors.red,
+                      icon: Icons.meeting_room_outlined,
+                      onTap: () {
+                        DatabaseService.vibrate();
+                        widget.onCategoryTap?.call(1);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Static Category List
+            StreamBuilder<QuerySnapshot>(
+              stream: _dbService.getCategoriesStream(),
+              builder: (context, catSnap) {
+                if (!catSnap.hasData) return const SizedBox.shrink();
+                var categories = catSnap.data!.docs;
+                
+                return Column(
+                  children: categories.map((catDoc) {
+                    return _buildCategorySolidCard(catDoc);
+                  }).toList(),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCategorySolidCard(QueryDocumentSnapshot catDoc) {
+    String catId = catDoc.id;
+    String catName = (catDoc.data() as Map)['categoryName'] ?? 'Unnamed';
+    
+    // Assign decent solid colors based on index
+    final List<MaterialColor> colors = [Colors.indigo, Colors.teal, Colors.deepPurple, Colors.brown, Colors.cyan];
+    final MaterialColor baseColor = colors[catId.hashCode % colors.length];
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _dbService.getSubItemsStream(catId),
+      builder: (context, subSnap) {
+        int total = 0;
+        int occupied = 0;
+        int vacant = 0;
+
+        if (subSnap.hasData) {
+          total = subSnap.data!.docs.length;
+          for (var doc in subSnap.data!.docs) {
+            var d = doc.data() as Map<String, dynamic>;
+            String status = d['status'] ?? ((d['tenantName'] ?? '').toString().isNotEmpty ? 'Occupied' : 'Vacant');
+            if (status == 'Occupied') {
+              occupied++;
+            } else {
+              vacant++;
+            }
+          }
+        }
+
         return Card(
-          elevation: 3,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: Colors.teal.shade50,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.teal.shade200)),
-          child: ExpansionTile(
-            leading: const Icon(Icons.dashboard_customize_outlined, color: Colors.teal),
-            title: Center(
-              child: Text(
-                "Units Overview (Total Status)",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal.shade900),
-              ),
-            ),
-            subtitle: Center(
-              child: Text(
-                "$totalDocs Total Units Registered",
-                style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
-              ),
-            ),
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildSubOverviewCard(
-                        title: "Occupied",
-                        count: occupiedCount,
-                        color: Colors.green,
-                        icon: Icons.door_front_door_outlined,
-                        onTap: () {
-                          DatabaseService.vibrate();
-                          widget.onCategoryTap?.call();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildSubOverviewCard(
-                        title: "Vacant",
-                        count: vacantCount,
-                        color: Colors.redAccent,
-                        icon: Icons.meeting_room_outlined,
-                        onTap: () {
-                          DatabaseService.vibrate();
-                          widget.onCategoryTap?.call();
-                        },
-                      ),
-                    ),
-                  ],
+          elevation: 4,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          color: baseColor.shade50,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: baseColor.shade200, width: 1.2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: baseColor,
+                  child: const Icon(Icons.category_outlined, color: Colors.white, size: 16),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    catName.toUpperCase(),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: baseColor.shade800, letterSpacing: 0.5),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildNestedStatItem("Total", total, Colors.blueGrey),
+                const SizedBox(width: 12),
+                _buildNestedStatItem("Occupied", occupied, Colors.green, onTap: () {
+                  DatabaseService.vibrate();
+                  widget.onCategoryTap?.call(0);
+                }),
+                const SizedBox(width: 12),
+                _buildNestedStatItem("Vacant", vacant, Colors.red, onTap: () {
+                  DatabaseService.vibrate();
+                  widget.onCategoryTap?.call(1);
+                }),
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildNestedStatItem(String label, int count, Color color, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+          const SizedBox(width: 4),
+          Text(
+            count.toString(),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: color),
+          ),
+        ],
+      ),
     );
   }
 
@@ -501,7 +607,7 @@ class _AdminHomeState extends State<AdminHome> {
     return Card(
       elevation: 4,
       color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: color.withValues(alpha: 0.2))),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: color.withOpacity(0.3), width: 1.2)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -614,7 +720,8 @@ class _AdminHomeState extends State<AdminHome> {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.indigo.shade50,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.indigo.shade200, width: 1)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: SingleChildScrollView(
@@ -650,7 +757,7 @@ class _AdminHomeState extends State<AdminHome> {
                   double balance = mainUsed - totalSubPaid;
 
                   return TableRow(
-                    decoration: BoxDecoration(color: rowColor),
+                    decoration: BoxDecoration(color: index % 2 == 0 ? Colors.white.withOpacity(0.5) : Colors.transparent),
                     children: [
                       Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${index + 1}", textAlign: TextAlign.center, style: dataStyle))),
                       Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(meterNo, textAlign: TextAlign.center, style: textStyle, overflow: TextOverflow.ellipsis))),
@@ -693,7 +800,8 @@ class _AdminHomeState extends State<AdminHome> {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.teal.shade50,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.teal.shade200, width: 1)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: SingleChildScrollView(
@@ -722,11 +830,10 @@ class _AdminHomeState extends State<AdminHome> {
                   double present = (data['presentReading'] as num?)?.toDouble() ?? 0;
                   double govtPresent = (data['govtBillReading'] as num?)?.toDouble() ?? 0;
                   double balance = govtPresent - present;
-                  final rowColor = index % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
                   bool isAlert = balance < -5 || balance > 100;
 
                   return TableRow(
-                    decoration: BoxDecoration(color: rowColor),
+                    decoration: BoxDecoration(color: index % 2 == 0 ? Colors.white.withOpacity(0.5) : Colors.transparent),
                     children: [
                       Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${index + 1}", textAlign: TextAlign.center, style: dataStyle))),
                       Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(meterNo, textAlign: TextAlign.center, style: textStyle, overflow: TextOverflow.ellipsis))),
@@ -756,153 +863,6 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _buildCategoryGrid() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _dbService.getCategoriesStream(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return _buildShimmerList();
-        var categoryDocs = snapshot.data!.docs;
-        
-        if (categoryDocs.isEmpty) return const Center(child: Text("No categories found.", style: TextStyle(color: Colors.grey)));
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            children: List.generate(categoryDocs.length, (index) {
-              var catDoc = categoryDocs[index];
-              String catId = catDoc.id;
-              String catName = (catDoc.data() as Map)['categoryName'] ?? 'Unnamed';
-              String catLower = catName.toLowerCase();
-
-              IconData icon;
-              Color baseColor;
-              if (catLower.contains("shop")) {
-                icon = Icons.storefront_outlined;
-                baseColor = Colors.orange;
-              } else if (catLower.contains("room")) {
-                icon = Icons.bed_outlined;
-                baseColor = Colors.blue;
-              } else {
-                icon = Icons.category_outlined;
-                baseColor = Colors.teal;
-              }
-
-              return StreamBuilder<QuerySnapshot>(
-                stream: _dbService.getSubItemsStream(catId),
-                builder: (context, subSnapshot) {
-                  int vacantCount = 0;
-                  int occupiedCount = 0;
-
-                  if (subSnapshot.hasData) {
-                    for (var doc in subSnapshot.data!.docs) {
-                      var data = doc.data() as Map<String, dynamic>;
-                      String status = data['status'] ?? ( (data['tenantName'] ?? '').toString().isNotEmpty ? 'Occupied' : 'Vacant' );
-                      if (status == 'Occupied') {
-                        occupiedCount++;
-                      } else {
-                        vacantCount++;
-                      }
-                    }
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: Card(
-                      elevation: 4,
-                      shadowColor: baseColor.withValues(alpha: 0.2),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      child: InkWell(
-                        onTap: () {
-                          DatabaseService.vibrate();
-                          if (!widget.isReadOnly) widget.onCategoryTap?.call();
-                        },
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                Colors.white,
-                                baseColor.withValues(alpha: 0.05),
-                              ],
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: baseColor.withValues(alpha: 0.1),
-                                child: Icon(icon, color: baseColor, size: 24),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      catName.toUpperCase(),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w900, 
-                                        fontSize: 16, 
-                                        color: baseColor.withValues(alpha: 0.9),
-                                        letterSpacing: 1.0,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        _smallInfoChip("Vacant: $vacantCount", Colors.redAccent),
-                                        const SizedBox(width: 8),
-                                        _smallInfoChip("Occupied: $occupiedCount", Colors.green),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text("TOTAL", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
-                                  Text(
-                                    "${vacantCount + occupiedCount}",
-                                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: baseColor),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.chevron_right, color: Colors.grey, size: 18),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _smallInfoChip(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
-      ),
-    );
-  }
-
   Widget _buildShimmerList() {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade300,
@@ -916,20 +876,6 @@ class _AdminHomeState extends State<AdminHome> {
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
           )),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSmallCountRow(IconData icon, String text, Color color, {double fontSize = 13}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: fontSize + 1, color: color),
-          const SizedBox(width: 6),
-          Text(text, style: TextStyle(fontSize: fontSize, color: Colors.black87, fontWeight: FontWeight.w500)),
-        ],
       ),
     );
   }

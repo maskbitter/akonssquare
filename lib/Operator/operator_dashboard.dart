@@ -192,10 +192,10 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
           children: [
             // 1. Home Tab (Same as Admin Home)
             AdminHome(
-              onCategoryTap: () {
+              onCategoryTap: (index) {
                 _pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
                 setState(() {
-                  _categoryInitialSubTab = 0; // Occupied
+                  _categoryInitialSubTab = index; // index 0 for Occupied, 1 for Vacant
                 });
               },
               onElectricityTap: () {

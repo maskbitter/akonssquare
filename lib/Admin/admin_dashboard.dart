@@ -239,10 +239,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             },
             children: [
               AdminHome(
-                onCategoryTap: () {
+                onCategoryTap: (index) {
                   _pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
                   setState(() {
-                    _categoryInitialSubTab = 0;
+                    _categoryInitialSubTab = index;
                   });
                 },
                 onElectricityTap: () {
