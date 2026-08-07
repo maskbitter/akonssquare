@@ -1,0 +1,22 @@
+App Design Assets - Ultra Modern 2026 Style
+
+1. Android Launcher Icons:
+   Place the XML files in the 'res/drawable' folder of your Android project.
+   In AndroidManifest.xml, set:
+   android:icon="@mipmap/ic_launcher"
+   android:roundIcon="@mipmap/ic_launcher_round" (pointing to an adaptive-icon XML)
+
+2. Flutter Splash Screen:
+   Use the 'ModernLogoPainter' class provided in 'splash_screen_logo.dart' with a CustomPaint widget.
+   Standard size: 120x120 or 80x80 for a cleaner look.
+
+3. Typography Recommendation:
+   Main Title: AKONS SQUARE
+   Font: Extra Bold / Black (w900)
+   Letter Spacing: 5.0
+   Color: White (0.9 opacity) with subtle shadow.
+
+4. Color Palette:
+   Primary: #00FFC2 (Electric Cyan)
+   Secondary: #00D2FF (Sky Blue)
+   Background: Deep Radial Gradient (#24292E to #0A0C0E)

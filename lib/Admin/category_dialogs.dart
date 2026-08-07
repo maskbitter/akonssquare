@@ -337,6 +337,7 @@ class CategoryDialogs {
     final presentReadingController = TextEditingController(text: data['presentReading'].toString());
     final govtReadingController = TextEditingController(text: data['govtBillReading'].toString());
     final amountController = TextEditingController(text: data['govtBillAmount'].toString());
+    final lastReadingController = TextEditingController(text: (data['lastReading'] ?? 0).toString());
     
     bool isLoading = false;
 
@@ -466,18 +467,67 @@ class CategoryDialogs {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: isLoading ? null : () async {
+                      double last = double.tryParse(lastReadingController.text) ?? 0; 
+                      double pres = double.tryParse(presentReadingController.text) ?? last;
+                      double govt = double.tryParse(govtReadingController.text) ?? 0; 
+                      double amt = double.tryParse(amountController.text) ?? 0;
+                      
+                      double prevSavedMain = (data['presentReading'] ?? 0).toDouble();
+                      double prevSavedGovt = (data['govtBillReading'] ?? 0).toDouble();
+                      
+                      bool syncMain = false;
+                      bool syncGovt = false;
+
+                      if (prevSavedMain > 0 && last != prevSavedMain) {
+                        syncMain = await showDialog(
+                          context: context,
+                          builder: (c) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: const Text("Sync Main Meter?", style: TextStyle(fontWeight: FontWeight.bold)),
+                            content: Text("Previous reading was $prevSavedMain. Should this be set as the 'Last Reading' for this month?"),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No", style: TextStyle(color: Colors.red))),
+                              TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Yes", style: TextStyle(color: Colors.green))),
+                            ],
+                          ),
+                        ) ?? false;
+                      }
+
+                      if (prevSavedGovt > 0 && govt != prevSavedGovt) {
+                        syncGovt = await showDialog(
+                          context: context,
+                          builder: (c) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: const Text("Sync Govt. Reading?", style: TextStyle(fontWeight: FontWeight.bold)),
+                            content: Text("Previous Govt. reading was $prevSavedGovt. Should this be set as the 'Last Govt. Reading' for this month?"),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No", style: TextStyle(color: Colors.red))),
+                              TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Yes", style: TextStyle(color: Colors.green))),
+                            ],
+                          ),
+                        ) ?? false;
+                      }
+
                       setDialogState(() => isLoading = true);
-                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                      await _dbService.updateMainMeter(docId, {
+
+                      double finalLastMain = syncMain ? prevSavedMain : last;
+                      double finalLastGovt = syncGovt ? prevSavedGovt : (data['lastGovtReading'] ?? 0).toDouble();
+                      double unitRate = (govt - finalLastGovt) > 0 ? amt / (govt - finalLastGovt) : (data['unitRate'] ?? 10).toDouble();
+
+                      Map<String, dynamic> updateData = {
                         ...data,
-                        'lastReading': (data['presentReading'] ?? 0).toDouble(),
-                        'presentReading': newPresent,
-                        'lastGovtReading': (data['govtBillReading'] ?? 0).toDouble(),
-                        'govtBillReading': newGovtReading,
-                        'govtBillAmount': billAmount,
+                        'lastReading': finalLastMain,
+                        'presentReading': pres,
+                        'lastGovtReading': finalLastGovt,
+                        'govtBillReading': govt,
+                        'govtBillAmount': amt,
                         'lastMonthUnitRate': (data['unitRate'] ?? 0).toDouble(),
-                        'unitRate': thisMonthRate,
-                      }, prefs.getString('username') ?? "Admin");
+                        'unitRate': unitRate,
+                      };
+                      
+                      SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                      String actor = prefs.getString('username') ?? "Admin";
+                      await _dbService.updateMainMeter(docId, updateData, actor);
                       if (context.mounted) Navigator.pop(ctx);
                     },
                     child: isLoading 
@@ -715,6 +765,23 @@ class CategoryDialogs {
                       if (pres < last) { _showValidationWarning(context, "Reading cannot be lower than previous."); return; }
                       if (selectedMainMeter == null || selectedSubMeter == null) { _showValidationWarning(context, "Please select both Main and Sub meters."); return; }
                       
+                      double prevSavedReading = (existingData?['presentReading'] ?? 0).toDouble();
+                      bool shouldSync = false;
+                      if (prevSavedReading > 0 && last != prevSavedReading) {
+                        shouldSync = await showDialog(
+                          context: context,
+                          builder: (c) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: const Text("Sync Reading?", style: TextStyle(fontWeight: FontWeight.bold)),
+                            content: Text("The previous month's reading was $prevSavedReading. Should this be set as the 'Last Reading' for this month?"),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No", style: TextStyle(color: Colors.red))),
+                              TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Yes", style: TextStyle(color: Colors.green))),
+                            ],
+                          ),
+                        ) ?? false;
+                      }
+
                       setDialogState(() => isLoading = true);
                       SharedPreferences prefs = await SharedPreferences.getInstance();
                       String actor = prefs.getString('username') ?? "Admin";
@@ -724,10 +791,12 @@ class CategoryDialogs {
                       }
                       await _dbService.setSubMeterAssignment(selectedSubMeter!, true);
 
+                      double finalLast = shouldSync ? prevSavedReading : last;
+
                       await _dbService.updateSubItemElectricity(subItemId, {
                         'mainMeterNo': selectedMainMeter,
                         'subMeterNo': selectedSubMeter,
-                        'lastReading': last,
+                        'lastReading': finalLast,
                         'presentReading': pres,
                         'pricePerUnit': double.tryParse(priceController.text) ?? 10,
                         'updatedAt': FieldValue.serverTimestamp(),

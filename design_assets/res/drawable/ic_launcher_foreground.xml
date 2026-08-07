@@ -5,8 +5,6 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-
-    <!-- 1. Glowing Inner Base (Further Centered and Zoomed Out) -->
     <path
         android:pathData="M36,36h40v40h-40z"
         android:fillAlpha="0.2">
@@ -22,29 +20,10 @@
             </gradient>
         </aapt:attr>
     </path>
-
-    <!-- 2. The Logic Grid (Resized to 18x18 with 4px gap) -->
-    <!-- Top-Left -->
-    <path
-        android:pathData="M36,36h18v18h-18z"
-        android:fillColor="#00FFC2"
-        android:fillAlpha="0.95" />
-
-    <!-- Top-Right -->
-    <path
-        android:pathData="M58,36h18v18h-18z"
-        android:fillColor="#00D2FF"
-        android:fillAlpha="0.9" />
-
-    <!-- Bottom-Left -->
-    <path
-        android:pathData="M36,58h18v18h-18z"
-        android:fillColor="#00D2FF"
-        android:fillAlpha="0.9" />
-
-    <!-- 3. The 'Active' Billing Node (Bottom Right) -->
-    <path
-        android:pathData="M58,58h18v18h-18z">
+    <path android:pathData="M36,36h18v18h-18z" android:fillColor="#00FFC2" android:fillAlpha="0.95" />
+    <path android:pathData="M58,36h18v18h-18z" android:fillColor="#00D2FF" android:fillAlpha="0.9" />
+    <path android:pathData="M36,58h18v18h-18z" android:fillColor="#00D2FF" android:fillAlpha="0.9" />
+    <path android:pathData="M58,58h18v18h-18z">
         <aapt:attr name="android:fillColor">
             <gradient
                 android:startX="58"
@@ -57,11 +36,4 @@
             </gradient>
         </aapt:attr>
     </path>
-
-    <!-- 4. Glass Reflection Overlay -->
-    <path
-        android:pathData="M36,36 L76,36 L36,76 Z"
-        android:fillAlpha="0.08"
-        android:fillColor="#FFFFFF" />
-
 </vector>
