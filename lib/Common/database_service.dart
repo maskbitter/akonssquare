@@ -7,6 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  // --- Static Cache for Pre-fetching ---
+  static List<Map<String, dynamic>> cachedSubItems = [];
+  static Map<String, dynamic>? cachedAppConfig;
+  static double? cachedDBVersion;
+
   // ==========================================
   // 1. AUDIT & LOGGING SYSTEM
   // ==========================================

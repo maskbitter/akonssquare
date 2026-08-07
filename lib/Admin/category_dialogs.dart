@@ -595,93 +595,158 @@ class CategoryDialogs {
     final priceController = TextEditingController(text: (existingData?['pricePerUnit'] ?? 10).toString());
     bool isLoading = false;
 
-    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Center(child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.flash_on, color: Colors.amber), const SizedBox(width: 8), Text("Electric: $subItemName", style: const TextStyle(fontWeight: FontWeight.bold))])),
-      content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        StreamBuilder<QuerySnapshot>(
-          stream: _dbService.getMainMetersStream(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const SizedBox.shrink();
-            var meters = snapshot.data!.docs;
-            return DropdownButtonFormField<String>(
-              value: selectedMainMeter,
-              decoration: const InputDecoration(labelText: "Main Meter", border: OutlineInputBorder()),
-              items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text(doc['meterNo'].toString()))).toList(),
-              onChanged: (v) => setDialogState(() => selectedMainMeter = v),
-            );
-          },
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Column(
+            children: [
+              const Icon(Icons.electric_bolt, color: Colors.amber, size: 40),
+              const SizedBox(height: 12),
+              const Text("Electricity - assigned submeter", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text("Update for $subItemName", style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (existingData?['updatedAt'] != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text("Last updated: ${DatabaseService.formatDuration(existingData?['updatedAt'] as Timestamp?)} ago", style: const TextStyle(fontSize: 11, color: Colors.blue))),
+                      ],
+                    ),
+                  ),
+                StreamBuilder<QuerySnapshot>(
+                  stream: _dbService.getMainMetersStream(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const SizedBox.shrink();
+                    var meters = snapshot.data!.docs;
+                    return DropdownButtonFormField<String>(
+                      value: selectedMainMeter,
+                      decoration: const InputDecoration(labelText: "Main Meter", border: OutlineInputBorder(), isDense: true),
+                      items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text("Main Meter: ${doc['meterNo']}"))).toList(),
+                      onChanged: (v) => setDialogState(() => selectedMainMeter = v),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                StreamBuilder<QuerySnapshot>(
+                  stream: _dbService.getSubMetersStream(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const SizedBox.shrink();
+                    var allSubMeters = snapshot.data!.docs;
+                    var available = allSubMeters.where((doc) {
+                      bool isAssigned = doc['isAssigned'] ?? false;
+                      bool isCurrent = doc['subMeterNo'] == selectedSubMeter;
+                      return !isAssigned || isCurrent;
+                    }).toList();
+
+                    return DropdownButtonFormField<String>(
+                      value: selectedSubMeter,
+                      decoration: const InputDecoration(labelText: "Sub-meter No", border: OutlineInputBorder(), isDense: true),
+                      items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text("Sub-meter: ${doc['subMeterNo']}"))).toList(),
+                      onChanged: (v) => setDialogState(() {
+                        selectedSubMeter = v;
+                        var match = available.firstWhere((d) => d['subMeterNo'] == v);
+                        lastReadingController.text = (match['presentReading'] ?? 0).toString();
+                      }),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildReadOnlyRow("Last Reading (Previous)", lastReadingController.text),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: presentReadingController, 
+                  textAlign: TextAlign.center, 
+                  keyboardType: TextInputType.number, 
+                  decoration: const InputDecoration(labelText: "New Present Reading", border: OutlineInputBorder(), isDense: true)
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: priceController, 
+                  textAlign: TextAlign.center, 
+                  keyboardType: TextInputType.number, 
+                  decoration: const InputDecoration(labelText: "Price (per unit) BDT", prefixText: "৳ ", border: OutlineInputBorder(), isDense: true)
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.close, size: 18),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red, width: 1.5),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.check, size: 18),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: isLoading ? null : () async {
+                      double last = double.tryParse(lastReadingController.text) ?? 0; 
+                      double pres = double.tryParse(presentReadingController.text) ?? last;
+                      if (pres < last) { _showValidationWarning(context, "Reading cannot be lower than previous."); return; }
+                      if (selectedMainMeter == null || selectedSubMeter == null) { _showValidationWarning(context, "Please select both Main and Sub meters."); return; }
+                      
+                      setDialogState(() => isLoading = true);
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      String actor = prefs.getString('username') ?? "Admin";
+
+                      if (existingData?['subMeterNo'] != null && existingData?['subMeterNo'] != selectedSubMeter) {
+                        await _dbService.setSubMeterAssignment(existingData?['subMeterNo'], false);
+                      }
+                      await _dbService.setSubMeterAssignment(selectedSubMeter!, true);
+
+                      await _dbService.updateSubItemElectricity(subItemId, {
+                        'mainMeterNo': selectedMainMeter,
+                        'subMeterNo': selectedSubMeter,
+                        'lastReading': last,
+                        'presentReading': pres,
+                        'pricePerUnit': double.tryParse(priceController.text) ?? 10,
+                        'updatedAt': FieldValue.serverTimestamp(),
+                        'isStopped': false,
+                      }, actor);
+
+                      await _dbService.syncSubMeterReading(selectedSubMeter!, pres, actor);
+
+                      if (context.mounted) Navigator.pop(ctx);
+                    }, 
+                    label: Text(isLoading ? "Updating..." : "Update", style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        StreamBuilder<QuerySnapshot>(
-          stream: _dbService.getSubMetersStream(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const SizedBox.shrink();
-            var allSubMeters = snapshot.data!.docs;
-            var available = allSubMeters.where((doc) {
-              bool isAssigned = doc['isAssigned'] ?? false;
-              bool isCurrent = doc['subMeterNo'] == selectedSubMeter;
-              return !isAssigned || isCurrent;
-            }).toList();
-
-            return DropdownButtonFormField<String>(
-              value: selectedSubMeter,
-              decoration: const InputDecoration(labelText: "Sub Meter", border: OutlineInputBorder()),
-              items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text(doc['subMeterNo'].toString()))).toList(),
-              onChanged: (v) => setDialogState(() {
-                selectedSubMeter = v;
-                var match = available.firstWhere((d) => d['subMeterNo'] == v);
-                lastReadingController.text = (match['presentReading'] ?? 0).toString();
-              }),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        TextField(controller: lastReadingController, decoration: const InputDecoration(labelText: "Last Reading", border: OutlineInputBorder()), enabled: false),
-        const SizedBox(height: 12),
-        TextField(controller: presentReadingController, textAlign: TextAlign.center, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "New Reading", border: OutlineInputBorder())),
-        const SizedBox(height: 12),
-        TextField(controller: priceController, textAlign: TextAlign.center, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Unit Price", prefixText: "৳ ", border: OutlineInputBorder())),
-      ])),
-      actions: [
-        Row(children: [
-          Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-          const SizedBox(width: 12),
-          Expanded(child: ElevatedButton(onPressed: isLoading ? null : () async {
-            double last = double.tryParse(lastReadingController.text) ?? 0; 
-            double pres = double.tryParse(presentReadingController.text) ?? last;
-            if (pres < last) { _showValidationWarning(context, "Reading cannot be lower than previous."); return; }
-            if (selectedMainMeter == null || selectedSubMeter == null) { _showValidationWarning(context, "Please select both Main and Sub meters."); return; }
-            
-            setDialogState(() => isLoading = true);
-            SharedPreferences prefs = await SharedPreferences.getInstance();
-            String actor = prefs.getString('username') ?? "Admin";
-
-            // If submeter changed, release old one and assign new one
-            if (existingData?['subMeterNo'] != null && existingData?['subMeterNo'] != selectedSubMeter) {
-              await _dbService.setSubMeterAssignment(existingData?['subMeterNo'], false);
-            }
-            await _dbService.setSubMeterAssignment(selectedSubMeter!, true);
-
-            // Update sub-item
-            await _dbService.updateSubItemElectricity(subItemId, {
-              'mainMeterNo': selectedMainMeter,
-              'subMeterNo': selectedSubMeter,
-              'lastReading': last,
-              'presentReading': pres,
-              'pricePerUnit': double.tryParse(priceController.text) ?? 10,
-              'updatedAt': FieldValue.serverTimestamp(),
-              'isStopped': false,
-            }, actor);
-
-            // Sync with sub_meters collection
-            await _dbService.syncSubMeterReading(selectedSubMeter!, pres, actor);
-
-            if (context.mounted) Navigator.pop(ctx);
-          }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Update"))),
-        ]),
-      ],
-    )));
+      ),
+    );
   }
 
   static void showMarkAsPaidDialog({

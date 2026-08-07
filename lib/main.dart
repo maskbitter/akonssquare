@@ -11,6 +11,7 @@ import 'package:akonssquare/Operator/operator_dashboard.dart';
 import 'package:akonssquare/Viewer/viewer_dashboard.dart';
 import 'package:akonssquare/Admin/super_admin_dashboard.dart';
 import 'package:akonssquare/Common/database_service.dart';
+import 'package:akonssquare/Common/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,60 +38,8 @@ class MyApp extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
       ),
-      home: const AuthCheck(),
+      home: const SplashScreen(),
     );
-  }
-}
-
-class AuthCheck extends StatefulWidget {
-  const AuthCheck({super.key});
-
-  @override
-  State<AuthCheck> createState() => _AuthCheckState();
-}
-
-class _AuthCheckState extends State<AuthCheck> {
-  @override
-  void initState() {
-    super.initState();
-    _checkLoginStatus();
-  }
-
-  Future<void> _checkLoginStatus() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    String role = prefs.getString('userRole') ?? 'user';
-
-    if (isLoggedIn) {
-      if (mounted) {
-        if (role == 'admin') {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
-        } else if (role == 'operator') {
-          String username = prefs.getString('username') ?? "Operator";
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OperatorDashboard(username: username)));
-        } else if (role == 'viewer') {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ViewerDashboard()));
-        } else if (role == 'superadmin') {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard()));
-        } else {
-          String subId = prefs.getString('subItemId') ?? "";
-          String catId = prefs.getString('categoryId') ?? "";
-          if (subId.isEmpty || catId.isEmpty) {
-             await prefs.clear();
-             if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
-             return;
-          }
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboard(subItemId: subId, categoryId: catId)));
-        }
-      }
-    } else {
-      if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
 
@@ -104,14 +53,16 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   String _appName = ""; 
-  List<Map<String, dynamic>> _subItems = [];
+  List<Map<String, dynamic>> _subItems = DatabaseService.cachedSubItems;
   Map<String, dynamic>? _selectedSubItem;
 
   @override
   void initState() {
     super.initState();
     _fetchAppName();
-    _fetchSubItems();
+    if (_subItems.isEmpty) {
+      _fetchSubItems();
+    }
   }
 
   Future<void> _fetchSubItems() async {
@@ -300,12 +251,14 @@ class _LoginPageState extends State<LoginPage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 40),
               child: Column(children: [
-                GestureDetector(onLongPress: _showMasterKeyDialog, child: Text(_appName.isEmpty ? "Loading..." : _appName, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue.shade900, letterSpacing: 1.5))),
+                GestureDetector(onLongPress: _showMasterKeyDialog, child: Text(_appName.isEmpty ? "AKONS SQUARE" : _appName, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue.shade900, letterSpacing: 1.5))),
                 const SizedBox(height: 4),
                 StreamBuilder<DocumentSnapshot>(
                   stream: DatabaseService().getDatabaseInfoStream(),
+                  initialData: null,
                   builder: (context, dbSnap) {
-                    String dbVer = "..."; if (dbSnap.hasData && dbSnap.data!.exists) { var v = (dbSnap.data!.data() as Map)['dbVersion'] ?? 0; dbVer = v.toString(); }
+                    String dbVer = DatabaseService.cachedDBVersion?.toString() ?? "..."; 
+                    if (dbSnap.hasData && dbSnap.data!.exists) { var v = (dbSnap.data!.data() as Map)['dbVersion'] ?? 0; dbVer = v.toString(); }
                     return Text("DB V-$dbVer", style: TextStyle(fontSize: 10, color: Colors.indigo.shade300, fontWeight: FontWeight.w900));
                   }
                 ),

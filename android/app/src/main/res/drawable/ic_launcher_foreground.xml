@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/apk/res-auto"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 1. Glowing Inner Base (Zoomed Out to fit Safe Zone) -->
+    <path
+        android:pathData="M21,21h66v66h-66z"
+        android:fillAlpha="0.25">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="21"
+                android:startY="21"
+                android:endX="87"
+                android:endY="87"
+                android:type="linear">
+                <item android:color="#00FFC2" android:offset="0" />
+                <item android:color="#0066FF" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 2. The Logic Grid (Resized to 30x30 with 6px gap) -->
+    <!-- Top-Left -->
+    <path
+        android:pathData="M21,21h30v30h-30z"
+        android:fillColor="#00FFC2"
+        android:fillAlpha="0.95" />
+
+    <!-- Top-Right -->
+    <path
+        android:pathData="M57,21h30v30h-30z"
+        android:fillColor="#00D2FF"
+        android:fillAlpha="0.9" />
+
+    <!-- Bottom-Left -->
+    <path
+        android:pathData="M21,57h30v30h-30z"
+        android:fillColor="#00D2FF"
+        android:fillAlpha="0.9" />
+
+    <!-- 3. The 'Active' Billing Node (Bottom Right) -->
+    <path
+        android:pathData="M57,57h30v30h-30z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="57"
+                android:startY="57"
+                android:endX="87"
+                android:endY="87"
+                android:type="linear">
+                <item android:color="#FFFFFF" android:offset="0" />
+                <item android:color="#00FFC2" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 4. Glass Reflection Overlay -->
+    <path
+        android:pathData="M21,21 L87,21 L21,87 Z"
+        android:fillAlpha="0.15"
+        android:fillColor="#FFFFFF" />
+
+</vector>
