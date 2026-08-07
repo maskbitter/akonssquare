@@ -429,8 +429,8 @@ class _AdminHomeState extends State<AdminHome> {
         int vacantCount = 0;
 
         for (var doc in snapshot.data!.docs) {
-          var data = doc.data() as Map<String, dynamic>;
-          String status = data['status'] ?? ((data['tenantName'] ?? '').toString().isNotEmpty ? 'Occupied' : 'Vacant');
+          var d = doc.data() as Map<String, dynamic>;
+          String status = d['status'] ?? ((d['tenantName'] ?? '').toString().isNotEmpty ? 'Occupied' : 'Vacant');
           if (status == 'Occupied') {
             occupiedCount++;
           } else {
@@ -438,66 +438,89 @@ class _AdminHomeState extends State<AdminHome> {
           }
         }
 
-        return Column(
-          children: [
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Colors.teal.shade900,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
+        return Card(
+          elevation: 3,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Colors.teal.shade50,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.teal.shade200)),
+          child: ExpansionTile(
+            leading: const Icon(Icons.dashboard_customize_outlined, color: Colors.teal),
+            title: Center(
+              child: Text(
+                "Units Overview (Total Status)",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal.shade900),
+              ),
+            ),
+            subtitle: Center(
+              child: Text(
+                "$totalDocs Total Units Registered",
+                style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+              ),
+            ),
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Row(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          "Units Overview (Total Status)",
-                          style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                      ],
+                    Expanded(
+                      child: _buildSubOverviewCard(
+                        title: "Occupied",
+                        count: occupiedCount,
+                        color: Colors.green,
+                        icon: Icons.door_front_door_outlined,
+                        onTap: () {
+                          DatabaseService.vibrate();
+                          widget.onCategoryTap?.call();
+                        },
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "$totalDocs Total Units",
-                      style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
-                    ),
-
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildOverviewStat("Occupied", occupiedCount.toDouble(), Colors.greenAccent, Icons.door_front_door_outlined),
-                        Container(width: 1, height: 30, color: Colors.white24),
-                        _buildOverviewStat("Vacant", vacantCount.toDouble(), Colors.redAccent, Icons.meeting_room_outlined),
-                      ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildSubOverviewCard(
+                        title: "Vacant",
+                        count: vacantCount,
+                        color: Colors.redAccent,
+                        icon: Icons.meeting_room_outlined,
+                        onTap: () {
+                          DatabaseService.vibrate();
+                          widget.onCategoryTap?.call();
+                        },
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildOverviewStat(String label, double count, Color color, IconData icon) {
-    return Column(
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 10, color: Colors.white70),
-            const SizedBox(width: 4),
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-          ],
+  Widget _buildSubOverviewCard({required String title, required int count, required Color color, required IconData icon, required VoidCallback onTap}) {
+    return Card(
+      elevation: 4,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: color.withValues(alpha: 0.2))),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 28),
+              const SizedBox(height: 8),
+              Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: color)),
+              const SizedBox(height: 4),
+              Text(
+                count.toString(),
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24, color: color),
+              ),
+            ],
+          ),
         ),
-        Text(
-          count.toInt().toString(),
-          style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-      ],
+      ),
     );
   }
 
