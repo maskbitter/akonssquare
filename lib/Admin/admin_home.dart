@@ -188,7 +188,8 @@ class _AdminHomeState extends State<AdminHome> {
         if (receivedSnapshot.hasData) {
           for (var doc in receivedSnapshot.data!.docs) {
             receivedTotal += (doc['totalAmount'] as num).toDouble();
-            List services = doc['services'] ?? [];
+            var data = doc.data() as Map<String, dynamic>;
+            List services = data.containsKey('services') ? data['services'] : [];
             for (var s in services) {
               if (s['name'].toString().toLowerCase().contains('rent')) {
                 rentTotal += (s['amount'] as num).toDouble();
@@ -1042,7 +1043,7 @@ class _AdminHomeState extends State<AdminHome> {
                     String subId = data['subItemId'];
                     
                     double rent = 0;
-                    List services = data['services'] ?? [];
+                    List services = data.containsKey('services') ? data['services'] : [];
                     for (var s in services) {
                       if (s['name'].toString().toLowerCase().contains('rent')) {
                         rent += (s['amount'] as num).toDouble();

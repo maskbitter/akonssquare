@@ -305,6 +305,63 @@ class DatabaseService {
   }
 
   // ==========================================
+  // 5.1 SUB-METER METHODS
+  // ==========================================
+
+  Stream<QuerySnapshot> getSubMetersStream() {
+    return _db.collection('sub_meters').orderBy('createdAt', descending: true).snapshots();
+  }
+
+  Future<void> addSubMeter(Map<String, dynamic> data, String actor) async {
+    data['createdAt'] = FieldValue.serverTimestamp();
+    data['updatedAt'] = FieldValue.serverTimestamp();
+    data['isAssigned'] = false;
+    data['lastReading'] = 0.0;
+    data['presentReading'] = 0.0;
+    await _db.collection('sub_meters').add(data);
+
+    await logActivity(
+      actor: actor,
+      action: "Add Sub Meter",
+      details: "Added sub meter '${data['subMeterNo']}' linked to main meter '${data['mainMeterNo']}'",
+      category: "Electricity",
+    );
+  }
+
+  Future<void> updateSubMeter(String docId, Map<String, dynamic> data, String actor) async {
+    data['updatedAt'] = FieldValue.serverTimestamp();
+    await _db.collection('sub_meters').doc(docId).update(data);
+  }
+
+  Future<void> removeSubMeter(String docId, String actor) async {
+    await archiveAndRemove(collection: 'sub_meters', docId: docId, removedBy: actor, reason: 'Admin removed sub meter');
+  }
+
+  Stream<QuerySnapshot> getAvailableSubMetersStream() {
+    return _db.collection('sub_meters').where('isAssigned', isEqualTo: false).snapshots();
+  }
+
+  Future<void> setSubMeterAssignment(String subMeterNo, bool isAssigned) async {
+    var snap = await _db.collection('sub_meters').where('subMeterNo', isEqualTo: subMeterNo).limit(1).get();
+    if (snap.docs.isNotEmpty) {
+      await snap.docs.first.reference.update({'isAssigned': isAssigned});
+    }
+  }
+
+  Future<void> syncSubMeterReading(String subMeterNo, double presentReading, String actor) async {
+    var snap = await _db.collection('sub_meters').where('subMeterNo', isEqualTo: subMeterNo).limit(1).get();
+    if (snap.docs.isNotEmpty) {
+      var doc = snap.docs.first;
+      var data = doc.data() as Map<String, dynamic>;
+      await doc.reference.update({
+        'lastReading': (data['presentReading'] ?? 0).toDouble(),
+        'presentReading': presentReading,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  // ==========================================
   // 6. APP CONFIG & UTILITY METHODS
   // ==========================================
 

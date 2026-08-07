@@ -33,36 +33,42 @@ class CategoryDialogs {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Column(
           children: [
-            Icon(Icons.warning_amber_rounded, color: confirmColor, size: 40),
+            Icon(Icons.delete_forever_outlined, color: confirmColor, size: 40),
             const SizedBox(height: 12),
-            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
           ],
         ),
-        content: Text(content, textAlign: TextAlign.center, style: const TextStyle(color: Colors.blueGrey)),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        content: Text(content, textAlign: TextAlign.center, style: const TextStyle(color: Colors.blueGrey, fontSize: 14)),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           Row(children: [
             Expanded(
-              child: OutlinedButton(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.close, size: 18),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red, 
                   side: const BorderSide(color: Colors.red, width: 1.5),
+                  backgroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () => Navigator.pop(ctx), 
-                child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+                label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.delete_forever, size: 18),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: confirmColor, 
                   foregroundColor: Colors.white,
+                  elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () { Navigator.pop(ctx); onConfirm(); }, 
-                child: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.bold))
+                label: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.bold))
               ),
             ),
           ]),
@@ -99,33 +105,110 @@ class CategoryDialogs {
   }
 
   static void showAddServiceDialog(BuildContext context) {
-    final nameController = TextEditingController(); final amountController = TextEditingController();
+    final nameController = TextEditingController(); 
+    final amountController = TextEditingController();
     bool isLoading = false;
+
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Center(child: Text("Manage Services", style: TextStyle(fontWeight: FontWeight.bold))),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: nameController, textAlign: TextAlign.center, decoration: const InputDecoration(labelText: "Service Name", border: OutlineInputBorder())),
-          const SizedBox(height: 12),
-          TextField(controller: amountController, textAlign: TextAlign.center, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Amount", prefixText: "৳ ", border: OutlineInputBorder())),
-        ]),
-        actions: [
-          Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-            const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(onPressed: isLoading ? null : () async {
-              String name = nameController.text.trim(); double amt = double.tryParse(amountController.text) ?? 0;
-              if (name.isEmpty) return;
-              setDialogState(() => isLoading = true);
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await _dbService.addService(name, amt, prefs.getString('username') ?? "Admin");
-              if (context.mounted) Navigator.pop(ctx);
-            }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Save"))),
-          ]),
-        ],
-      )),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Center(child: Text("Manage Services", style: TextStyle(fontWeight: FontWeight.bold))),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min, 
+                children: [
+                  TextField(
+                    controller: nameController, 
+                    textAlign: TextAlign.center, 
+                    decoration: const InputDecoration(labelText: "New Service Name", border: OutlineInputBorder(), isDense: true)
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amountController, 
+                    textAlign: TextAlign.center, 
+                    keyboardType: TextInputType.number, 
+                    decoration: const InputDecoration(labelText: "Price (BDT)", prefixText: "৳ ", border: OutlineInputBorder(), isDense: true)
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                    onPressed: isLoading ? null : () async {
+                      String name = nameController.text.trim(); 
+                      double amt = double.tryParse(amountController.text) ?? 0;
+                      if (name.isEmpty) return;
+                      setDialogState(() => isLoading = true);
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await _dbService.addService(name, amt, prefs.getString('username') ?? "Admin");
+                      nameController.clear();
+                      amountController.clear();
+                      setDialogState(() => isLoading = false);
+                    }, 
+                    label: Text(isLoading ? "Saving..." : "Add Service")
+                  ),
+                  const Divider(height: 32),
+                  const Text("Existing Services", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _dbService.getServicesStream(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const LinearProgressIndicator();
+                      var docs = snapshot.data!.docs;
+                      if (docs.isEmpty) return const Text("No services found.", style: TextStyle(fontSize: 12, color: Colors.grey));
+                      
+                      return Column(
+                        children: docs.map((doc) {
+                          var data = doc.data() as Map<String, dynamic>;
+                          String sName = data['serviceName'] ?? 'Unknown';
+                          double amt = (data['amount'] ?? 0).toDouble();
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(sName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                      Text("৳${amt.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, color: Colors.indigo)),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                  onPressed: () => showConfirmDialog(
+                                    context: context, 
+                                    title: "Delete Service?", 
+                                    content: "Remove '$sName' permanently?", 
+                                    onConfirm: () async {
+                                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                                      await _dbService.removeService(doc.id, prefs.getString('username') ?? "Admin");
+                                    }
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Close")),
+          ],
+        ),
+      ),
     );
   }
 
@@ -139,7 +222,7 @@ class CategoryDialogs {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text("Add Unit to $categoryName", style: const TextStyle(fontWeight: FontWeight.bold))),
         content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: subItemController, textAlign: TextAlign.center, decoration: const InputDecoration(labelText: "Unit Name", border: OutlineInputBorder())),
+          TextField(controller: subItemController, textAlign: TextAlign.center, decoration: InputDecoration(labelText: "$categoryName No", border: const OutlineInputBorder())),
           const SizedBox(height: 12),
           TextField(controller: tenantNameController, textAlign: TextAlign.center, decoration: const InputDecoration(labelText: "Tenant Name (Optional)", border: OutlineInputBorder())),
           const SizedBox(height: 12),
@@ -164,52 +247,349 @@ class CategoryDialogs {
     );
   }
 
-  static void showMainMeterDialog({required BuildContext context, Map<String, dynamic>? existingData, String? docId}) {
-    final bool isEditing = existingData != null;
-    final meterNoController = TextEditingController(text: existingData?['meterNo'] ?? '');
-    final lastReadingController = TextEditingController(text: (existingData?['presentReading'] ?? 0).toString());
-    final presentReadingController = TextEditingController();
-    final govtReadingController = TextEditingController(text: (existingData?['govtBillReading'] ?? 0).toString());
-    final amountController = TextEditingController(text: (existingData?['govtBillAmount'] ?? 0).toString());
-    String meterType = existingData?['meterType'] ?? 'Residential';
+  static void showAddMainMeterDialog(BuildContext context) {
+    final meterNoController = TextEditingController();
+    String meterType = 'Residential';
     bool isLoading = false;
 
-    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Center(child: Text(isEditing ? "Edit Meter" : "Add Meter", style: const TextStyle(fontWeight: FontWeight.bold))),
-      content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        DropdownButtonFormField<String>(value: meterType, items: const [DropdownMenuItem(value: "Residential", child: Text("Residential")), DropdownMenuItem(value: "Commercial", child: Text("Commercial"))], onChanged: (v) { if (v != null) setDialogState(() => meterType = v); }, decoration: const InputDecoration(labelText: "Type", border: OutlineInputBorder())),
-        const SizedBox(height: 12),
-        TextField(controller: meterNoController, textAlign: TextAlign.center, decoration: const InputDecoration(labelText: "Meter No", border: OutlineInputBorder())),
-        const SizedBox(height: 12),
-        TextField(controller: lastReadingController, decoration: const InputDecoration(labelText: "Last Reading", border: OutlineInputBorder()), enabled: false),
-        const SizedBox(height: 12),
-        TextField(controller: presentReadingController, textAlign: TextAlign.center, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Present Reading", border: OutlineInputBorder())),
-        const Divider(height: 32),
-        TextField(controller: govtReadingController, textAlign: TextAlign.center, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Govt Bill Reading", border: OutlineInputBorder())),
-        const SizedBox(height: 12),
-        TextField(controller: amountController, textAlign: TextAlign.center, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Bill Amount", prefixText: "৳ ", border: OutlineInputBorder())),
-      ])),
-      actions: [
-        Row(children: [
-          Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-          const SizedBox(width: 12),
-          Expanded(child: ElevatedButton(onPressed: isLoading ? null : () async {
-            setDialogState(() => isLoading = true);
-            double last = double.tryParse(lastReadingController.text) ?? 0; double pres = double.tryParse(presentReadingController.text) ?? last;
-            double govt = double.tryParse(govtReadingController.text) ?? 0; double amt = double.tryParse(amountController.text) ?? 0;
-            Map<String, dynamic> data = {'meterNo': meterNoController.text.trim(), 'meterType': meterType, 'lastReading': last, 'presentReading': pres, 'govtBillReading': govt, 'govtBillAmount': amt, 'unitRate': (govt - (existingData?['lastGovtReading'] ?? 0)) > 0 ? amt / (govt - (existingData?['lastGovtReading'] ?? 0)) : 0};
-            SharedPreferences prefs = await SharedPreferences.getInstance(); String actor = prefs.getString('username') ?? "Admin";
-            if (isEditing) await _dbService.updateMainMeter(docId!, data, actor); else await _dbService.addMainMeter(data, actor);
-            if (context.mounted) Navigator.pop(ctx);
-          }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Save"))),
-        ]),
-      ],
-    )));
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Center(child: Text("Add Main Meter", style: TextStyle(fontWeight: FontWeight.bold))),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: meterType,
+                decoration: const InputDecoration(labelText: "Meter Type", border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: "Residential", child: Text("Residential")),
+                  DropdownMenuItem(value: "Commercial", child: Text("Commercial")),
+                ],
+                onChanged: (v) { if (v != null) setDialogState(() => meterType = v); },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: meterNoController,
+                textAlign: TextAlign.center,
+                decoration: const InputDecoration(labelText: "Meter Number", border: OutlineInputBorder()),
+              ),
+            ],
+          ),
+          actions: [
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red, width: 1.5),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: isLoading ? null : () async {
+                    String no = meterNoController.text.trim();
+                    if (no.isEmpty) return;
+                    setDialogState(() => isLoading = true);
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    await _dbService.addMainMeter({
+                      'meterNo': no,
+                      'meterType': meterType,
+                      'lastReading': 0.0,
+                      'presentReading': 0.0,
+                      'govtBillReading': 0.0,
+                      'lastGovtReading': 0.0,
+                      'govtBillAmount': 0.0,
+                      'unitRate': 0.0,
+                      'lastMonthUnitRate': 0.0,
+                    }, prefs.getString('username') ?? "Admin");
+                    if (context.mounted) Navigator.pop(ctx);
+                  },
+                  child: isLoading 
+                    ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text("Add", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void showUpdateMainMeterDialog({required BuildContext context, required Map<String, dynamic> data, required String docId}) {
+    final presentReadingController = TextEditingController(text: data['presentReading'].toString());
+    final govtReadingController = TextEditingController(text: data['govtBillReading'].toString());
+    final amountController = TextEditingController(text: data['govtBillAmount'].toString());
+    
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          double lastReading = (data['lastReading'] ?? 0).toDouble();
+          double lastGovtReading = (data['lastGovtReading'] ?? 0).toDouble();
+          double lastMonthRate = (data['lastMonthUnitRate'] ?? 0).toDouble();
+          
+          double newPresent = double.tryParse(presentReadingController.text) ?? lastReading;
+          double newGovtReading = double.tryParse(govtReadingController.text) ?? lastGovtReading;
+          double billAmount = double.tryParse(amountController.text) ?? 0;
+
+          // Calculations
+          double govtBillUnit = newGovtReading - lastGovtReading;
+          double thisMonthRate = govtBillUnit > 0 ? billAmount / govtBillUnit : 0;
+          double govtDueAdv = newGovtReading - newPresent;
+          double mainUsed = newPresent - lastReading;
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                const Icon(Icons.speed, color: Colors.indigo),
+                const SizedBox(width: 8),
+                Expanded(child: Text("Update Main Meter: ${data['meterNo']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildReadOnlyRow("Meter Type", data['meterType']),
+                  _buildReadOnlyRow("Meter No", data['meterNo']),
+                  _buildReadOnlyRow("Last Reading", lastReading.toStringAsFixed(1)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: presentReadingController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    onChanged: (_) => setDialogState(() {}),
+                    decoration: const InputDecoration(labelText: "New Present Reading", border: OutlineInputBorder(), isDense: true),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text("Government Bill Details", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                  ),
+                  _buildReadOnlyRow("Last Govt. Bill Reading", lastGovtReading.toStringAsFixed(1)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: govtReadingController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    onChanged: (_) => setDialogState(() {}),
+                    decoration: const InputDecoration(labelText: "New Govt. Bill Reading", border: OutlineInputBorder(), isDense: true),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: amountController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    onChanged: (_) => setDialogState(() {}),
+                    decoration: const InputDecoration(labelText: "Govt. Bill Amount", prefixText: "৳ ", border: OutlineInputBorder(), isDense: true),
+                  ),
+                  _buildReadOnlyRow("Govt. Bill Unit", govtBillUnit.toStringAsFixed(1)),
+                  _buildReadOnlyRow("Last Month Unit Rate", "৳${lastMonthRate.toStringAsFixed(2)}"),
+                  _buildReadOnlyRow("This Month Unit Rate", "৳${thisMonthRate.toStringAsFixed(2)}"),
+                  _buildReadOnlyRow("Govt. Due/Adv Units", govtDueAdv.toStringAsFixed(1)),
+                  
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text("Detailed Statistics (Calculated)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                  ),
+                  _buildReadOnlyRow("Main Meter Used Unit", mainUsed.toStringAsFixed(1)),
+                  
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _dbService.getSubItemsByMainMeter(data['meterNo']),
+                    builder: (context, subSnap) {
+                      double totalSubUnits = 0;
+                      if (subSnap.hasData) {
+                        for (var doc in subSnap.data!.docs) {
+                          var ud = doc.data() as Map<String, dynamic>;
+                          var ed = ud['electricityDetails'];
+                          if (ed != null && ed['isStopped'] != true) {
+                            totalSubUnits += (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble());
+                          }
+                        }
+                      }
+                      double balance = mainUsed - totalSubUnits;
+                      return Column(
+                        children: [
+                          _buildReadOnlyRow("Total Sub-meter Units", totalSubUnits.toStringAsFixed(1)),
+                          _buildReadOnlyRow("Balance Units (Main-Sub)", balance.toStringAsFixed(1), valueColor: balance > 0 ? Colors.red : Colors.green),
+                        ],
+                      );
+                    }
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red, width: 1.5),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: isLoading ? null : () async {
+                      setDialogState(() => isLoading = true);
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await _dbService.updateMainMeter(docId, {
+                        ...data,
+                        'lastReading': (data['presentReading'] ?? 0).toDouble(),
+                        'presentReading': newPresent,
+                        'lastGovtReading': (data['govtBillReading'] ?? 0).toDouble(),
+                        'govtBillReading': newGovtReading,
+                        'govtBillAmount': billAmount,
+                        'lastMonthUnitRate': (data['unitRate'] ?? 0).toDouble(),
+                        'unitRate': thisMonthRate,
+                      }, prefs.getString('username') ?? "Admin");
+                      if (context.mounted) Navigator.pop(ctx);
+                    },
+                    child: isLoading 
+                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text("Update", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ]),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  static Widget _buildReadOnlyRow(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+          Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: valueColor ?? Colors.black87)),
+        ],
+      ),
+    );
+  }
+
+  static void showAddSubMeterDialog(BuildContext context) {
+    final subMeterNoController = TextEditingController();
+    String? selectedMainMeter;
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Center(child: Text("Add Sub Meter", style: TextStyle(fontWeight: FontWeight.bold))),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              StreamBuilder<QuerySnapshot>(
+                stream: _dbService.getMainMetersStream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const LinearProgressIndicator();
+                  var meters = snapshot.data!.docs;
+                  return DropdownButtonFormField<String>(
+                    value: selectedMainMeter,
+                    decoration: const InputDecoration(labelText: "Select Main Meter", border: OutlineInputBorder()),
+                    items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text("Meter: ${doc['meterNo']}"))).toList(),
+                    onChanged: (v) => setDialogState(() => selectedMainMeter = v),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: subMeterNoController,
+                textAlign: TextAlign.center,
+                decoration: const InputDecoration(labelText: "Sub Meter Number", border: OutlineInputBorder()),
+              ),
+            ],
+          ),
+          actions: [
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red, width: 1.5),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: isLoading ? null : () async {
+                    String no = subMeterNoController.text.trim();
+                    if (no.isEmpty || selectedMainMeter == null) return;
+                    setDialogState(() => isLoading = true);
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    await _dbService.addSubMeter({
+                      'subMeterNo': no,
+                      'mainMeterNo': selectedMainMeter,
+                    }, prefs.getString('username') ?? "Admin");
+                    if (context.mounted) Navigator.pop(ctx);
+                  },
+                  child: isLoading 
+                    ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text("Add", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
   }
 
   static void showElectricityDialog({required BuildContext context, required String subItemId, required String subItemName, Map<String, dynamic>? existingData}) {
-    final subMeterController = TextEditingController(text: existingData?['mainSubMeterNo'] ?? '');
+    String? selectedMainMeter = existingData?['mainMeterNo'];
+    String? selectedSubMeter = existingData?['subMeterNo'];
     final lastReadingController = TextEditingController(text: (existingData?['presentReading'] ?? 0).toString());
     final presentReadingController = TextEditingController();
     final priceController = TextEditingController(text: (existingData?['pricePerUnit'] ?? 10).toString());
@@ -219,7 +599,43 @@ class CategoryDialogs {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Center(child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.flash_on, color: Colors.amber), const SizedBox(width: 8), Text("Electric: $subItemName", style: const TextStyle(fontWeight: FontWeight.bold))])),
       content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: subMeterController, textAlign: TextAlign.center, decoration: const InputDecoration(labelText: "Meter Number", border: OutlineInputBorder())),
+        StreamBuilder<QuerySnapshot>(
+          stream: _dbService.getMainMetersStream(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const SizedBox.shrink();
+            var meters = snapshot.data!.docs;
+            return DropdownButtonFormField<String>(
+              value: selectedMainMeter,
+              decoration: const InputDecoration(labelText: "Main Meter", border: OutlineInputBorder()),
+              items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text(doc['meterNo'].toString()))).toList(),
+              onChanged: (v) => setDialogState(() => selectedMainMeter = v),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        StreamBuilder<QuerySnapshot>(
+          stream: _dbService.getSubMetersStream(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const SizedBox.shrink();
+            var allSubMeters = snapshot.data!.docs;
+            var available = allSubMeters.where((doc) {
+              bool isAssigned = doc['isAssigned'] ?? false;
+              bool isCurrent = doc['subMeterNo'] == selectedSubMeter;
+              return !isAssigned || isCurrent;
+            }).toList();
+
+            return DropdownButtonFormField<String>(
+              value: selectedSubMeter,
+              decoration: const InputDecoration(labelText: "Sub Meter", border: OutlineInputBorder()),
+              items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text(doc['subMeterNo'].toString()))).toList(),
+              onChanged: (v) => setDialogState(() {
+                selectedSubMeter = v;
+                var match = available.firstWhere((d) => d['subMeterNo'] == v);
+                lastReadingController.text = (match['presentReading'] ?? 0).toString();
+              }),
+            );
+          },
+        ),
         const SizedBox(height: 12),
         TextField(controller: lastReadingController, decoration: const InputDecoration(labelText: "Last Reading", border: OutlineInputBorder()), enabled: false),
         const SizedBox(height: 12),
@@ -232,11 +648,35 @@ class CategoryDialogs {
           Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
           const SizedBox(width: 12),
           Expanded(child: ElevatedButton(onPressed: isLoading ? null : () async {
-            double last = double.tryParse(lastReadingController.text) ?? 0; double pres = double.tryParse(presentReadingController.text) ?? last;
+            double last = double.tryParse(lastReadingController.text) ?? 0; 
+            double pres = double.tryParse(presentReadingController.text) ?? last;
             if (pres < last) { _showValidationWarning(context, "Reading cannot be lower than previous."); return; }
+            if (selectedMainMeter == null || selectedSubMeter == null) { _showValidationWarning(context, "Please select both Main and Sub meters."); return; }
+            
             setDialogState(() => isLoading = true);
             SharedPreferences prefs = await SharedPreferences.getInstance();
-            await _dbService.updateSubItemElectricity(subItemId, {'mainSubMeterNo': subMeterController.text.trim(), 'lastReading': last, 'presentReading': pres, 'pricePerUnit': double.tryParse(priceController.text) ?? 10, 'updatedAt': FieldValue.serverTimestamp()}, prefs.getString('username') ?? "Admin");
+            String actor = prefs.getString('username') ?? "Admin";
+
+            // If submeter changed, release old one and assign new one
+            if (existingData?['subMeterNo'] != null && existingData?['subMeterNo'] != selectedSubMeter) {
+              await _dbService.setSubMeterAssignment(existingData?['subMeterNo'], false);
+            }
+            await _dbService.setSubMeterAssignment(selectedSubMeter!, true);
+
+            // Update sub-item
+            await _dbService.updateSubItemElectricity(subItemId, {
+              'mainMeterNo': selectedMainMeter,
+              'subMeterNo': selectedSubMeter,
+              'lastReading': last,
+              'presentReading': pres,
+              'pricePerUnit': double.tryParse(priceController.text) ?? 10,
+              'updatedAt': FieldValue.serverTimestamp(),
+              'isStopped': false,
+            }, actor);
+
+            // Sync with sub_meters collection
+            await _dbService.syncSubMeterReading(selectedSubMeter!, pres, actor);
+
             if (context.mounted) Navigator.pop(ctx);
           }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Update"))),
         ]),
@@ -401,6 +841,7 @@ class CategoryDialogs {
                           'TenantName': TenantName, 
                           'monthYear': monthYear, 
                           'totalAmount': houseRentTotal + electricityBill, 
+                          'services': services, // Added for chart breakdown
                           'paymentNotes': note, 
                           'paidAt': FieldValue.serverTimestamp()
                         }, actor);
@@ -615,18 +1056,106 @@ class CategoryDialogs {
   }
 
   static void showSubItemStatusDialog({required BuildContext context, required String subItemId, required String subItemName, required String currentStatus, required String currentTenant, required String currentNid}) {
-    String target = currentStatus == 'Occupied' ? 'Vacant' : 'Occupied';
-    showConfirmDialog(
-      context: context, 
-      title: "Change Status", 
-      content: "Set $subItemName to $target?", 
-      confirmText: "Proceed",
-      confirmColor: Colors.orange,
-      onConfirm: () async {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await _dbService.updateSubItemStatus(subItemId, target, prefs.getString('username') ?? "Admin");
-      }
-    );
+    if (currentStatus == 'Vacant') {
+      final tenantController = TextEditingController();
+      final nidController = TextEditingController();
+      bool isLoading = false;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Column(
+              children: [
+                const Icon(Icons.person_add_outlined, color: Colors.green, size: 40),
+                const SizedBox(height: 12),
+                Text("Set $subItemName to Occupied", textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Enter tenant details to proceed", style: TextStyle(color: Colors.blueGrey, fontSize: 13)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: tenantController,
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(labelText: "Tenant Name", border: OutlineInputBorder(), isDense: true),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nidController,
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(labelText: "NID Number", border: OutlineInputBorder(), isDense: true),
+                ),
+              ],
+            ),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: isLoading ? null : () async {
+                        String name = tenantController.text.trim();
+                        String nid = nidController.text.trim();
+                        if (name.isEmpty || nid.isEmpty) {
+                          _showValidationWarning(context, "Please provide both Tenant Name and NID Number.");
+                          return;
+                        }
+                        setDialogState(() => isLoading = true);
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        await _dbService.updateSubItemStatus(
+                          subItemId, 
+                          'Occupied', 
+                          prefs.getString('username') ?? "Admin",
+                          TenantName: name,
+                          nidNumber: nid,
+                        );
+                        if (context.mounted) Navigator.pop(ctx);
+                      },
+                      child: isLoading 
+                        ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text("Proceed", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      showConfirmDialog(
+        context: context, 
+        title: "Set to Vacant?", 
+        content: "Are you sure you want to set $subItemName to Vacant? Renter info will be cleared.", 
+        confirmText: "Proceed",
+        confirmColor: Colors.orange,
+        onConfirm: () async {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await _dbService.updateSubItemStatus(subItemId, 'Vacant', prefs.getString('username') ?? "Admin");
+        }
+      );
+    }
   }
 
   static void showSubItemServiceSettingsDialog({required BuildContext context, required String subItemId, required String subItemName, required List categoryServices, required List excludedServices}) {
@@ -706,6 +1235,120 @@ class CategoryDialogs {
             ]),
           ],
         ),
+      ),
+    );
+  }
+
+  static void showWifiServiceEditDialog({required BuildContext context, required String subItemId, required String subItemName, required Map<String, dynamic> serviceMap, required List overriddenServices}) {
+    int quantity = (serviceMap['deviceQuantity'] ?? 1).toInt();
+    double unitPrice = (serviceMap['wifiCost'] ?? serviceMap['amount'] ?? 0).toDouble();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          double total = quantity * unitPrice;
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Column(
+              children: [
+                const Icon(Icons.wifi, color: Colors.blueAccent, size: 40),
+                const SizedBox(height: 12),
+                Text("Edit 'Wifi Bill' for '$subItemName'", textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Service: Wifi Bill", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                      onPressed: () { if (quantity > 1) setDialogState(() => quantity--); },
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
+                      child: Text("$quantity", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline, color: Colors.green),
+                      onPressed: () => setDialogState(() => quantity++),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(labelText: "Wifi cost per device", prefixText: "৳ ", border: OutlineInputBorder()),
+                  onChanged: (val) {
+                    double? p = double.tryParse(val);
+                    if (p != null) setDialogState(() => unitPrice = p);
+                  },
+                  controller: TextEditingController(text: unitPrice.toStringAsFixed(0))..selection = TextSelection.fromPosition(TextSelection.fromPosition(TextPosition(offset: unitPrice.toStringAsFixed(0).length)).extent),
+                ),
+                const SizedBox(height: 16),
+                Text("Total Wifi Bill: ৳${total.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Colors.indigo)),
+              ],
+            ),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.close, size: 18),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red, width: 1.5),
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.check, size: 18),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: isLoading ? null : () async {
+                        setDialogState(() => isLoading = true);
+                        List updated = overriddenServices.map((s) => Map<String, dynamic>.from(s)).toList();
+                        updated.removeWhere((s) => s['originalName'] == serviceMap['originalName']);
+                        updated.add({
+                          'originalName': serviceMap['originalName'], 
+                          'name': serviceMap['name'], 
+                          'amount': quantity * unitPrice,
+                          'deviceQuantity': quantity,
+                          'wifiCost': unitPrice,
+                        });
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        await _dbService.updateSubItemOverriddenServices(subItemId, updated, prefs.getString('username') ?? "Admin");
+                        if (context.mounted) Navigator.pop(ctx);
+                      },
+                      label: isLoading 
+                        ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text("Update", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
