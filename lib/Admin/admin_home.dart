@@ -257,10 +257,10 @@ class _AdminHomeState extends State<AdminHome> {
                                 child: Row(
                                   children: [
                                     if (_showPieChart)
-                                      Expanded(child: SizedBox(height: 100, child: _buildPieChart(receivedTotal, dueTotal))),
+                                      Expanded(child: SizedBox(height: 80, child: _buildPieChart(receivedTotal, dueTotal))),
                                     if (_showPieChart && _showBarChart) const SizedBox(width: 16),
                                     if (_showBarChart)
-                                      Expanded(child: SizedBox(height: 100, child: _buildBarChart(rentTotal, utilityTotal, dueTotal))),
+                                      Expanded(child: SizedBox(height: 80, child: _buildBarChart(rentTotal, utilityTotal, dueTotal))),
                                   ],
                                 ),
                               ),
@@ -335,20 +335,20 @@ class _AdminHomeState extends State<AdminHome> {
     return PieChart(
       PieChartData(
         sectionsSpace: 2,
-        centerSpaceRadius: 30,
+        centerSpaceRadius: 20,
         sections: [
           PieChartSectionData(
             color: Colors.greenAccent,
             value: received,
             title: '${((received/total)*100).toStringAsFixed(0)}%',
-            radius: 40,
+            radius: 30,
             titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
           ),
           PieChartSectionData(
             color: Colors.orangeAccent,
             value: due,
             title: '${((due/total)*100).toStringAsFixed(0)}%',
-            radius: 35,
+            radius: 25,
             titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
           ),
         ],
@@ -562,7 +562,7 @@ class _AdminHomeState extends State<AdminHome> {
                 Expanded(
                   child: Text(
                     catName.toUpperCase(),
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: baseColor.shade800, letterSpacing: 0.5),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: baseColor.shade800, letterSpacing: 0.5),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -592,11 +592,11 @@ class _AdminHomeState extends State<AdminHome> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
           const SizedBox(width: 4),
           Text(
             count.toString(),
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: color),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color),
           ),
         ],
       ),
