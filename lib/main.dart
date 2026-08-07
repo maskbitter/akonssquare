@@ -83,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
           return data;
         }).where((item) {
           String tenant = item['TenantName'] ?? '';
-          String status = item['status'] ?? (tenant.isNotEmpty && tenant != 'No Tenant' ? 'Occupied' : 'Vacant');
+          String status = item['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
           return status == 'Occupied';
         }).toList();
         _subItems.sort((a, b) => (a['subItemName'] ?? '').toString().compareTo((b['subItemName'] ?? '').toString()));
@@ -130,7 +130,7 @@ class _LoginPageState extends State<LoginPage> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
-          String tName = _selectedSubItem!['TenantName'] ?? 'No Tenant';
+          String tName = _selectedSubItem!['TenantName'] ?? 'No Name';
           String unitName = _selectedSubItem!['subItemName'] ?? 'Unit';
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -339,7 +339,7 @@ class _LoginPageState extends State<LoginPage> {
                         height: 55, 
                         child: ElevatedButton.icon(
                           icon: const Icon(Icons.login_outlined),
-                          label: const Text("LOGIN TO DASHBOARD", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                          label: const Text("Login to dashboard", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
                           onPressed: () { HapticFeedback.mediumImpact(); _loginBasicUser(); },
                           onLongPress: () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
                           style: ElevatedButton.styleFrom(

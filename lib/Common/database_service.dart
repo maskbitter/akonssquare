@@ -135,7 +135,7 @@ class DatabaseService {
     DocumentReference doc = await _db.collection('sub_items').add({
       'categoryId': categoryId,
       'subItemName': name,
-      'TenantName': 'No Tenant',
+      'TenantName': 'No Name',
       'nidNumber': 'No Number',
       'notes': '',
       'status': 'Vacant',
@@ -160,11 +160,11 @@ class DatabaseService {
 
     Map<String, dynamic> data = {'status': status};
     if (status == 'Vacant') {
-      data['TenantName'] = 'No Tenant';
+      data['TenantName'] = 'No Name';
       data['nidNumber'] = 'No Number';
       data['occupiedAt'] = null;
     } else {
-      if (TenantName != null) data['TenantName'] = TenantName.isEmpty ? 'No Tenant' : TenantName;
+      if (TenantName != null) data['TenantName'] = TenantName.isEmpty ? 'No Name' : TenantName;
       if (nidNumber != null) data['nidNumber'] = nidNumber.isEmpty ? 'No Number' : nidNumber;
       data['occupiedAt'] = FieldValue.serverTimestamp();
     }
@@ -186,8 +186,8 @@ class DatabaseService {
 
     if (data.containsKey('TenantName')) {
       String Tenant = data['TenantName'] ?? '';
-      if (Tenant.isEmpty || Tenant == 'No Tenant') {
-        data['TenantName'] = 'No Tenant';
+      if (Tenant.isEmpty || Tenant == 'No Name') {
+        data['TenantName'] = 'No Name';
         data['status'] = 'Vacant';
         data['nidNumber'] = 'No Number';
         data['occupiedAt'] = null;

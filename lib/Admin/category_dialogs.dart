@@ -630,7 +630,7 @@ class CategoryDialogs {
     );
   }
 
-  static void showElectricityDialog({required BuildContext context, required String subItemId, required String subItemName, Map<String, dynamic>? existingData}) {
+  static void showElectricityDialog({required BuildContext context, required String subItemId, required String subItemName, Map<String, dynamic>? existingData, bool isOperator = false}) {
     String? selectedMainMeter = existingData?['mainMeterNo'];
     String? selectedSubMeter = existingData?['subMeterNo'];
     final lastReadingController = TextEditingController(text: (existingData?['presentReading'] ?? 0).toString());
@@ -678,7 +678,7 @@ class CategoryDialogs {
                       value: selectedMainMeter,
                       decoration: const InputDecoration(labelText: "Main Meter", border: OutlineInputBorder(), isDense: true),
                       items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text("Main Meter: ${doc['meterNo']}"))).toList(),
-                      onChanged: (v) => setDialogState(() => selectedMainMeter = v),
+                      onChanged: isOperator ? null : (v) => setDialogState(() => selectedMainMeter = v),
                     );
                   },
                 ),
@@ -698,7 +698,7 @@ class CategoryDialogs {
                       value: selectedSubMeter,
                       decoration: const InputDecoration(labelText: "Sub-meter No", border: OutlineInputBorder(), isDense: true),
                       items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text("Sub-meter: ${doc['subMeterNo']}"))).toList(),
-                      onChanged: (v) => setDialogState(() {
+                      onChanged: isOperator ? null : (v) => setDialogState(() {
                         selectedSubMeter = v;
                         var match = available.firstWhere((d) => d['subMeterNo'] == v);
                         lastReadingController.text = (match['presentReading'] ?? 0).toString();
@@ -825,7 +825,7 @@ class CategoryDialogs {
             child: Column(
               mainAxisSize: MainAxisSize.min, 
               children: [
-                const Text("select month for this payment", style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                const Text("Select month for this payment", style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center, 
@@ -844,9 +844,9 @@ class CategoryDialogs {
                   ],
                 ),
                 const Divider(height: 24),
-                _buildRow("$mainCategoryName rent:", "৳${houseRentTotal.toStringAsFixed(1)}"),
+                _buildRow("$mainCategoryName Rent:", "৳${houseRentTotal.toStringAsFixed(1)}"),
                 const SizedBox(height: 4),
-                _buildRow("electric bill:", "৳${electricityBill.toStringAsFixed(1)}"),
+                _buildRow("Electric Bill:", "৳${electricityBill.toStringAsFixed(1)}"),
                 const Divider(height: 24),
                 _buildRow("Total:", "৳${(houseRentTotal + electricityBill).toStringAsFixed(1)}", isBold: true),
                 const SizedBox(height: 12),
@@ -864,7 +864,7 @@ class CategoryDialogs {
                     ),
                   ),
                 ] else
-                   const Text("future payments cannot be recorded.", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+                   const Text("Future payments cannot be recorded.", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
 
                 // --- HISTORY SECTION ---
                 FutureBuilder<QuerySnapshot>(
@@ -1069,7 +1069,7 @@ class CategoryDialogs {
 
   static void showEditSubItemDetailsDialog({required BuildContext context, required String subItemId, required String currentName, required String currentTenantName, required String currentNidNumber, required String currentNotes}) {
     final subItemController = TextEditingController(text: currentName); 
-    final tenantController = TextEditingController(text: currentTenantName == "No Tenant" ? "" : currentTenantName);
+    final tenantController = TextEditingController(text: currentTenantName == "No Name" ? "" : currentTenantName);
     final nidController = TextEditingController(text: currentNidNumber == "No Number" ? "" : currentNidNumber); 
     final notesController = TextEditingController(text: currentNotes);
     bool isLoading = false;

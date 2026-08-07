@@ -89,7 +89,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         return data;
       }).where((item) {
         String tenant = item['TenantName'] ?? '';
-        String status = item['status'] ?? (tenant.isNotEmpty && tenant != 'No Tenant' ? 'Occupied' : 'Vacant');
+        String status = item['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
         return status == 'Occupied';
       }).toList();
       DatabaseService.cachedSubItems.sort((a, b) => (a['subItemName'] ?? '').toString().compareTo((b['subItemName'] ?? '').toString()));

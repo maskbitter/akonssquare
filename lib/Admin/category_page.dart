@@ -203,7 +203,7 @@ class _CategoryPageState extends State<CategoryPage> {
                       var subDocs = subSnapshot.data!.docs.where((doc) {
                         var d = doc.data() as Map<String, dynamic>;
                         String tenant = d['TenantName'] ?? '';
-                        String s = d['status'] ?? (tenant.isNotEmpty && tenant != 'No Tenant' ? 'Occupied' : 'Vacant');
+                        String s = d['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
                         return s == status;
                       }).toList();
 
@@ -265,7 +265,7 @@ class _CategoryPageState extends State<CategoryPage> {
                               var d = subDoc.data() as Map<String, dynamic>;
                               String subId = subDoc.id;
                               String subName = d['subItemName'] ?? 'Unnamed';
-                              String tenant = d['TenantName'] ?? 'No Tenant';
+                              String tenant = d['TenantName'] ?? 'No Name';
                               var ed = d['electricityDetails'];
                               List overridden = d['overriddenServices'] ?? [];
                               List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: overridden);
@@ -331,7 +331,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                           );
                                         },
                                         itemBuilder: (ctx) => [
-                                          const PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red, size: 20), title: Text("Remove Unit", style: TextStyle(color: Colors.red)), dense: true)),
+                                          if (!widget.isOperator)
+                                            const PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red, size: 20), title: Text("Remove Unit", style: TextStyle(color: Colors.red)), dense: true)),
                                         ],
                                       ),
                                       children: [
@@ -411,8 +412,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                             Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                if (tenant != 'No Tenant' && tenant.isNotEmpty) Text(tenant, style: TextStyle(fontSize: 13, color: isPaid ? Colors.green.shade600 : Colors.blueGrey, fontWeight: FontWeight.bold)),
-                                                Text(isPaid ? "PAID for $_selectedMonthStr" : "${active.length} active services | DUE", style: TextStyle(fontSize: 11, color: isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+                                                if (tenant != 'No Name' && tenant.isNotEmpty) Text(tenant, style: TextStyle(fontSize: 13, color: isPaid ? Colors.green.shade600 : Colors.blueGrey, fontWeight: FontWeight.bold)),
+                                                Text(isPaid ? "Paid for $_selectedMonthStr" : "${active.length} Active services | Due", style: TextStyle(fontSize: 11, color: isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
                                               ],
                                             ),
                                           ],
@@ -431,7 +432,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                             PopupMenuButton<String>(
                                               icon: const Icon(Icons.more_vert, size: 24, color: Colors.blueGrey),
                                               onSelected: (val) async {
-                                                if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed);
+                                                if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator);
                                                 if (val == 'stop') {
                                                   bool isStopping = ed?['isStopped'] != true;
                                                   if (isStopping) {
@@ -505,7 +506,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                     color: Colors.amber,
                                                     trailing: IconButton(
                                                       icon: const Icon(Icons.electric_bolt, color: Colors.orange, size: 22), 
-                                                      onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed)
+                                                      onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
                                                     )
                                                   ),
 
@@ -724,22 +725,23 @@ class _CategoryPageState extends State<CategoryPage> {
                             ),
                           ),
                         ),
-                        DataCell(
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                            onPressed: () => CategoryDialogs.showConfirmDialog(
-                              context: context, 
-                              title: "Remove Meter?", 
-                              content: "Are you sure you want to remove meter '$meterNo'?", 
-                              onConfirm: () async {
-                                SharedPreferences prefs = await SharedPreferences.getInstance();
-                                await _dbService.removeMainMeter(mDoc.id, prefs.getString('username') ?? "Admin");
-                              }
+                        if (!widget.isOperator)
+                          DataCell(
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                              onPressed: () => CategoryDialogs.showConfirmDialog(
+                                context: context, 
+                                title: "Remove Meter?", 
+                                content: "Are you sure you want to remove meter '$meterNo'?", 
+                                onConfirm: () async {
+                                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                                  await _dbService.removeMainMeter(mDoc.id, prefs.getString('username') ?? "Admin");
+                                }
+                              ),
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
                             ),
-                            constraints: const BoxConstraints(),
-                            padding: EdgeInsets.zero,
                           ),
-                        ),
                       ],
                     );
                   }).toList(),
@@ -797,20 +799,21 @@ class _CategoryPageState extends State<CategoryPage> {
                           DataCell(Text(last.toStringAsFixed(1))),
                           DataCell(Text(pres.toStringAsFixed(1))),
                           DataCell(Text((pres - last).toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
-                          DataCell(
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                              onPressed: () => CategoryDialogs.showConfirmDialog(
-                                context: context, 
-                                title: "Remove Sub-Meter?", 
-                                content: "Are you sure you want to remove '${sData['subMeterNo']}'?", 
-                                onConfirm: () async {
-                                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                                  await _dbService.removeSubMeter(sDoc.id, prefs.getString('username') ?? "Admin");
-                                }
+                          if (!widget.isOperator)
+                            DataCell(
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                                onPressed: () => CategoryDialogs.showConfirmDialog(
+                                  context: context, 
+                                  title: "Remove Sub-Meter?", 
+                                  content: "Are you sure you want to remove '${sData['subMeterNo']}'?", 
+                                  onConfirm: () async {
+                                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                                    await _dbService.removeSubMeter(sDoc.id, prefs.getString('username') ?? "Admin");
+                                  }
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       );
                     }).toList(),
