@@ -299,6 +299,9 @@ class DatabaseService {
 
   Future<void> updateMainMeter(String docId, Map<String, dynamic> data, String actor) async {
     data['updatedAt'] = FieldValue.serverTimestamp();
+    // Reset paid units for the new month/cycle
+    data['totalSubPaidUnits'] = 0.0;
+    
     await _db.collection('main_meters').doc(docId).update(data);
 
     await logActivity(
@@ -307,6 +310,16 @@ class DatabaseService {
       details: "Updated readings for main meter '${data['meterNo']}'",
       category: "Electricity",
     );
+  }
+
+  Future<void> incrementMainMeterPaidUnits(String meterNo, double units) async {
+    var snap = await _db.collection('main_meters').where('meterNo', isEqualTo: meterNo).limit(1).get();
+    if (snap.docs.isNotEmpty) {
+      await snap.docs.first.reference.update({
+        'totalSubPaidUnits': FieldValue.increment(units),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
   }
 
   // ==========================================

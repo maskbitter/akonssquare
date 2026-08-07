@@ -620,8 +620,10 @@ class _AdminHomeState extends State<AdminHome> {
               double last = (data['lastReading'] as num?)?.toDouble() ?? 0;
               double present = (data['presentReading'] as num?)?.toDouble() ?? 0;
               double mainUsed = present - last;
+              double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
               double unitRate = (data['unitRate'] as num?)?.toDouble() ?? 0;
               final rowColor = index % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
+              double balance = mainUsed - totalSubPaid;
 
               return TableRow(
                 decoration: BoxDecoration(color: rowColor),
@@ -632,56 +634,21 @@ class _AdminHomeState extends State<AdminHome> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 1),
                     child: Center(
-                      child: StreamBuilder<QuerySnapshot>(
-                        stream: _dbService.getSubItemsByMainMeter(meterNo),
-                        builder: (context, subSnapshot) {
-                          double totalSubUnits = 0;
-                          if (subSnapshot.hasData) {
-                            for (var subDoc in subSnapshot.data!.docs) {
-                              var subData = subDoc.data() as Map<String, dynamic>;
-                              var ed = subData['electricityDetails'];
-                              if (ed != null) {
-                                double sLast = (ed['lastReading'] as num?)?.toDouble() ?? 0.0;
-                                double sPresent = (ed['presentReading'] as num?)?.toDouble() ?? 0.0;
-                                totalSubUnits += (sPresent - sLast);
-                              }
-                            }
-                          }
-                          return Text(totalSubUnits.toStringAsFixed(1), style: const TextStyle(fontSize: 13), textAlign: TextAlign.center);
-                        },
-                      ),
+                      child: Text(totalSubPaid.toStringAsFixed(1), style: const TextStyle(fontSize: 13), textAlign: TextAlign.center),
                     ),
                   ),
                   Padding(padding: const EdgeInsets.symmetric(vertical: 1), child: Center(child: Text("৳${unitRate.toStringAsFixed(2)}", style: const TextStyle(fontSize: 13), textAlign: TextAlign.center))),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 1),
                     child: Center(
-                      child: StreamBuilder<QuerySnapshot>(
-                        stream: _dbService.getSubItemsByMainMeter(meterNo),
-                        builder: (context, subSnapshot) {
-                          double totalSubUnits = 0;
-                          if (subSnapshot.hasData) {
-                            for (var subDoc in subSnapshot.data!.docs) {
-                              var subData = subDoc.data() as Map<String, dynamic>;
-                              var ed = subData['electricityDetails'];
-                              if (ed != null) {
-                                double sLast = (ed['lastReading'] as num?)?.toDouble() ?? 0.0;
-                                double sPresent = (ed['presentReading'] as num?)?.toDouble() ?? 0.0;
-                                totalSubUnits += (sPresent - sLast);
-                              }
-                            }
-                          }
-                          double balance = mainUsed - totalSubUnits;
-                          return Text(
-                            balance.toStringAsFixed(1),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: balance > 0 ? Colors.red : Colors.green,
-                              fontWeight: balance > 0 ? FontWeight.bold : FontWeight.normal,
-                            ),
-                            textAlign: TextAlign.center,
-                          );
-                        },
+                      child: Text(
+                        balance.toStringAsFixed(1),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: balance > 0 ? Colors.red : Colors.green,
+                          fontWeight: balance > 0 ? FontWeight.bold : FontWeight.normal,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),

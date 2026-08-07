@@ -592,7 +592,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)
                 ),
                 if (isWifi && unitPrice != null)
-                  Text("(Unit Price: ৳${unitPrice.toStringAsFixed(0)} per device)", style: const TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                  Text("(৳${unitPrice.toStringAsFixed(0)} per device)", style: const TextStyle(fontSize: 11, color: Colors.blueGrey)),
                 if (isOverridden && !isWifi) const Text("Customized from 'Original'", style: TextStyle(fontSize: 10, color: Colors.blueAccent, fontStyle: FontStyle.italic)),
               ],
             ),
@@ -697,6 +697,8 @@ class _CategoryPageState extends State<CategoryPage> {
                     double thisRate = (data['unitRate'] ?? 0).toDouble();
                     
                     double govtDueAdv = newGovt - pres;
+                    double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
+                    double balance = mainUsed - totalSubPaid;
 
                     return DataRow(
                       onSelectChanged: (_) => CategoryDialogs.showUpdateMainMeterDialog(context: context, data: data, docId: mDoc.id),
@@ -713,47 +715,14 @@ class _CategoryPageState extends State<CategoryPage> {
                         DataCell(Text("৳${thisRate.toStringAsFixed(2)}")),
                         DataCell(Text(govtDueAdv.toStringAsFixed(1), style: TextStyle(color: govtDueAdv.abs() > 5 ? Colors.orange : Colors.black87, fontWeight: govtDueAdv.abs() > 5 ? FontWeight.bold : FontWeight.normal))),
                         DataCell(Text(mainUsed.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold))),
+                        DataCell(Text(totalSubPaid.toStringAsFixed(1))),
                         DataCell(
-                          StreamBuilder<QuerySnapshot>(
-                            stream: _dbService.getSubItemsByMainMeter(meterNo),
-                            builder: (context, subSnap) {
-                              double totalSubUsed = 0;
-                              if (subSnap.hasData) {
-                                for (var doc in subSnap.data!.docs) {
-                                  var ud = doc.data() as Map<String, dynamic>;
-                                  var ed = ud['electricityDetails'];
-                                  if (ed != null && ed['isStopped'] != true) {
-                                    totalSubUsed += (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble());
-                                  }
-                                }
-                              }
-                              return Text(totalSubUsed.toStringAsFixed(1));
-                            },
-                          ),
-                        ),
-                        DataCell(
-                          StreamBuilder<QuerySnapshot>(
-                            stream: _dbService.getSubItemsByMainMeter(meterNo),
-                            builder: (context, subSnap) {
-                              double totalSubUsed = 0;
-                              if (subSnap.hasData) {
-                                for (var doc in subSnap.data!.docs) {
-                                  var ud = doc.data() as Map<String, dynamic>;
-                                  var ed = ud['electricityDetails'];
-                                  if (ed != null && ed['isStopped'] != true) {
-                                    totalSubUsed += (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble());
-                                  }
-                                }
-                              }
-                              double balance = mainUsed - totalSubUsed;
-                              return Text(
-                                balance.toStringAsFixed(1),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: balance > 0 ? Colors.red : Colors.green,
-                                ),
-                              );
-                            },
+                          Text(
+                            balance.toStringAsFixed(1),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: balance > 0 ? Colors.red : Colors.green,
+                            ),
                           ),
                         ),
                         DataCell(
@@ -810,7 +779,7 @@ class _CategoryPageState extends State<CategoryPage> {
                       DataColumn(label: Text("Sub-Meter No")),
                       DataColumn(label: Text("Main-Meter No")),
                       DataColumn(label: Text("Last Reading")),
-                      DataColumn(label: Text("This Month")),
+                      DataColumn(label: Text("Present Reading")),
                       DataColumn(label: Text("Used Unit")),
                       DataColumn(label: Text("Actions")),
                     ],

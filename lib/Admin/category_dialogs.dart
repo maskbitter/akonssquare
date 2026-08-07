@@ -767,21 +767,6 @@ class CategoryDialogs {
                       
                       double prevSavedReading = (existingData?['presentReading'] ?? 0).toDouble();
                       bool shouldSync = false;
-                      if (prevSavedReading > 0 && last != prevSavedReading) {
-                        shouldSync = await showDialog(
-                          context: context,
-                          builder: (c) => AlertDialog(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            title: const Text("Sync Reading?", style: TextStyle(fontWeight: FontWeight.bold)),
-                            content: Text("The previous month's reading was $prevSavedReading. Should this be set as the 'Last Reading' for this month?"),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No", style: TextStyle(color: Colors.red))),
-                              TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Yes", style: TextStyle(color: Colors.green))),
-                            ],
-                          ),
-                        ) ?? false;
-                      }
-
                       setDialogState(() => isLoading = true);
                       SharedPreferences prefs = await SharedPreferences.getInstance();
                       String actor = prefs.getString('username') ?? "Admin";
@@ -791,19 +776,16 @@ class CategoryDialogs {
                       }
                       await _dbService.setSubMeterAssignment(selectedSubMeter!, true);
 
-                      double finalLast = shouldSync ? prevSavedReading : last;
-
+                      // Only update presentReading, lastReading remains same until payment
                       await _dbService.updateSubItemElectricity(subItemId, {
                         'mainMeterNo': selectedMainMeter,
                         'subMeterNo': selectedSubMeter,
-                        'lastReading': finalLast,
+                        'lastReading': (existingData?['lastReading'] ?? last).toDouble(),
                         'presentReading': pres,
                         'pricePerUnit': double.tryParse(priceController.text) ?? 10,
                         'updatedAt': FieldValue.serverTimestamp(),
                         'isStopped': false,
                       }, actor);
-
-                      await _dbService.syncSubMeterReading(selectedSubMeter!, pres, actor);
 
                       if (context.mounted) Navigator.pop(ctx);
                     }, 
@@ -981,11 +963,28 @@ class CategoryDialogs {
                         }, actor);
                         
                         if (electricityDetails != null) {
+                          double last = (electricityDetails['lastReading'] ?? 0).toDouble();
+                          double pres = (electricityDetails['presentReading'] ?? 0).toDouble();
+                          double used = pres - last;
+                          String? meterNo = electricityDetails['mainMeterNo'];
+                          String? subMeterNo = electricityDetails['subMeterNo'];
+
+                          // Update sub-item reading
                           await _dbService.updateSubItemElectricity(subItemId, {
                             ...electricityDetails, 
-                            'lastReading': electricityDetails['presentReading'], 
+                            'lastReading': pres, 
                             'updatedAt': FieldValue.serverTimestamp()
                           }, actor);
+
+                          // Sync global sub-meter
+                          if (subMeterNo != null) {
+                            await _dbService.syncSubMeterReading(subMeterNo, pres, actor);
+                          }
+
+                          // Update main meter paid units
+                          if (meterNo != null && used > 0) {
+                            await _dbService.incrementMainMeterPaidUnits(meterNo, used);
+                          }
                         }
                         if (context.mounted) {
                           Navigator.pop(ctx);
