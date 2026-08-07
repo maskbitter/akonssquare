@@ -22,7 +22,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final DatabaseService _dbService = DatabaseService();
   bool _isProcessing = false;
   double _progress = 0.0;
-  String _selectedRoleForVisibility = 'operator';
+  String _selectedRoleForVisibility = 'admin';
 
   String _getBackupFileName(num version) {
     DateTime now = DateTime.now();
@@ -392,15 +392,21 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Column(
+                child: ExpansionTile(
+                  leading: const Icon(Icons.security, color: Colors.indigo),
+                  title: const Text(
+                    "Dashboard Visibility Control",
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
+                  ),
+                  subtitle: const Text("Control what sections are visible to different roles", style: TextStyle(fontSize: 12)),
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                       child: Row(
                         children: [
-                          const Icon(Icons.security, size: 20, color: Colors.indigo),
+                          const Icon(Icons.person_search_outlined, size: 20, color: Colors.indigo),
                           const SizedBox(width: 12),
-                          const Text("Manage Visibility for:", style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text("Manage Visibility for:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                           const SizedBox(width: 12),
                           DropdownButton<String>(
                             value: _selectedRoleForVisibility,
@@ -416,6 +422,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         ],
                       ),
                     ),
+                    const Divider(height: 1),
                     StreamBuilder<DocumentSnapshot>(
                       stream: _dbService.getDashboardVisibilityStream(_selectedRoleForVisibility),
                       builder: (context, snapshot) {
@@ -433,13 +440,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           s.forEach((k, v) => settings[k] = v as bool);
                         }
 
-                        return ExpansionTile(
-                          leading: const Icon(Icons.visibility_outlined, color: Colors.indigo),
-                          title: Text(
-                            "Dashboard Visibility (${_selectedRoleForVisibility.toUpperCase()})",
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
-                          ),
-                          subtitle: const Text("Control what sections are visible to this role", style: TextStyle(fontSize: 12)),
+                        return Column(
                           children: [
                             _buildVisibilitySwitch("Show Accounts Section", settings['showAccounts']!, (val) {
                               settings['showAccounts'] = val;
@@ -488,7 +489,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 );
                               }
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 12),
                           ],
                         );
                       }

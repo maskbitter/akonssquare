@@ -314,7 +314,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                       subtitle: const Row(
                                         children: [
                                           SizedBox(width: 32),
-                                          Text("Status: VACANT", style: TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                                          Text("Status: Vacant", style: TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.bold)),
                                         ],
                                       ),
                                       trailing: PopupMenuButton<String>(
@@ -341,11 +341,26 @@ class _CategoryPageState extends State<CategoryPage> {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              if (d['nidNumber'] != null && d['nidNumber'] != 'No Number' && d['nidNumber'].toString().isNotEmpty)
+                                              if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
                                                 _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Colors.indigo),
                                                 
                                               if ((d['notes'] ?? '').toString().isNotEmpty)
                                                 _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(icon: const Icon(Icons.remove_circle_outline, color: Colors.orange, size: 20), onPressed: () => _dbService.updateSubItemDetails(subId, {'notes': ''}, "Admin"))),
+                                              
+                                              if (ed != null && ed['isStopped'] != true)
+                                                  _buildSectionBox(
+                                                    "Electric Bills", 
+                                                    "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
+                                                    Icons.flash_on, 
+                                                    amount: eBillAmount, 
+                                                    color: Colors.amber,
+                                                    trailing: IconButton(
+                                                      icon: const Icon(Icons.electric_bolt, color: Colors.orange, size: 22), 
+                                                      onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
+                                                    )
+                                                  ),
+
+                                                ...active.map((s) => _buildServiceRow(subId, subName, s, overridden)),
                                             ],
                                           ),
                                         ),
