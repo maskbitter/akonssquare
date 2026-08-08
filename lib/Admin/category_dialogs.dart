@@ -133,7 +133,7 @@ class CategoryDialogs {
                   await _dbService.addCategory(name, prefs.getString('username') ?? "Admin");
                   if (context.mounted) Navigator.pop(ctx);
                 }, 
-                child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Save")
+                child: isLoading ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary)) : const Text("Save")
               )),
             ]),
           ],
@@ -255,15 +255,15 @@ class CategoryDialogs {
             actions: [
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                    side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   onPressed: () => Navigator.pop(ctx), 
-                  child: Text("Close", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error))
+                  child: const Text("Close")
                 ),
               ),
             ],
@@ -311,7 +311,7 @@ class CategoryDialogs {
                   await _dbService.addSubItem(categoryId, name, prefs.getString('username') ?? "Admin");
                   if (context.mounted) Navigator.pop(ctx);
                 }, 
-                child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Add")
+                child: isLoading ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary)) : const Text("Add")
               )),
             ]),
           ],
@@ -397,7 +397,7 @@ class CategoryDialogs {
                       if (context.mounted) Navigator.pop(ctx);
                     },
                     child: isLoading 
-                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
                       : const Text("Add"),
                   ),
                 ),
@@ -565,8 +565,14 @@ class CategoryDialogs {
                             title: Text("Sync Main Meter?", style: Theme.of(context).textTheme.titleLarge),
                             content: Text("Previous reading was $prevSavedMain. Should this be set as the 'Last Reading' for this month?", style: Theme.of(context).textTheme.bodyMedium),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(c, false), child: Text("No", style: TextStyle(color: Theme.of(context).colorScheme.error))),
-                              TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Yes", style: TextStyle(color: Colors.green))),
+                              TextButton(
+                                onPressed: () => Navigator.pop(c, false), 
+                                child: Text("No", style: TextStyle(color: Theme.of(context).colorScheme.error))
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(c, true), 
+                                child: Text("Yes", style: TextStyle(color: Theme.of(context).colorScheme.tertiary))
+                              ),
                             ],
                           ),
                         ) ?? false;
@@ -580,8 +586,14 @@ class CategoryDialogs {
                             title: Text("Sync Govt. Reading?", style: Theme.of(context).textTheme.titleLarge),
                             content: Text("Previous Govt. reading was $prevSavedGovt. Should this be set as the 'Last Govt. Reading' for this month?", style: Theme.of(context).textTheme.bodyMedium),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(c, false), child: Text("No", style: TextStyle(color: Theme.of(context).colorScheme.error))),
-                              TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Yes", style: TextStyle(color: Colors.green))),
+                              TextButton(
+                                onPressed: () => Navigator.pop(c, false), 
+                                child: Text("No", style: TextStyle(color: Theme.of(context).colorScheme.error))
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(c, true), 
+                                child: Text("Yes", style: TextStyle(color: Theme.of(context).colorScheme.tertiary))
+                              ),
                             ],
                           ),
                         ) ?? false;
@@ -610,7 +622,7 @@ class CategoryDialogs {
                       if (context.mounted) Navigator.pop(ctx);
                     },
                     child: isLoading 
-                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
                       : const Text("Update"),
                   ),
                 ),
@@ -736,7 +748,7 @@ class CategoryDialogs {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Column(
             children: [
-              const Icon(Icons.electric_bolt, color: Colors.amber, size: 40),
+              const Icon(Icons.electric_bolt, color: Colors.orange, size: 40),
               const SizedBox(height: 12),
               Text("Electricity - assigned submeter", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
               Text("Update for $subItemName", style: Theme.of(context).textTheme.bodySmall),
@@ -1060,7 +1072,7 @@ class CategoryDialogs {
                         }
                       }, 
                     child: isLoading 
-                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
                       : const Text("Confirm")
                     ),
                   ),
@@ -1404,7 +1416,7 @@ class CategoryDialogs {
                       title: Text(sName, style: Theme.of(context).textTheme.titleSmall),
                       subtitle: Text(
                         isApplied ? "applied (৳$amount)" : "Unassigned for this sub-item",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isApplied ? Colors.green : Theme.of(context).colorScheme.onSurfaceVariant),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isApplied ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       value: isApplied,
                       onChanged: (bool? value) {
@@ -1497,7 +1509,7 @@ class CategoryDialogs {
                     child: Text("$quantity", style: Theme.of(context).textTheme.headlineMedium),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.add_circle_outline, color: Colors.green),
+                    icon: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.tertiary),
                     onPressed: () => setDialogState(() => quantity++),
                   ),
                 ],
@@ -1559,7 +1571,7 @@ class CategoryDialogs {
                         if (context.mounted) Navigator.pop(ctx);
                       },
                       child: isLoading 
-                        ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
                         : const Text("Update"),
                     ),
                   ),

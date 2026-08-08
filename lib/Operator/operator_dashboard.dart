@@ -110,7 +110,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                       Navigator.pop(context);
                       _handleLogout();
                     },
-                    child: const Text("Close"),
+                    child: const Text("Logout"),
                   ),
                 ),
               ],

@@ -140,7 +140,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       Navigator.pop(context);
                       _handleLogout();
                     },
-                    child: const Text("Close"),
+                    child: const Text("Logout"),
                   ),
                 ),
               ],

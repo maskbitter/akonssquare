@@ -368,7 +368,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     ]),
                     const SizedBox(height: 12),
                     SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), onPressed: () => _handleLocalSave(context), icon: const Icon(Icons.save_alt), label: const Text("Save Locally"))),
-                    if (_isProcessing) LinearProgressIndicator(value: _progress, color: Theme.of(context).colorScheme.primary),
+                    if (_isProcessing) ...[
+                      const SizedBox(height: 16),
+                      LinearProgressIndicator(value: _progress, backgroundColor: Theme.of(context).colorScheme.outlineVariant, color: Theme.of(context).colorScheme.primary, minHeight: 6),
+                      const SizedBox(height: 4),
+                      Text("${(_progress * 100).toStringAsFixed(1)}%", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                    ],
+                    const SizedBox(height: 8),
+                    Text(
+                      "Backup generates a JSON file. Use Restore to upload a previous backup. Versioning ensures safety.",
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+                      textAlign: TextAlign.center,
+                    ),
                     FutureBuilder<SharedPreferences>(
                       future: SharedPreferences.getInstance(),
                       builder: (context, snapshot) {
@@ -436,7 +447,7 @@ class _SettingsPageState extends State<SettingsPage> {
       child: ExpansionTile(
         leading: Icon(icon, color: accentColor),
         title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: accentColor, fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+        subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
         children: children,
       ),
     );

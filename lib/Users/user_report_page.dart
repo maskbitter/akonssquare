@@ -264,13 +264,13 @@ class UserReportPage extends StatelessWidget {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFE8F5E9),
+                                        color: Theme.of(context).colorScheme.tertiaryContainer,
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.green.shade200),
+                                        border: Border.all(color: Theme.of(context).colorScheme.tertiary.withOpacity(0.3)),
                                       ),
                                       child: Text(
                                         "PAID", 
-                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.green.shade800)
+                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold)
                                       ),
                                     ),
                                   ],

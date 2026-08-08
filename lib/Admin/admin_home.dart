@@ -64,6 +64,8 @@ class _AdminHomeState extends State<AdminHome> {
               'showMainVsSub': true,
               'showMainVsGovt': true,
               'showCategory': true,
+              'showTotalOccupied': true,
+              'showTotalVacant': true,
             };
 
             if (visSnap.hasData && visSnap.data!.exists) {
@@ -275,10 +277,10 @@ class _AdminHomeState extends State<AdminHome> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInteractiveStat("Received", receivedTotal, Colors.greenAccent, Icons.check_circle_outline,
+                                _buildInteractiveStat("Received", receivedTotal, Theme.of(context).colorScheme.tertiary, Icons.check_circle_outline,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 0)),
                                 Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
-                                _buildInteractiveStat("Due", dueTotal, Colors.orangeAccent, Icons.pending_actions,
+                                _buildInteractiveStat("Due", dueTotal, Theme.of(context).colorScheme.error, Icons.pending_actions,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 1)),
                               ],
                             ),
@@ -289,7 +291,7 @@ class _AdminHomeState extends State<AdminHome> {
                                 _buildInteractiveStat("Rent", rentTotal, Theme.of(context).colorScheme.onPrimary, Icons.home_work_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: true)),
                                 Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
-                                _buildInteractiveStat("Utility", utilityTotal, Colors.yellowAccent, Icons.settings_suggest_outlined,
+                                _buildInteractiveStat("Utility", utilityTotal, Theme.of(context).colorScheme.secondary, Icons.settings_suggest_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: false)),
                               ],
                             ),
@@ -344,20 +346,20 @@ class _AdminHomeState extends State<AdminHome> {
         centerSpaceRadius: 20,
         sections: [
           PieChartSectionData(
-            color: Colors.green.shade400,
+            color: Theme.of(context).colorScheme.tertiary,
             value: received,
             title: '${((received/total)*100).toStringAsFixed(0)}%',
             radius: 35,
-            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onTertiary, fontWeight: FontWeight.bold),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.onTertiary.withOpacity(0.2), width: 1),
           ),
           PieChartSectionData(
-            color: Colors.orange.shade400,
+            color: Theme.of(context).colorScheme.error,
             value: due,
             title: '${((due/total)*100).toStringAsFixed(0)}%',
             radius: 30,
-            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onError, fontWeight: FontWeight.bold),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.onError.withOpacity(0.2), width: 1),
           ),
         ],
       ),
@@ -391,9 +393,9 @@ class _AdminHomeState extends State<AdminHome> {
         gridData: const FlGridData(show: false),
         borderData: FlBorderData(show: false),
         barGroups: [
-          _makeGroupData(0, v1, Colors.lightBlueAccent),
-          _makeGroupData(1, v2, Colors.yellowAccent),
-          _makeGroupData(2, v3, Colors.orangeAccent),
+          _makeGroupData(0, v1, Theme.of(context).colorScheme.onPrimary),
+          _makeGroupData(1, v2, Theme.of(context).colorScheme.secondary),
+          _makeGroupData(2, v3, Theme.of(context).colorScheme.error),
         ],
       ),
     );
@@ -426,7 +428,7 @@ class _AdminHomeState extends State<AdminHome> {
       child: Container(
         height: 140,
         margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(24)),
       ),
     );
   }
@@ -466,31 +468,34 @@ class _AdminHomeState extends State<AdminHome> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  Expanded(
-                    child: _buildSubOverviewCard(
-                      title: "Total Occupied",
-                      count: occupiedCount,
-                      color: Colors.green,
-                      icon: Icons.door_front_door_outlined,
-                      onTap: () {
-                        DatabaseService.vibrate();
-                        widget.onCategoryTap?.call(0);
-                      },
+                  if (settings['showTotalOccupied'] ?? true)
+                    Expanded(
+                      child: _buildSubOverviewCard(
+                        title: "Total Occupied",
+                        count: occupiedCount,
+                        color: Theme.of(context).colorScheme.tertiary,
+                        icon: Icons.door_front_door_outlined,
+                        onTap: () {
+                          DatabaseService.vibrate();
+                          widget.onCategoryTap?.call(0);
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildSubOverviewCard(
-                      title: "Total Vacant",
-                      count: vacantCount,
-                      color: Colors.red,
-                      icon: Icons.meeting_room_outlined,
-                      onTap: () {
-                        DatabaseService.vibrate();
-                        widget.onCategoryTap?.call(1);
-                      },
+                  if ((settings['showTotalOccupied'] ?? true) && (settings['showTotalVacant'] ?? true))
+                    const SizedBox(width: 12),
+                  if (settings['showTotalVacant'] ?? true)
+                    Expanded(
+                      child: _buildSubOverviewCard(
+                        title: "Total Vacant",
+                        count: vacantCount,
+                        color: Theme.of(context).colorScheme.error,
+                        icon: Icons.meeting_room_outlined,
+                        onTap: () {
+                          DatabaseService.vibrate();
+                          widget.onCategoryTap?.call(1);
+                        },
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -694,7 +699,7 @@ class _AdminHomeState extends State<AdminHome> {
                 titleIcon: Icons.balance,
                 containerColor: Theme.of(context).colorScheme.primaryContainer,
                 accentColor: Theme.of(context).colorScheme.primary,
-                headers: ["#", "Meter Number", "Main Used", "Sub Units", "Unit Rate", "Balance"],
+                headers: ["#", "Meter\nNumber", "Main Meter\nUsed Units", "Sub-Meter\Total Units", "This Month\nUnit Rate", "Balance Units"],
                 meters: mainMeters,
                 rowBuilder: (data, index) {
                   double last = (data['lastReading'] as num?)?.toDouble() ?? 0;
@@ -726,7 +731,7 @@ class _AdminHomeState extends State<AdminHome> {
                 titleIcon: Icons.receipt_long,
                 containerColor: Theme.of(context).colorScheme.secondaryContainer,
                 accentColor: Theme.of(context).colorScheme.secondary,
-                headers: ["#", "Meter Number", "Main Readings", "Govt. Readings", "Balance Units"],
+                headers: ["#", "Meter\nNumber", "Main Meter\nReadings", "Govt. Bill\nReadings", "Balance Units"],
                 meters: mainMeters,
                 rowBuilder: (data, index) {
                   double present = (data['presentReading'] as num?)?.toDouble() ?? 0;
@@ -805,7 +810,7 @@ class _AdminHomeState extends State<AdminHome> {
                 CircleAvatar(
                   radius: 18,
                   backgroundColor: accentColor,
-                  child: const Icon(Icons.category_outlined, color: Colors.white, size: 16),
+                  child: Icon(Icons.category_outlined, color: Theme.of(context).colorScheme.onTertiary, size: 16),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -838,7 +843,7 @@ class _AdminHomeState extends State<AdminHome> {
           children: List.generate(3, (index) => Container(
             height: 80,
             margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(20)),
           )),
         ),
       ),
@@ -1155,14 +1160,14 @@ class _AdminHomeState extends State<AdminHome> {
     String? notes,
   }) {
     final List<Color> pastelColors = [
-      const Color(0xFFE8EAFC),
-      const Color(0xFFE0F2F1),
-      const Color(0xFFFFF3E0),
-      const Color(0xFFF3E5F5),
-      const Color(0xFFF1F8E9),
-      const Color(0xFFFCE4EC),
-      const Color(0xFFFFF8E1),
-      const Color(0xFFE1F5FE),
+      Theme.of(context).colorScheme.primaryContainer,
+      Theme.of(context).colorScheme.secondaryContainer,
+      Theme.of(context).colorScheme.tertiaryContainer,
+      Theme.of(context).colorScheme.surfaceContainer,
+      Theme.of(context).colorScheme.surfaceContainerHigh,
+      Theme.of(context).colorScheme.surfaceContainerHighest,
+      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
+      Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.7),
     ];
     Color itemColor = pastelColors[index % pastelColors.length];
 
@@ -1175,7 +1180,7 @@ class _AdminHomeState extends State<AdminHome> {
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: Colors.white.withOpacity(0.5),
+          backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.5),
           child: Icon(icon, color: color, size: 20),
         ),
         title: Text(title, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
@@ -1248,7 +1253,7 @@ class _AdminHomeState extends State<AdminHome> {
                 if (showElec && data['electricityDetails'] != null) ...[
                   Row(
                     children: [
-                      const Icon(Icons.flash_on, color: Colors.amber, size: 16),
+                      Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 16),
                       const SizedBox(width: 8),
                       Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleSmall),
                     ],

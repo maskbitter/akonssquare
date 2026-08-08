@@ -95,7 +95,7 @@ class _CategoryPageState extends State<CategoryPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accentColor.withOpacity(0.1))),
       child: ListTile(
         onTap: onTap,
-        leading: CircleAvatar(backgroundColor: accentColor, child: Icon(icon, color: Colors.white, size: 20)),
+        leading: CircleAvatar(backgroundColor: accentColor, child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20)),
         title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: accentColor)),
         subtitle: Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: accentColor.withOpacity(0.7))),
         trailing: Icon(Icons.arrow_forward_ios, size: 14, color: accentColor),
@@ -324,13 +324,13 @@ class _CategoryPageState extends State<CategoryPage> {
                           leading: CircleAvatar(
                             backgroundColor: accentColor, 
                             child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                const Icon(Icons.category_outlined, color: Colors.white, size: 20),
-                                if (hasElectric) 
-                                  const Positioned(right: 0, bottom: 0, child: Icon(Icons.flash_on, color: Colors.amber, size: 10)),
-                              ],
-                            ),
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(Icons.category_outlined, color: Theme.of(context).colorScheme.onPrimary, size: 20),
+                        if (hasElectric) 
+                          Positioned(right: 0, bottom: 0, child: Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 10)),
+                      ],
+                    ),
                           ),
                           title: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -448,7 +448,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.end,
                                                 children: [
-                                                  if (ed != null) const Icon(Icons.flash_on, color: Colors.amber, size: 20),
+                                                  if (ed != null) Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 20),
                                                   Text("৳${total.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.error)),
                                                 ],
                                               ),
@@ -487,9 +487,9 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
                                                   Icons.flash_on, 
                                                   amount: eBillAmount, 
-                                                  color: Colors.amber,
+                                                  color: Theme.of(context).colorScheme.secondary,
                                                   trailing: IconButton(
-                                                    icon: const Icon(Icons.electric_bolt, color: Colors.orange, size: 22), 
+                                                    icon: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.secondary, size: 22), 
                                                     onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
                                                   )
                                                 ),
@@ -576,7 +576,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   margin: const EdgeInsets.only(left: 6),
                                                   padding: const EdgeInsets.all(3),
                                                   decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(4)),
-                                                  child: Icon(Icons.notes, color: Colors.green, size: 16),
+                                                  child: Icon(Icons.notes, color: Theme.of(context).colorScheme.tertiary, size: 16),
                                                 ),
                                               if (isOccupied)
                                                 Padding(
@@ -638,7 +638,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   PopupMenuItem(
                                                     value: ed == null ? 'electric' : 'stop', 
                                                     child: ListTile(
-                                                      leading: Icon(Icons.flash_on, color: ed == null ? Theme.of(context).colorScheme.outline : Colors.amber, size: 20), 
+                                                      leading: Icon(Icons.flash_on, color: ed == null ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.secondary, size: 20), 
                                                       title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
                                                       dense: true
                                                     )
@@ -661,7 +661,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 ),
                                               ),
                                               const Spacer(),
-                                              if (ed != null) const Icon(Icons.flash_on, color: Colors.amber, size: 18),
+                                              if (ed != null) Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 18),
                                               const SizedBox(width: 4),
                                               Text(
                                                 "৳${displayTotal.toStringAsFixed(2)}",
@@ -717,7 +717,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   amount: eBillAmount, 
                                                   color: Colors.amber,
                                                   trailing: IconButton(
-                                                    icon: const Icon(Icons.electric_bolt, color: Colors.orange, size: 22), 
+                                                    icon: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.secondary, size: 22), 
                                                     onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
                                                   )
                                                 ),
@@ -851,8 +851,8 @@ class _CategoryPageState extends State<CategoryPage> {
               ),
               child: ExpansionTile(
                 leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primary, 
-                  child: const Icon(Icons.settings_input_component, color: Colors.white, size: 20)
+                  backgroundColor: Theme.of(context).colorScheme.onPrimary, 
+                  child: Icon(Icons.settings_input_component, color: Theme.of(context).colorScheme.primary, size: 20)
                 ),
                 title: Text(
                   "Main Meters List", 
@@ -860,9 +860,9 @@ class _CategoryPageState extends State<CategoryPage> {
                 ),
                 subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall),
                 children: [
-                  _buildMeterExpandableSection("Residential Meter", resMeters, Icons.home_outlined, Colors.indigo),
+                  _buildMeterExpandableSection("Residential Meter", resMeters, Icons.home_outlined, Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 8),
-                  _buildMeterExpandableSection("Commercial Meter", comMeters, Icons.business_outlined, Colors.teal),
+                  _buildMeterExpandableSection("Commercial Meter", comMeters, Icons.business_outlined, Theme.of(context).colorScheme.secondary),
                   const SizedBox(height: 12),
                 ],
               ),
@@ -876,7 +876,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color) {
     bool isOp = widget.isOperator;
-    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
+    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
 
     return Card(
@@ -888,7 +888,7 @@ class _CategoryPageState extends State<CategoryPage> {
         side: BorderSide(color: color.withOpacity(0.3), width: 1)
       ),
       child: ExpansionTile(
-        leading: CircleAvatar(backgroundColor: color, child: Icon(icon, color: Colors.white, size: 20)),
+        leading: CircleAvatar(backgroundColor: color, child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20)),
         title: Text(
           title, 
           style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: color)
@@ -918,7 +918,7 @@ class _CategoryPageState extends State<CategoryPage> {
                         border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5))
                       ),
                       children: [
-                        "#", "Meter Number", "Last Readings", "Present Readings", "Last Govt.", "New Govt.", "Govt. Amount", "Govt. Units", "Last Rate", "This Rate", "Due/Adv", "Main Used", "Sub Units", "Balance", "Action"
+                        "#", "Meter Number", "Last Readings", "Present Readings", "Govt. Last\n Bill Readings", "Govt. New\nBill Readings", "Govt. Bill\nAmounts", "Govt. Bill\nUnits", "Last Month\nUnit Rate", "This Month\nUnit Rate", "Govt.\nDue/Adv Units", "Main Meter\nUsed Units", "Sub Units", "Balance", "Action"
                       ].map((h) => Padding(
                         padding: const EdgeInsets.all(12), 
                         child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle))
@@ -962,15 +962,15 @@ class _CategoryPageState extends State<CategoryPage> {
                           wrapCell(Text(govtUnit.toStringAsFixed(0), style: dataStyle)),
                           wrapCell(Text(lastRate.toStringAsFixed(1), style: dataStyle)),
                           wrapCell(Text(thisRate.toStringAsFixed(1), style: dataStyle)),
-                          wrapCell(Text(govtDueAdv.toStringAsFixed(0), style: dataStyle?.copyWith(color: govtDueAdv.abs() > 5 ? Colors.orange : null, fontWeight: govtDueAdv.abs() > 5 ? FontWeight.bold : null))),
+                          wrapCell(Text(govtDueAdv.toStringAsFixed(0), style: dataStyle?.copyWith(color: govtDueAdv.abs() > 5 ? Theme.of(context).colorScheme.secondary : null, fontWeight: govtDueAdv.abs() > 5 ? FontWeight.bold : null))),
                           wrapCell(Text(mainUsed.toStringAsFixed(0), style: dataStyle?.copyWith(fontWeight: FontWeight.bold))),
                           wrapCell(Text(totalSubPaid.toStringAsFixed(0), style: dataStyle)),
-                          wrapCell(Text(balance.toStringAsFixed(0), style: dataStyle?.copyWith(color: balance > 0 ? Colors.red : Colors.green, fontWeight: FontWeight.bold))),
+                          wrapCell(Text(balance.toStringAsFixed(0), style: dataStyle?.copyWith(color: balance > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold))),
                           if (!isOp)
                             Padding(
                               padding: const EdgeInsets.all(4),
                               child: IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                                icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.error),
                                 onPressed: () => CategoryDialogs.showConfirmDialog(
                                   context: context, 
                                   title: "Remove Meter?", 
@@ -996,7 +996,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Widget _buildSubMeterExpandableSection() {
     bool isOp = widget.isOperator;
-    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
+    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSecondary, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
 
     return StreamBuilder<QuerySnapshot>(
@@ -1014,8 +1014,8 @@ class _CategoryPageState extends State<CategoryPage> {
           ),
           child: ExpansionTile(
             leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.secondary, 
-              child: const Icon(Icons.cable, color: Colors.white, size: 20)
+              backgroundColor: Theme.of(context).colorScheme.onSecondary, 
+              child: Icon(Icons.cable, color: Theme.of(context).colorScheme.secondary, size: 20)
             ),
             title: Text(
               "Sub-Meters List", 
@@ -1072,7 +1072,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                 Padding(
                                   padding: const EdgeInsets.all(4),
                                   child: IconButton(
-                                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                    icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20),
                                     onPressed: () => CategoryDialogs.showConfirmDialog(
                                       context: context, 
                                       title: "Remove Sub-Meter?", 
