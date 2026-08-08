@@ -232,26 +232,39 @@ class _CategoryPageState extends State<CategoryPage> {
                         catTotal += (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal);
                       }
 
-                      final List<Color> catCardColors = [
-                        Colors.indigo.shade50,
-                        Colors.teal.shade50,
-                        Colors.deepPurple.shade50,
-                        Colors.blueGrey.shade50,
-                        Colors.brown.shade50,
-                        Colors.cyan.shade50,
-                      ];
-                      final Color catColor = catCardColors[i % catCardColors.length];
-                      final Color accentColor = Colors.primaries[(i * 3) % Colors.primaries.length];
+                      bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
+                      final accentColor = Colors.primaries[(i * 3) % Colors.primaries.length];
 
                       return Card(
                         elevation: 3,
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        color: catColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accentColor.withOpacity(0.2))),
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16), 
+                          side: BorderSide(color: accentColor.withValues(alpha: 0.1), width: 1.2)
+                        ),
                         child: ExpansionTile(
-                          leading: CircleAvatar(backgroundColor: accentColor, child: const Icon(Icons.category_outlined, color: Colors.white, size: 20)),
-                          title: Text(catName.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 0.5, color: accentColor)),
-                          subtitle: Text("${subDocs.length} units | Total: ৳${catTotal.toStringAsFixed(2)}", style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          leading: CircleAvatar(
+                            backgroundColor: accentColor, 
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                const Icon(Icons.category_outlined, color: Colors.white, size: 20),
+                                if (hasElectric) 
+                                  const Positioned(right: 0, bottom: 0, child: Icon(Icons.flash_on, color: Colors.amber, size: 10)),
+                              ],
+                            ),
+                          ),
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(catName.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 0.5, color: accentColor)),
+                              Text("৳${catTotal.toStringAsFixed(2)}", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: accentColor)),
+                            ],
+                          ),
+                          subtitle: Text("${subDocs.length} units | Assigned services", style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -290,97 +303,126 @@ class _CategoryPageState extends State<CategoryPage> {
                               Color itemColor = cardColors[subIdx % cardColors.length];
 
                               if (status == 'Vacant') {
-                                return InkWell(
-                                  onLongPress: () => CategoryDialogs.showSubItemStatusDialog(
-                                    context: context, 
-                                    subItemId: subId, 
-                                    subItemName: subName, 
-                                    currentStatus: 'Vacant', 
-                                    currentTenant: tenant, 
-                                    currentNid: d['nidNumber'] ?? ''
-                                  ),
-                                  child: Card(
-                                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                    color: itemColor,
-                                    elevation: 2,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.red.shade100, width: 0.8)),
-                                    child: ExpansionTile(
-                                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                                      title: Row(
-                                        children: [
-                                          const Icon(Icons.meeting_room_outlined, color: Colors.redAccent, size: 22),
-                                          const SizedBox(width: 10),
-                                          Expanded(child: Text(subName, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.redAccent, fontSize: 18), overflow: TextOverflow.ellipsis)),
-                                          IconButton(
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
-                                            icon: const Icon(Icons.edit, size: 18, color: Colors.blueGrey),
-                                            onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
-                                              context: context, 
-                                              subItemId: subId, 
-                                              currentName: subName, 
-                                              currentTenantName: tenant, 
-                                              currentNidNumber: d['nidNumber'] ?? 'No Number', 
-                                              currentNotes: d['notes'] ?? ''
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      subtitle: const Row(
-                                        children: [
-                                          SizedBox(width: 32),
-                                          Text("Status: Vacant", style: TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                                        ],
-                                      ),
-                                      trailing: PopupMenuButton<String>(
-                                        icon: const Icon(Icons.more_vert, size: 24, color: Colors.blueGrey),
-                                        onSelected: (val) async {
-                                          if (val == 'remove') CategoryDialogs.showConfirmDialog(
-                                            context: context, 
-                                            title: "Remove '$subName'?", 
-                                            content: "Are you sure you want to remove this $subName?", 
-                                            onConfirm: () async { 
-                                              SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                              await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
-                                            }
-                                          );
-                                        },
-                                        itemBuilder: (ctx) => [
-                                          if (!widget.isOperator)
-                                            const PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red, size: 20), title: Text("Remove Unit", style: TextStyle(color: Colors.red)), dense: true)),
-                                        ],
-                                      ),
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  color: itemColor,
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.red.shade100, width: 0.8)),
+                                  child: ExpansionTile(
+                                    tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                                    trailing: const SizedBox.shrink(),
+                                    title: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Padding(
-                                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                        const Padding(
+                                          padding: EdgeInsets.only(top: 4),
+                                          child: Icon(Icons.meeting_room_outlined, color: Colors.redAccent, size: 24),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
-                                                _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Colors.indigo),
-                                                
-                                              if ((d['notes'] ?? '').toString().isNotEmpty)
-                                                _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(icon: const Icon(Icons.remove_circle_outline, color: Colors.orange, size: 20), onPressed: () => _dbService.updateSubItemDetails(subId, {'notes': ''}, "Admin"))),
-                                              
-                                              if (ed != null && ed['isStopped'] != true)
-                                                  _buildSectionBox(
-                                                    "Electric Bills", 
-                                                    "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
-                                                    Icons.flash_on, 
-                                                    amount: eBillAmount, 
-                                                    color: Colors.amber,
-                                                    trailing: IconButton(
-                                                      icon: const Icon(Icons.electric_bolt, color: Colors.orange, size: 22), 
-                                                      onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
-                                                    )
+                                              Row(
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                    decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
+                                                    child: Text(subName, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, fontSize: 18)),
                                                   ),
-
-                                                ...active.map((s) => _buildServiceRow(subId, subName, s, overridden)),
+                                                  const Spacer(),
+                                                  IconButton(
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    icon: const Icon(Icons.edit, size: 18, color: Colors.blueGrey),
+                                                    onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
+                                                      context: context, 
+                                                      subItemId: subId, 
+                                                      currentName: subName, 
+                                                      currentTenantName: tenant, 
+                                                      currentNidNumber: d['nidNumber'] ?? 'No Number', 
+                                                      currentNotes: d['notes'] ?? ''
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  PopupMenuButton<String>(
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    icon: const Icon(Icons.more_vert, size: 24, color: Colors.blueGrey),
+                                                    onSelected: (val) async {
+                                                      if (val == 'remove') CategoryDialogs.showConfirmDialog(
+                                                        context: context, 
+                                                        title: "Remove '$subName'?", 
+                                                        content: "Are you sure you want to remove this $subName?", 
+                                                        onConfirm: () async { 
+                                                          SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                          await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
+                                                        }
+                                                      );
+                                                    },
+                                                    itemBuilder: (ctx) => [
+                                                      if (!widget.isOperator)
+                                                        const PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red, size: 20), title: Text("Remove Unit", style: TextStyle(color: Colors.red)), dense: true)),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              const Text("Status: Vacant", style: TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.end,
+                                                children: [
+                                                  if (ed != null) const Icon(Icons.flash_on, color: Colors.amber, size: 20),
+                                                  Text("৳${total.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, fontSize: 22)),
+                                                ],
+                                              ),
                                             ],
                                           ),
                                         ),
                                       ],
                                     ),
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
+                                              _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Colors.indigo),
+                                              
+                                            if ((d['notes'] ?? '').toString().isNotEmpty)
+                                              _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
+                                                icon: const Icon(Icons.remove_circle_outline, color: Colors.orange, size: 20), 
+                                                onPressed: () => CategoryDialogs.showConfirmDialog(
+                                                  context: context,
+                                                  title: "Remove Note?",
+                                                  content: "Are you sure you want to clear the note for '$subName'?",
+                                                  confirmText: "Clear",
+                                                  onConfirm: () async {
+                                                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                                                    await _dbService.updateSubItemDetails(subId, {'notes': ''}, prefs.getString('username') ?? "Admin");
+                                                  },
+                                                ),
+                                              )),
+                                            
+                                            if (ed != null && ed['isStopped'] != true)
+                                                _buildSectionBox(
+                                                  "Electric Bills", 
+                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
+                                                  Icons.flash_on, 
+                                                  amount: eBillAmount, 
+                                                  color: Colors.amber,
+                                                  trailing: IconButton(
+                                                    icon: const Icon(Icons.electric_bolt, color: Colors.orange, size: 22), 
+                                                    onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
+                                                  )
+                                                ),
+
+                                              ...active.map((s) => _buildServiceRow(subId, subName, s, overridden)),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 );
                               }
@@ -394,168 +436,197 @@ class _CategoryPageState extends State<CategoryPage> {
                                     displayTotal = (paySnap.data!.docs.first['totalAmount'] as num).toDouble();
                                   }
 
-                                  return InkWell(
-                                    onLongPress: () => CategoryDialogs.showSubItemStatusDialog(
-                                      context: context, 
-                                      subItemId: subId, 
-                                      subItemName: subName, 
-                                      currentStatus: 'Occupied', 
-                                      currentTenant: tenant, 
-                                      currentNid: d['nidNumber'] ?? ''
+                                  return Card(
+                                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    color: isPaid ? Colors.green.shade50 : itemColor,
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      side: BorderSide(color: isPaid ? Colors.green.shade200 : Colors.blue.shade100, width: 0.8)
                                     ),
-                                    child: Card(
-                                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                      color: isPaid ? Colors.green.shade50 : itemColor,
-                                      elevation: 2,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        side: BorderSide(color: isPaid ? Colors.green.shade200 : Colors.blue.shade100, width: 0.8)
-                                      ),
-                                      child: ExpansionTile(
-                                        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                                        title: Row(
-                                          children: [
-                                            Icon(isPaid ? Icons.check_circle : Icons.door_front_door_outlined, color: isPaid ? Colors.green : Colors.blue, size: 22),
-                                            const SizedBox(width: 10),
-                                            Expanded(child: Text(subName, style: TextStyle(fontWeight: FontWeight.w900, color: isPaid ? Colors.green.shade700 : Colors.blue, fontSize: 18), overflow: TextOverflow.ellipsis)),
-                                            Text("৳${displayTotal.toStringAsFixed(2)}", style: TextStyle(fontWeight: FontWeight.w900, color: isPaid ? Colors.green.shade700 : Colors.blue, fontSize: 18)),
-                                            const SizedBox(width: 8),
-                                            IconButton(
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(),
-                                              icon: const Icon(Icons.edit, size: 18, color: Colors.blueGrey),
-                                              onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
-                                                context: context, 
-                                                subItemId: subId, 
-                                                currentName: subName, 
-                                                currentTenantName: tenant, 
-                                                currentNidNumber: d['nidNumber'] ?? 'No Number', 
-                                                currentNotes: d['notes'] ?? ''
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        subtitle: Row(
-                                          children: [
-                                            const SizedBox(width: 32),
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                if (tenant != 'No Name' && tenant.isNotEmpty) Text(tenant, style: TextStyle(fontSize: 13, color: isPaid ? Colors.green.shade600 : Colors.blueGrey, fontWeight: FontWeight.bold)),
-                                                Text(isPaid ? "Paid for $_selectedMonthStr" : "${active.length} Active services | Due", style: TextStyle(fontSize: 11, color: isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            if ((d['notes'] ?? '').toString().isNotEmpty) const Icon(Icons.notes, color: Colors.blueGrey, size: 20),
-                                            const SizedBox(width: 8),
-                                            IconButton(
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(),
-                                              icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Colors.blue : Colors.orange, size: 24), 
-                                              onPressed: () => CategoryDialogs.showMarkAsPaidDialog(context: context, subItemId: subId, subItemName: subName, TenantName: tenant, nidNumber: d['nidNumber'] ?? '', houseRentTotal: total - eBillAmount, electricityBill: eBillAmount, services: active.cast<Map<String, dynamic>>(), electricityDetails: ed, mainCategoryName: catName)
-                                            ),
-                                            PopupMenuButton<String>(
-                                              icon: const Icon(Icons.more_vert, size: 24, color: Colors.blueGrey),
-                                              onSelected: (val) async {
-                                                if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator);
-                                                if (val == 'stop') {
-                                                  bool isStopping = ed?['isStopped'] != true;
-                                                  if (isStopping) {
-                                                    double last = (ed?['lastReading'] ?? 0).toDouble();
-                                                    double pres = (ed?['presentReading'] ?? 0).toDouble();
-                                                    if (pres > last) {
-                                                      CategoryDialogs.showConfirmDialog(
-                                                        context: context,
-                                                        title: "Confirm Stop Electric",
-                                                        content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
-                                                        onConfirm: () async {
-                                                          await _dbService.updateSubItemElectricity(subId, {
-                                                            ...ed!,
-                                                            'presentReading': last,
-                                                            'isStopped': true,
-                                                            'updatedAt': FieldValue.serverTimestamp(),
-                                                          }, "Admin");
-                                                        },
-                                                      );
-                                                    } else {
-                                                      await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
-                                                    }
-                                                  } else {
-                                                    await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
-                                                  }
-                                                }
-                                                if (val == 'services') CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
-                                                if (val == 'remove') CategoryDialogs.showConfirmDialog(
-                                                  context: context, 
-                                                  title: "Remove '$subName'?", 
-                                                  content: "Are you sure you want to remove this $subName?", 
-                                                  onConfirm: () async { 
-                                                    SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                                    await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
-                                                  }
-                                                );
-                                              },
-                                              itemBuilder: (ctx) => [
-                                                PopupMenuItem(
-                                                  value: ed == null ? 'electric' : 'stop', 
-                                                  child: ListTile(
-                                                    leading: Icon(Icons.flash_on, color: ed == null ? Colors.grey : Colors.amber, size: 20), 
-                                                    title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
-                                                    dense: true
-                                                  )
-                                                ),
-                                                const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest, size: 20), title: Text("Manage Services"), dense: true)),
-                                                const PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red, size: 20), title: Text("Remove Unit", style: TextStyle(color: Colors.red)), dense: true)),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
+                                    child: ExpansionTile(
+                                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                                      trailing: const SizedBox.shrink(),
+                                      title: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Padding(
-                                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                            padding: const EdgeInsets.only(top: 4),
+                                            child: Icon(isPaid ? Icons.check_circle : Icons.door_front_door_outlined, color: isPaid ? Colors.green : Colors.blue, size: 24),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
-                                                  _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Colors.indigo),
-
-                                                if ((d['notes'] ?? '').toString().isNotEmpty)
-                                                  _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(icon: const Icon(Icons.remove_circle_outline, color: Colors.orange, size: 20), onPressed: () => _dbService.updateSubItemDetails(subId, {'notes': ''}, "Admin"))),
-                                                
-                                                    if (ed != null && ed['isStopped'] != true)
-                                                  _buildSectionBox(
-                                                    "Electric Bills", 
-                                                    "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
-                                                    Icons.flash_on, 
-                                                    amount: eBillAmount, 
-                                                    color: Colors.amber,
-                                                    trailing: IconButton(
-                                                      icon: const Icon(Icons.electric_bolt, color: Colors.orange, size: 22), 
-                                                      onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
-                                                    )
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
+                                                      child: Text(subName, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, fontSize: 18)),
+                                                    ),
+                                                    const Spacer(),
+                                                    IconButton(
+                                                      padding: EdgeInsets.zero,
+                                                      constraints: const BoxConstraints(),
+                                                      icon: const Icon(Icons.edit, size: 18, color: Colors.blueGrey),
+                                                      onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
+                                                        context: context, 
+                                                        subItemId: subId, 
+                                                        currentName: subName, 
+                                                        currentTenantName: tenant, 
+                                                        currentNidNumber: d['nidNumber'] ?? 'No Number', 
+                                                        currentNotes: d['notes'] ?? ''
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    if ((d['notes'] ?? '').toString().isNotEmpty)
+                                                      Container(
+                                                        padding: const EdgeInsets.all(4),
+                                                        decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(4)),
+                                                        child: const Icon(Icons.notes, color: Colors.blueGrey, size: 18),
+                                                      ),
+                                                    const SizedBox(width: 12),
+                                                    IconButton(
+                                                      padding: EdgeInsets.zero,
+                                                      constraints: const BoxConstraints(),
+                                                      icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Colors.blue : Colors.orange, size: 24), 
+                                                      onPressed: () => CategoryDialogs.showMarkAsPaidDialog(context: context, subItemId: subId, subItemName: subName, TenantName: tenant, nidNumber: d['nidNumber'] ?? '', houseRentTotal: total - eBillAmount, electricityBill: eBillAmount, services: active.cast<Map<String, dynamic>>(), electricityDetails: ed, mainCategoryName: catName)
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    PopupMenuButton<String>(
+                                                      padding: EdgeInsets.zero,
+                                                      constraints: const BoxConstraints(),
+                                                      icon: const Icon(Icons.more_vert, size: 24, color: Colors.blueGrey),
+                                                      onSelected: (val) async {
+                                                        if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator);
+                                                        if (val == 'stop') {
+                                                          bool isStopping = ed?['isStopped'] != true;
+                                                          if (isStopping) {
+                                                            double last = (ed?['lastReading'] ?? 0).toDouble();
+                                                            double pres = (ed?['presentReading'] ?? 0).toDouble();
+                                                            if (pres > last) {
+                                                              CategoryDialogs.showConfirmDialog(
+                                                                context: context,
+                                                                title: "Confirm Stop Electric",
+                                                                content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
+                                                                onConfirm: () async {
+                                                                  await _dbService.updateSubItemElectricity(subId, {
+                                                                    ...ed!,
+                                                                    'presentReading': last,
+                                                                    'isStopped': true,
+                                                                    'updatedAt': FieldValue.serverTimestamp(),
+                                                                  }, "Admin");
+                                                                },
+                                                              );
+                                                            } else {
+                                                              await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
+                                                            }
+                                                          } else {
+                                                            await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
+                                                          }
+                                                        }
+                                                        if (val == 'services') CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
+                                                        if (val == 'remove') CategoryDialogs.showConfirmDialog(
+                                                          context: context, 
+                                                          title: "Remove '$subName'?", 
+                                                          content: "Are you sure you want to remove this $subName?", 
+                                                          onConfirm: () async { 
+                                                            SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                            await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
+                                                          }
+                                                        );
+                                                      },
+                                                      itemBuilder: (ctx) => [
+                                                        PopupMenuItem(
+                                                          value: ed == null ? 'electric' : 'stop', 
+                                                          child: ListTile(
+                                                            leading: Icon(Icons.flash_on, color: ed == null ? Colors.grey : Colors.amber, size: 20), 
+                                                            title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
+                                                            dense: true
+                                                          )
+                                                        ),
+                                                        const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest, size: 20), title: Text("Manage Services"), dense: true)),
+                                                        if (!widget.isOperator)
+                                                          const PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red, size: 20), title: Text("Remove Unit", style: TextStyle(color: Colors.red)), dense: true)),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                                if (tenant != 'No Name' && tenant.isNotEmpty)
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(top: 2),
+                                                    child: Text(tenant, style: const TextStyle(fontSize: 14, color: Colors.blueGrey, fontWeight: FontWeight.bold)),
                                                   ),
-
-                                                ...active.map((s) => _buildServiceRow(subId, subName, s, overridden)),
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 2),
+                                                  child: Text(isPaid ? "Paid for $_selectedMonthStr" : "${active.length} Active services | Due", style: TextStyle(fontSize: 11, color: isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.end,
+                                                  children: [
+                                                    if (ed != null) const Icon(Icons.flash_on, color: Colors.amber, size: 20),
+                                                    Text("৳${displayTotal.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, fontSize: 22)),
+                                                  ],
+                                                ),
                                               ],
                                             ),
                                           ),
                                         ],
                                       ),
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
+                                                _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Colors.indigo),
+
+                                              if ((d['notes'] ?? '').toString().isNotEmpty)
+                                                _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
+                                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.orange, size: 20), 
+                                                  onPressed: () => CategoryDialogs.showConfirmDialog(
+                                                    context: context,
+                                                    title: "Remove Note?",
+                                                    content: "Are you sure you want to clear the note for '$subName'?",
+                                                    confirmText: "Clear",
+                                                    onConfirm: () async {
+                                                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                                                      await _dbService.updateSubItemDetails(subId, {'notes': ''}, prefs.getString('username') ?? "Admin");
+                                                    },
+                                                  ),
+                                                )),
+                                              
+                                                  if (ed != null && ed['isStopped'] != true)
+                                                _buildSectionBox(
+                                                  "Electric Bills", 
+                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
+                                                  Icons.flash_on, 
+                                                  amount: eBillAmount, 
+                                                  color: Colors.amber,
+                                                  trailing: IconButton(
+                                                    icon: const Icon(Icons.electric_bolt, color: Colors.orange, size: 22), 
+                                                    onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
+                                                  )
+                                                ),
+
+                                              ...active.map((s) => _buildServiceRow(subId, subName, s, overridden)),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   );
                                 }
                               );
-                            }),
+                            }).toList(),
                             const SizedBox(height: 12),
                             Center(
-                              child: TextButton.icon(
+                              child: TextButton(
                                 onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
-                                icon: const Icon(Icons.add_circle_outline, size: 22, color: Colors.indigo),
-                                label: Text("Add New $catName", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.indigo)),
+                                child: Text("Add New $catName", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.indigo)),
                               ),
                             ),
                             const SizedBox(height: 12),

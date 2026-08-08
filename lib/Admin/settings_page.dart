@@ -520,28 +520,26 @@ class _SettingsPageState extends State<SettingsPage> {
                           Row(
                             children: [
                               Expanded(
-                                child: ElevatedButton.icon(
+                                child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green, 
                                     foregroundColor: Colors.white,
                                     textStyle: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
-                                  icon: _isProcessing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.backup),
-                                  label: const Text("Backup Now"),
                                   onPressed: _isProcessing ? null : () => _handleBackup(context),
+                                  child: _isProcessing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Backup Now"),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: ElevatedButton.icon(
+                                child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.indigo, 
                                     foregroundColor: Colors.white,
                                     textStyle: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
-                                  icon: _isProcessing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.restore),
-                                  label: const Text("Restore Data"),
                                   onPressed: _isProcessing ? null : () => _handleRestore(context),
+                                  child: _isProcessing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Restore Data"),
                                 ),
                               ),
                             ],
@@ -549,15 +547,14 @@ class _SettingsPageState extends State<SettingsPage> {
                           const SizedBox(height: 12),
                           SizedBox(
                             width: double.infinity,
-                            child: ElevatedButton.icon(
+                            child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blueGrey, 
                               foregroundColor: Colors.white,
                               textStyle: const TextStyle(fontWeight: FontWeight.bold),
                             ),
-                              icon: _isProcessing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_alt),
-                              label: const Text("Save Locally"),
                               onPressed: _isProcessing ? null : () => _handleLocalSave(context),
+                              child: _isProcessing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Save Locally"),
                             ),
                           ),
                           if (_isProcessing) ...[
@@ -592,17 +589,16 @@ class _SettingsPageState extends State<SettingsPage> {
                                       const SizedBox(height: 8),
                                       SizedBox(
                                         width: double.infinity,
-                                        child: ElevatedButton.icon(
+                                        child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.red, 
                                             foregroundColor: Colors.white,
                                             textStyle: const TextStyle(fontWeight: FontWeight.bold),
                                           ),
-                                          icon: _isProcessing 
-                                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                                              : const Icon(Icons.delete_forever),
-                                          label: const Text("Wipe All Server Data (Excl. Users)"),
                                           onPressed: _isProcessing ? null : () => _handleWipe(context),
+                                          child: _isProcessing 
+                                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                                              : const Text("Wipe All Server Data (Excl. Users)"),
                                         ),
                                       ),
                                     ],
@@ -640,15 +636,14 @@ class _SettingsPageState extends State<SettingsPage> {
                         SizedBox(
                           width: double.infinity,
                           height: 45,
-                          child: ElevatedButton.icon(
+                          child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.indigo,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            icon: const Icon(Icons.person_add_alt_1),
                             onPressed: () => _showUserDialog(context),
-                            label: const Text("Add New Account"),
+                            child: const Text("Add New Account"),
                           ),
                         ),
                         const SizedBox(height: 24),

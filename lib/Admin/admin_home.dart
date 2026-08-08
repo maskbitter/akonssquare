@@ -761,7 +761,6 @@ class _AdminHomeState extends State<AdminHome> {
                   double mainUsed = present - last;
                   double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
                   double unitRate = (data['unitRate'] as num?)?.toDouble() ?? 0;
-                  final rowColor = index % 2 == 0 ? Colors.blue.shade50.withValues(alpha: 0.5) : Colors.transparent;
                   double balance = mainUsed - totalSubPaid;
 
                   return TableRow(
@@ -1014,7 +1013,7 @@ class _AdminHomeState extends State<AdminHome> {
                           return FutureBuilder<DocumentSnapshot>(
                             future: _dbService.getCategoryById(catId),
                             builder: (context, catSnap) {
-                              categoryName = catSnap.data?['categoryName'] ?? 'Unknown';
+                              categoryName = (catSnap.data?.data() as Map?)?['categoryName'] ?? 'Unknown';
                               String tName = data['TenantName'] ?? snap.data!['TenantName'] ?? 'No Name';
                               
                               return _buildBillingTile(
@@ -1077,7 +1076,7 @@ class _AdminHomeState extends State<AdminHome> {
               return FutureBuilder<DocumentSnapshot>(
                 future: _dbService.getCategoryById(catId),
                 builder: (context, catSnap) {
-                  categoryName = catSnap.data?['categoryName'] ?? 'Unknown';
+                  categoryName = (catSnap.data?.data() as Map?)?['categoryName'] ?? 'Unknown';
                   String tName = data['TenantName'] ?? snap.data!['TenantName'] ?? 'No Name';
 
                   return _buildBillingTile(
@@ -1136,38 +1135,45 @@ class _AdminHomeState extends State<AdminHome> {
         return FutureBuilder<DocumentSnapshot>(
           future: _dbService.getCategoryById(catId),
           builder: (context, catSnap) {
-            String categoryName = catSnap.data?['categoryName'] ?? 'Loading...';
-            String tName = data['TenantName'] ?? 'No Name'; // Capital T
-            return FutureBuilder<double>(
-              future: _calculateSingleDue(doc),
-              builder: (context, amountSnap) {
-                double amount = amountSnap.data ?? 0;
-                return _buildBillingTile(
-                  index: index,
-                  title: "${data['subItemName']} ($tName)",
-                  subtitle: categoryName,
-                  amount: amount,
-                  color: Colors.orange,
-                  icon: Icons.pending,
-                  onTap: () async {
-                    // For Due items, we need to build a virtual billing record
-                    var catDoc = await _dbService.getCategoryById(catId);
-                    List catServices = (catDoc.data() as Map<String, dynamic>?)?['assignedServices'] ?? [];
-                    List excluded = data['excludedServices'] ?? [];
-                    List overridden = data['overriddenServices'] ?? [];
-                    List active = DatabaseService.getEffectiveServices(categoryServices: catServices, excludedServices: excluded, overriddenServices: overridden);
-                    
-                    Map<String, dynamic> virtualData = {
-                      'monthYear': _selectedMonthStr,
-                      'TenantName': tName,
-                      'nidNumber': data['nidNumber'] ?? '',
-                      'services': active,
-                      'electricityDetails': data['electricityDetails'],
-                      'electricityBill': (amount - active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble())),
-                      'totalAmount': amount,
-                      'houseRentTotal': amount - (amount - active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble())),
-                    };
-                    if (context.mounted) _showItemDetailDialog(context, virtualData, data['subItemName'] ?? 'Unnamed', tName, categoryName, mode: 'all');
+            String categoryName = (catSnap.data?.data() as Map?)?['categoryName'] ?? 'Loading...';
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance.collection('sub_items').doc(doc.id).get(),
+              builder: (context, subSnap) {
+                String tName = 'No Name';
+                if (subSnap.hasData && subSnap.data!.exists) {
+                  tName = subSnap.data!['TenantName'] ?? 'No Name';
+                }
+                return FutureBuilder<double>(
+                  future: _calculateSingleDue(doc),
+                  builder: (context, amountSnap) {
+                    double amount = amountSnap.data ?? 0;
+                    return _buildBillingTile(
+                      index: index,
+                      title: "${data['subItemName']} ($tName)",
+                      subtitle: categoryName,
+                      amount: amount,
+                      color: Colors.orange,
+                      icon: Icons.pending,
+                      onTap: () async {
+                        var catDoc = await _dbService.getCategoryById(catId);
+                        List catServices = (catDoc.data() as Map<String, dynamic>?)?['assignedServices'] ?? [];
+                        List excluded = data['excludedServices'] ?? [];
+                        List overridden = data['overriddenServices'] ?? [];
+                        List active = DatabaseService.getEffectiveServices(categoryServices: catServices, excludedServices: excluded, overriddenServices: overridden);
+                        
+                        Map<String, dynamic> virtualData = {
+                          'monthYear': _selectedMonthStr,
+                          'TenantName': tName,
+                          'nidNumber': data['nidNumber'] ?? '',
+                          'services': active,
+                          'electricityDetails': data['electricityDetails'],
+                          'electricityBill': (amount - active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble())),
+                          'totalAmount': amount,
+                          'houseRentTotal': amount - (amount - active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble())),
+                        };
+                        if (context.mounted) _showItemDetailDialog(context, virtualData, data['subItemName'] ?? 'Unnamed', tName, categoryName, mode: 'all');
+                      },
+                    );
                   },
                 );
               },
@@ -1366,8 +1372,7 @@ class _AdminHomeState extends State<AdminHome> {
         actions: [
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.close, size: 18),
+            child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.red,
                 side: const BorderSide(color: Colors.red, width: 1.5),
@@ -1375,7 +1380,7 @@ class _AdminHomeState extends State<AdminHome> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               onPressed: () => Navigator.pop(context), 
-              label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+              child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
             ),
           ),
         ],

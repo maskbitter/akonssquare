@@ -220,6 +220,11 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
+          if (index == 1) {
+            setState(() {
+              _categoryInitialSubTab = 0; // Default to Occupied
+            });
+          }
           _pageController.animateToPage(index, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
         },
         items: const [

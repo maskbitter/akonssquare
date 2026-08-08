@@ -43,8 +43,7 @@ class CategoryDialogs {
         actions: [
           Row(children: [
             Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.close, size: 18),
+              child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red, 
                   side: const BorderSide(color: Colors.red, width: 1.5),
@@ -53,13 +52,12 @@ class CategoryDialogs {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () => Navigator.pop(ctx), 
-                label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+                child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.delete_forever, size: 18),
+              child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: confirmColor, 
                   foregroundColor: Colors.white,
@@ -68,7 +66,7 @@ class CategoryDialogs {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () { Navigator.pop(ctx); onConfirm(); }, 
-                label: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.bold))
+                child: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.bold))
               ),
             ),
           ]),
@@ -134,8 +132,7 @@ class CategoryDialogs {
                     decoration: const InputDecoration(labelText: "Price (BDT)", prefixText: "৳ ", border: OutlineInputBorder(), isDense: true)
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.add, size: 18),
+                  ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
                     onPressed: isLoading ? null : () async {
                       String name = nameController.text.trim(); 
@@ -148,7 +145,7 @@ class CategoryDialogs {
                       amountController.clear();
                       setDialogState(() => isLoading = false);
                     }, 
-                    label: Text(isLoading ? "Saving..." : "Add Service")
+                    child: Text(isLoading ? "Saving..." : "Add Service")
                   ),
                   const Divider(height: 32),
                   const Text("Existing Services", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey, fontSize: 13)),
@@ -207,8 +204,7 @@ class CategoryDialogs {
           actions: [
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.close, size: 18),
+              child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red,
                   side: const BorderSide(color: Colors.red, width: 1.5),
@@ -216,7 +212,7 @@ class CategoryDialogs {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () => Navigator.pop(ctx), 
-                label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+                child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
               ),
             ),
           ],
@@ -729,8 +725,7 @@ class CategoryDialogs {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.close, size: 18),
+                  child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       side: const BorderSide(color: Colors.red, width: 1.5),
@@ -739,13 +734,12 @@ class CategoryDialogs {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () => Navigator.pop(ctx),
-                    label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.check, size: 18),
+                  child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
@@ -782,7 +776,7 @@ class CategoryDialogs {
 
                       if (context.mounted) Navigator.pop(ctx);
                     }, 
-                    label: Text(isLoading ? "Updating..." : "Update", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(isLoading ? "Updating..." : "Update", style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -1427,8 +1421,7 @@ class CategoryDialogs {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.close, size: 18),
+                    child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.red,
                         side: const BorderSide(color: Colors.red, width: 1.5),
@@ -1437,13 +1430,12 @@ class CategoryDialogs {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () => Navigator.pop(ctx),
-                      label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.check, size: 18),
+                    child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
@@ -1465,7 +1457,7 @@ class CategoryDialogs {
                         await _dbService.updateSubItemOverriddenServices(subItemId, updated, prefs.getString('username') ?? "Admin");
                         if (context.mounted) Navigator.pop(ctx);
                       },
-                      label: isLoading 
+                      child: isLoading 
                         ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                         : const Text("Update", style: TextStyle(fontWeight: FontWeight.bold)),
                     ),

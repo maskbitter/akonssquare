@@ -346,9 +346,7 @@ class _LoginPageState extends State<LoginPage> {
                       SizedBox(
                         width: double.infinity, 
                         height: 55, 
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.login_outlined),
-                          label: const Text("Login to dashboard", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                        child: ElevatedButton(
                           onPressed: () { HapticFeedback.mediumImpact(); _loginBasicUser(); },
                           onLongPress: () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
                           style: ElevatedButton.styleFrom(
@@ -356,6 +354,7 @@ class _LoginPageState extends State<LoginPage> {
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
+                          child: const Text("Login to dashboard", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
                         )
                       ),
                     ]
