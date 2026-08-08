@@ -19,18 +19,19 @@ class SuperAdminDashboard extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 70,
-        backgroundColor: Colors.indigo.shade900,
-        foregroundColor: Colors.white,
-        title: const Column(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("System Recovery", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            Text("Master Access Mode", style: TextStyle(fontSize: 10, color: Colors.white70)),
+            Text("System Recovery", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
+            Text("Master Access Mode", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.power_settings_new, color: Colors.orangeAccent),
+            icon: const Icon(Icons.power_settings_new),
+            color: Theme.of(context).colorScheme.error,
             onPressed: () => _handleLogout(context),
           ),
           const SizedBox(width: 8),

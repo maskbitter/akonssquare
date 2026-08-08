@@ -761,7 +761,7 @@ class DatabaseService {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+        content: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
         behavior: SnackBarBehavior.floating,
         backgroundColor: backgroundColor ?? Colors.blue.shade800,
         width: 280,

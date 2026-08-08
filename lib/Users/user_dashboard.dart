@@ -58,24 +58,34 @@ class _UserDashboardState extends State<UserDashboard> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Center(child: Text("Logout Confirmation", style: TextStyle(fontWeight: FontWeight.bold))),
-          content: const Text("Are you sure you want to logout?", textAlign: TextAlign.center),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          title: Center(child: Text("Logout Confirmation", style: Theme.of(context).textTheme.titleLarge)),
+          content: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
             Row(
               children: [
-                Expanded(child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
-                  onPressed: () => Navigator.pop(context), child: const Text("Cancel"))),
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error, 
+                      side: BorderSide(color: Theme.of(context).colorScheme.error)
+                    ),
+                    onPressed: () => Navigator.pop(context), 
+                    child: const Text("Cancel")
+                  )
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.error, 
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary
+                    ),
                     onPressed: () {
                       Navigator.pop(context);
                       _handleLogout();
                     },
-                    child: const Text("Logout"),
+                    child: const Text("Close"),
                   ),
                 ),
               ],
@@ -109,12 +119,12 @@ class _UserDashboardState extends State<UserDashboard> {
         children: [
           Row(
             children: [
-              if (icon != null) Icon(icon, size: 12, color: Colors.blueGrey.shade300),
+              if (icon != null) Icon(icon, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
               if (icon != null) const SizedBox(width: 6),
-              Text(label, style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+              Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
           ),
-          Text(value, style: TextStyle(fontSize: 13, fontWeight: isBold ? FontWeight.bold : FontWeight.w500)),
+          Text(value, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.w500)),
         ],
       ),
     );
@@ -130,7 +140,7 @@ class _UserDashboardState extends State<UserDashboard> {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 70,
-        title: Text(_appName.isEmpty ? "Loading..." : _appName, style: const TextStyle(fontSize: 16)),
+        title: Text(_appName.isEmpty ? "Loading..." : _appName, style: Theme.of(context).textTheme.titleMedium),
         centerTitle: true,
         actions: [
           InkWell(
@@ -147,10 +157,10 @@ class _UserDashboardState extends State<UserDashboard> {
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.logout, color: Colors.red, size: 20),
-                        Text(local, style: TextStyle(fontSize: 8, color: Colors.blueGrey.shade600, fontWeight: FontWeight.bold)),
+                        Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 20),
+                        Text(local, style: Theme.of(context).textTheme.labelSmall),
                         if (remote != null && remote != local)
-                          Text(remote, style: const TextStyle(fontSize: 8, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                          Text(remote, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
                       ],
                     );
                   }
@@ -164,11 +174,12 @@ class _UserDashboardState extends State<UserDashboard> {
       body: UpdateGuard(child: pages[_currentIndex]),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
         onTap: (index) => setState(() => _currentIndex = index),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: "Dashboard"),
-          BottomNavigationBarItem(icon: Icon(Icons.analytics), label: "History"),
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: "Dashboard"),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), activeIcon: Icon(Icons.analytics), label: "History"),
         ],
       ),
     );
@@ -264,19 +275,19 @@ class _UserDashboardState extends State<UserDashboard> {
               double totalBill = servicesSum + electricityBill;
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Card(
-                      elevation: 3,
-                      color: Colors.blue.shade50,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 2,
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+                        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
                         child: Column(
                           children: [
-                            Text(_categoryName, style: TextStyle(fontSize: 13, color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
+                            Text(_categoryName, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
                             const SizedBox(height: 6),
                             Row(
                               mainAxisAlignment: TenantName.isNotEmpty 
@@ -286,7 +297,7 @@ class _UserDashboardState extends State<UserDashboard> {
                                 Flexible(
                                   child: Text(
                                     subName, 
-                                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(letterSpacing: -0.5),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -296,11 +307,13 @@ class _UserDashboardState extends State<UserDashboard> {
                                     child: Chip(
                                       label: Text(
                                         TenantName, 
-                                        style: const TextStyle(fontSize: 11),
+                                        style: Theme.of(context).textTheme.labelSmall,
                                         overflow: TextOverflow.ellipsis,
                                       ), 
-                                      backgroundColor: Colors.white,
+                                      backgroundColor: Theme.of(context).colorScheme.surface,
                                       visualDensity: VisualDensity.compact,
+                                      side: BorderSide.none,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                       padding: EdgeInsets.zero,
                                     ),
                                   ),
@@ -310,22 +323,22 @@ class _UserDashboardState extends State<UserDashboard> {
                             if (nidNumber.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.only(top: 4.0),
-                                child: Text("NID: $nidNumber", style: const TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.bold)),
+                                child: Text("NID: $nidNumber", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                               ),
                             if (createdAt != null)
                               Padding(
                                 padding: const EdgeInsets.only(top: 4.0),
-                                child: Text("Using for: $durationText", style: const TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                                child: Text("Using for: $durationText", style: Theme.of(context).textTheme.labelSmall),
                               ),
-                            const Divider(height: 20),
+                            const Divider(height: 32),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.receipt_long_outlined, color: Colors.indigo, size: 18),
-                                const SizedBox(width: 8),
+                                Icon(Icons.receipt_long_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                                const SizedBox(width: 10),
                                 Text(
                                   "Total Outstanding: ৳${totalBill.toStringAsFixed(2)}",
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Theme.of(context).colorScheme.primary),
                                 ),
                               ],
                             ),
@@ -360,27 +373,27 @@ class _UserDashboardState extends State<UserDashboard> {
                         
                         return Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          padding: const EdgeInsets.symmetric(vertical: 12.0),
                           child: Wrap(
                             alignment: WrapAlignment.center,
                             crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 6,
-                            runSpacing: 6,
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
-                              const Text(
+                              Text(
                                 "Pending:", 
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.redAccent)
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)
                               ),
                               ...pendingMonths.map((m) => Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.redAccent.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.redAccent.shade100),
+                                  color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Theme.of(context).colorScheme.error.withOpacity(0.2)),
                                 ),
                                 child: Text(
                                   m, 
-                                  style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)
                                 ),
                               )),
                             ],
@@ -390,36 +403,39 @@ class _UserDashboardState extends State<UserDashboard> {
                     ),
 
                     if (notes.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      const Text("Notes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 16),
+                      Text("Notes", style: Theme.of(context).textTheme.titleSmall),
+                      const SizedBox(height: 8),
                       Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 1,
+                        color: Theme.of(context).colorScheme.surface,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: ListTile(
                           dense: true,
-                          leading: const Icon(Icons.note_alt_outlined, color: Colors.blueGrey, size: 20),
-                          title: Text(notes, style: const TextStyle(fontSize: 13)),
+                          leading: Icon(Icons.note_alt_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
+                          title: Text(notes, style: Theme.of(context).textTheme.bodySmall),
                         ),
                       ),
                     ],
-                    const SizedBox(height: 12),
-                    const Text("Bill Details", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 16),
+                    Text("Bill Details", style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 8),
                     if (ed != null && !isElectricStopped)
                       Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                        elevation: 1,
+                        margin: const EdgeInsets.only(bottom: 12),
                         child: ExpansionTile(
-                          visualDensity: VisualDensity.compact,
+                          shape: const Border(),
+                          collapsedShape: const Border(),
                           leading: const Icon(Icons.electric_bolt, color: Colors.amber, size: 22),
-                          title: const Text("Electricity Bill", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                          title: Text("Electricity Bill", style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
                           subtitle: Text(
                             "Used: ${((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)} units",
-                            style: const TextStyle(fontSize: 10),
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                           trailing: Text(
                             "৳${electricityBill.toStringAsFixed(2)}",
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.teal),
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary),
                           ),
                           children: [
                             const Divider(height: 1),
@@ -442,7 +458,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
                       return _buildDetailCard(
                         icon: Icons.check_circle_outline,
-                        color: Colors.teal,
+                        color: Theme.of(context).colorScheme.secondary,
                         title: s['name'].toString().toLowerCase().contains("wifi") 
                             ? "${s['name']} (Devices: ${s['deviceQuantity'] ?? 1})" 
                             : s['name'],
@@ -451,9 +467,9 @@ class _UserDashboardState extends State<UserDashboard> {
                       );
                     }),
                     if (activeServices.isEmpty && (ed == null || isElectricStopped))
-                      const Center(child: Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text("No active charges for this month.", style: TextStyle(fontSize: 13, color: Colors.grey)),
+                      Center(child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text("No active charges for this month.", style: Theme.of(context).textTheme.bodySmall),
                       )),
                   ],
                 ),
@@ -466,19 +482,20 @@ class _UserDashboardState extends State<UserDashboard> {
 
   Widget _buildDetailCard({required IconData icon, required Color color, required String title, required double amount, String? subtitle, VoidCallback? onTap}) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      elevation: 1,
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: ListTile(
         onTap: onTap,
         dense: true,
         visualDensity: VisualDensity.compact,
         leading: Icon(icon, color: color, size: 20),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(fontSize: 10)) : null,
+        title: Text(title, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+        subtitle: subtitle != null ? Text(subtitle, style: Theme.of(context).textTheme.labelSmall) : null,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("৳${amount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.teal)),
-            if (onTap != null) const Icon(Icons.chevron_right, size: 14, color: Colors.grey),
+            Text("৳${amount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+            if (onTap != null) Icon(Icons.chevron_right, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ],
         ),
       ),

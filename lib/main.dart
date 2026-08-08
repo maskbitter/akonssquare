@@ -12,11 +12,15 @@ import 'package:akonssquare/Viewer/viewer_dashboard.dart';
 import 'package:akonssquare/Admin/super_admin_dashboard.dart';
 import 'package:akonssquare/Common/database_service.dart';
 import 'package:akonssquare/Common/splash_screen.dart';
+import 'package:akonssquare/Common/theme_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   
+  // Initialize theme
+  await ThemeManager.init();
+
   // Explicitly enable and configure persistence
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
@@ -31,21 +35,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'AkonsSquare',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.indigo,
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        dialogTheme: DialogThemeData(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        ),
-      ),
-      home: const SplashScreen(),
+    return ValueListenableBuilder<String>(
+      valueListenable: ThemeManager.appThemeNotifier,
+      builder: (context, currentTheme, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'AkonsSquare',
+          theme: ThemeManager.getThemeByName(currentTheme),
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }
@@ -106,13 +105,17 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Center(child: Text("Login Failed!", style: TextStyle(fontWeight: FontWeight.bold))),
-        content: Text(message, textAlign: TextAlign.center),
+        title: Center(child: Text("Login Failed!", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
+        content: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
         actions: [
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, side: BorderSide(color: Colors.grey.shade300)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.surface, 
+                foregroundColor: Theme.of(context).colorScheme.onSurface, 
+                side: BorderSide(color: Theme.of(context).colorScheme.outline)
+              ),
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text("OK"),
             ),
@@ -134,19 +137,19 @@ class _LoginPageState extends State<LoginPage> {
           String unitName = _selectedSubItem!['subItemName'] ?? 'Unit';
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(unitName, style: const TextStyle(fontWeight: FontWeight.bold)), Text("($tName)", style: const TextStyle(fontSize: 14, color: Colors.blueGrey, fontStyle: FontStyle.italic))])),
+            title: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(unitName, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), Text("($tName)", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic))])),
             content: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Text("Enter last 4 digits of your NID:", textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
+              Text("Enter last 4 digits of your NID:", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall),
               const SizedBox(height: 12),
-              TextField(controller: passController, obscureText: true, keyboardType: TextInputType.number, maxLength: 4, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock_outline), border: OutlineInputBorder(), counterText: "")),
+              TextField(controller: passController, obscureText: true, keyboardType: TextInputType.number, maxLength: 4, style: Theme.of(context).textTheme.bodyLarge, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock_outline), border: OutlineInputBorder(), counterText: "")),
             ]),
             actions: [
               Row(children: [
-                Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)), onPressed: isAuthenticating ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
+                Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: isAuthenticating ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
                 const SizedBox(width: 12),
-                Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, textStyle: const TextStyle(fontWeight: FontWeight.bold)), onPressed: isAuthenticating ? null : () async {
+                Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Theme.of(context).colorScheme.onPrimary, textStyle: const TextStyle(fontWeight: FontWeight.bold)), onPressed: isAuthenticating ? null : () async {
                   String input = passController.text.trim(); String storedNid = (_selectedSubItem!['nidNumber'] ?? '').toString();
-                  if (input.isEmpty || input.length != 4) { DatabaseService.showToast(context, "Enter 4 digits!", backgroundColor: Colors.orange); return; }
+                  if (input.isEmpty || input.length != 4) { DatabaseService.showToast(context, "Enter 4 digits!", backgroundColor: Theme.of(context).colorScheme.secondary); return; }
                   setDialogState(() => isAuthenticating = true);
                   String last4 = storedNid.length >= 4 ? storedNid.substring(storedNid.length - 4) : storedNid;
                   if (input == last4 && storedNid.isNotEmpty && storedNid != "No Number") {
@@ -162,10 +165,10 @@ class _LoginPageState extends State<LoginPage> {
 
                     if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboard(subItemId: subId, categoryId: catId))); }
                   } else {
-                    if (context.mounted) DatabaseService.showToast(context, "Incorrect password!", backgroundColor: Colors.red);
+                    if (context.mounted) DatabaseService.showToast(context, "Incorrect password!", backgroundColor: Theme.of(context).colorScheme.error);
                     setDialogState(() => isAuthenticating = false);
                   }
-                }, child: isAuthenticating ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Verify"))),
+                }, child: isAuthenticating ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary)) : const Text("Verify"))),
               ]),
             ],
           );
@@ -240,29 +243,51 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showMasterKeyDialog() {
     final keyController = TextEditingController();
+    bool isLoading = false;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Center(child: Text("Master Access", style: TextStyle(fontWeight: FontWeight.bold))),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text("Enter secret key:", style: TextStyle(fontSize: 12)),
-          const SizedBox(height: 12),
-          TextField(controller: keyController, obscureText: true, decoration: const InputDecoration(labelText: "Secret Key", border: OutlineInputBorder(), prefixIcon: Icon(Icons.vpn_key_outlined))),
-        ]),
-        actions: [
-          Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-            const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white), onPressed: () async {
-              if (keyController.text.trim() == 'superadmin') {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'superadmin');
-                if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard())); }
-              } else { if (context.mounted) DatabaseService.showToast(context, "Invalid!", backgroundColor: Colors.red); }
-            }, child: const Text("Authorize"))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Center(child: Text("Master Access", style: TextStyle(fontWeight: FontWeight.bold))),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text("Enter secret key:", style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+            TextField(controller: keyController, obscureText: true, decoration: const InputDecoration(labelText: "Secret Key", border: OutlineInputBorder(), prefixIcon: Icon(Icons.vpn_key_outlined))),
           ]),
-        ],
+          actions: [
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                    side: BorderSide(color: Theme.of(context).colorScheme.error),
+                  ),
+                  onPressed: () => Navigator.pop(ctx), 
+                  child: const Text("Cancel")
+                )
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                    foregroundColor: Theme.of(context).colorScheme.onTertiary
+                  ), 
+                  onPressed: isLoading ? null : () async {
+                    if (keyController.text.trim() == 'superadmin') {
+                      setDialogState(() => isLoading = true);
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'superadmin');
+                      if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard())); }
+                    } else { if (context.mounted) DatabaseService.showToast(context, "Invalid!", backgroundColor: Theme.of(context).colorScheme.error); }
+                  }, 
+                  child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Authorize")
+                )
+              ),
+            ]),
+          ],
+        ),
       ),
     );
   }
@@ -276,7 +301,7 @@ class _LoginPageState extends State<LoginPage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 40),
               child: Column(children: [
-                GestureDetector(onLongPress: _showMasterKeyDialog, child: Text(_appName.isEmpty ? "AKONS SQUARE" : _appName, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue.shade900, letterSpacing: 1.5))),
+                GestureDetector(onLongPress: _showMasterKeyDialog, child: Text(_appName.isEmpty ? "AKONS SQUARE" : _appName, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, letterSpacing: 1.5))),
                 const SizedBox(height: 4),
                 // Version Info moved here
                 StreamBuilder<DocumentSnapshot>(
@@ -294,7 +319,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     return Text(
                       versionText,
-                      style: const TextStyle(fontSize: 10, color: Colors.blueGrey, fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold),
                     );
                   }
                 ),
@@ -305,7 +330,7 @@ class _LoginPageState extends State<LoginPage> {
                   builder: (context, dbSnap) {
                     String dbVer = DatabaseService.cachedDBVersion?.toString() ?? "..."; 
                     if (dbSnap.hasData && dbSnap.data!.exists) { var v = (dbSnap.data!.data() as Map)['dbVersion'] ?? 0; dbVer = v.toString(); }
-                    return Text("DB V-$dbVer", style: TextStyle(fontSize: 10, color: Colors.indigo.shade300, fontWeight: FontWeight.w900));
+                    return Text("DB V-$dbVer", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w900));
                   }
                 ),
               ]),
@@ -317,7 +342,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center, 
                     children: [
-                      const Text("Welcome", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      Text("Welcome", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 30),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -325,6 +350,7 @@ class _LoginPageState extends State<LoginPage> {
                           value: _selectedSubItem,
                           alignment: Alignment.center,
                           isExpanded: true,
+                          style: Theme.of(context).textTheme.bodyMedium,
                           decoration: InputDecoration(
                             labelText: "Select User Name", 
                             prefixIcon: const Icon(Icons.meeting_room_outlined), 
@@ -347,14 +373,14 @@ class _LoginPageState extends State<LoginPage> {
                         width: double.infinity, 
                         height: 55, 
                         child: ElevatedButton(
-                          onPressed: () { HapticFeedback.mediumImpact(); _loginBasicUser(); },
                           onLongPress: () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
+                          onPressed: () { HapticFeedback.mediumImpact(); _loginBasicUser(); },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.indigo,
-                            foregroundColor: Colors.white,
+                            backgroundColor: Theme.of(context).colorScheme.tertiary,
+                            foregroundColor: Theme.of(context).colorScheme.onTertiary,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          child: const Text("Login to dashboard", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                          child: Text("Login to dashboard", style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.1, color: Theme.of(context).colorScheme.onTertiary)),
                         )
                       ),
                     ]
@@ -368,12 +394,11 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   Image.asset('assets/images/signature.png', height: 40, errorBuilder: (c, e, s) => const SizedBox.shrink()),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     "AkonsAutomation by AkonS",
-                    style: TextStyle(
-                      fontSize: 11, 
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.bold, 
-                      color: Colors.indigo,
+                      color: Theme.of(context).colorScheme.primary,
                       letterSpacing: 0.5,
                       fontStyle: FontStyle.italic,
                     ),

@@ -12,9 +12,29 @@ class CategoryDialogs {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Center(child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.warning_amber_rounded, color: Colors.orange), SizedBox(width: 8), Text("Required")])),
-        content: Text(message, textAlign: TextAlign.center),
-        actions: [Center(child: ElevatedButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK")))],
+        title: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min, 
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.error), 
+              const SizedBox(width: 8), 
+              Text("Required", style: Theme.of(context).textTheme.titleLarge)
+            ]
+          )
+        ),
+        content: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.tertiary,
+                foregroundColor: Theme.of(context).colorScheme.onTertiary,
+              ),
+              onPressed: () => Navigator.pop(ctx), 
+              child: const Text("OK")
+            )
+          )
+        ],
       ),
     );
   }
@@ -25,48 +45,49 @@ class CategoryDialogs {
     required String content, 
     required VoidCallback onConfirm,
     String confirmText = "Remove",
-    Color confirmColor = Colors.red,
+    Color? confirmColor,
   }) {
+    final effectiveConfirmColor = confirmColor ?? Theme.of(context).colorScheme.error;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Column(
           children: [
-            Icon(Icons.delete_forever_outlined, color: confirmColor, size: 40),
+            Icon(Icons.delete_forever_outlined, color: effectiveConfirmColor, size: 40),
             const SizedBox(height: 12),
-            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+            Text(title, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
           ],
         ),
-        content: Text(content, textAlign: TextAlign.center, style: const TextStyle(color: Colors.blueGrey, fontSize: 14)),
+        content: Text(content, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           Row(children: [
             Expanded(
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red, 
-                  side: const BorderSide(color: Colors.red, width: 1.5),
-                  backgroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.error, 
+                  side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                  backgroundColor: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () => Navigator.pop(ctx), 
-                child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+                child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error))
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: confirmColor, 
-                  foregroundColor: Colors.white,
+                  backgroundColor: effectiveConfirmColor, 
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () { Navigator.pop(ctx); onConfirm(); }, 
-                child: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.bold))
+                child: Text(confirmText, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary))
               ),
             ),
           ]),
@@ -81,24 +102,43 @@ class CategoryDialogs {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Center(child: Text("New Category", style: TextStyle(fontWeight: FontWeight.bold))),
-        content: TextField(controller: controller, textAlign: TextAlign.center, decoration: const InputDecoration(labelText: "Category Name", border: OutlineInputBorder())),
-        actions: [
-          Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-            const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(onPressed: isLoading ? null : () async {
-              String name = controller.text.trim(); if (name.isEmpty) return;
-              setDialogState(() => isLoading = true);
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await _dbService.addCategory(name, prefs.getString('username') ?? "Admin");
-              if (context.mounted) Navigator.pop(ctx);
-            }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Save"))),
-          ]),
-        ],
-      )),
+      builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Center(child: Text("New Category", style: Theme.of(context).textTheme.titleLarge)),
+          content: TextField(
+            controller: controller, 
+            textAlign: TextAlign.center, 
+            style: Theme.of(context).textTheme.bodyLarge,
+            decoration: const InputDecoration(labelText: "Category Name", border: OutlineInputBorder())
+          ),
+          actions: [
+            Row(children: [
+              Expanded(child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  side: BorderSide(color: Theme.of(context).colorScheme.error),
+                ),
+                onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+              const SizedBox(width: 12),
+              Expanded(child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                ),
+                onPressed: isLoading ? null : () async {
+                  String name = controller.text.trim(); if (name.isEmpty) return;
+                  setDialogState(() => isLoading = true);
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  await _dbService.addCategory(name, prefs.getString('username') ?? "Admin");
+                  if (context.mounted) Navigator.pop(ctx);
+                }, 
+                child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Save")
+              )),
+            ]),
+          ],
+        );
+      }),
     );
   }
 
@@ -110,113 +150,125 @@ class CategoryDialogs {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Center(child: Text("Manage Services", style: TextStyle(fontWeight: FontWeight.bold))),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min, 
-                children: [
-                  TextField(
-                    controller: nameController, 
-                    textAlign: TextAlign.center, 
-                    decoration: const InputDecoration(labelText: "New Service Name", border: OutlineInputBorder(), isDense: true)
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: amountController, 
-                    textAlign: TextAlign.center, 
-                    keyboardType: TextInputType.number, 
-                    decoration: const InputDecoration(labelText: "Price (BDT)", prefixText: "৳ ", border: OutlineInputBorder(), isDense: true)
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
-                    onPressed: isLoading ? null : () async {
-                      String name = nameController.text.trim(); 
-                      double amt = double.tryParse(amountController.text) ?? 0;
-                      if (name.isEmpty) return;
-                      setDialogState(() => isLoading = true);
-                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                      await _dbService.addService(name, amt, prefs.getString('username') ?? "Admin");
-                      nameController.clear();
-                      amountController.clear();
-                      setDialogState(() => isLoading = false);
-                    }, 
-                    child: Text(isLoading ? "Saving..." : "Add Service")
-                  ),
-                  const Divider(height: 32),
-                  const Text("Existing Services", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  StreamBuilder<QuerySnapshot>(
-                    stream: _dbService.getServicesStream(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const LinearProgressIndicator();
-                      var docs = snapshot.data!.docs;
-                      if (docs.isEmpty) return const Text("No services found.", style: TextStyle(fontSize: 12, color: Colors.grey));
-                      
-                      return Column(
-                        children: docs.map((doc) {
-                          var data = doc.data() as Map<String, dynamic>;
-                          String sName = data['serviceName'] ?? 'Unknown';
-                          double amt = (data['amount'] ?? 0).toDouble();
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Center(child: Text("Manage Services", style: Theme.of(context).textTheme.titleLarge)),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, 
+                  children: [
+                    TextField(
+                      controller: nameController, 
+                      textAlign: TextAlign.center, 
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      decoration: const InputDecoration(labelText: "New Service Name", border: OutlineInputBorder(), isDense: true)
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: amountController, 
+                      textAlign: TextAlign.center, 
+                      keyboardType: TextInputType.number, 
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      decoration: const InputDecoration(labelText: "Price (BDT)", prefixText: "৳ ", border: OutlineInputBorder(), isDense: true)
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                        foregroundColor: Theme.of(context).colorScheme.onTertiary
+                      ),
+                      onPressed: isLoading ? null : () async {
+                        String name = nameController.text.trim(); 
+                        double amt = double.tryParse(amountController.text) ?? 0;
+                        if (name.isEmpty) return;
+                        setDialogState(() => isLoading = true);
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        await _dbService.addService(name, amt, prefs.getString('username') ?? "Admin");
+                        nameController.clear();
+                        amountController.clear();
+                        setDialogState(() => isLoading = false);
+                      }, 
+                      child: Text(isLoading ? "Saving..." : "Add Service")
+                    ),
+                    const Divider(height: 32),
+                    Text("Existing Services", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    const SizedBox(height: 8),
+                    StreamBuilder<QuerySnapshot>(
+                      stream: _dbService.getServicesStream(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return const LinearProgressIndicator();
+                        var docs = snapshot.data!.docs;
+                        if (docs.isEmpty) return Text("No services found.", style: Theme.of(context).textTheme.bodySmall);
+                        
+                        return Column(
+                          children: docs.map((doc) {
+                            var data = doc.data() as Map<String, dynamic>;
+                            String sName = data['serviceName'] ?? 'Unknown';
+                            double amt = (data['amount'] ?? 0).toDouble();
 
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(sName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                      Text("৳${amt.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, color: Colors.indigo)),
-                                    ],
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surfaceContainerLow, 
+                                borderRadius: BorderRadius.circular(8), 
+                                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(sName, style: Theme.of(context).textTheme.titleSmall),
+                                        Text("৳${amt.toStringAsFixed(0)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                                  onPressed: () => showConfirmDialog(
-                                    context: context, 
-                                    title: "Delete Service?", 
-                                    content: "Remove '$sName' permanently?", 
-                                    onConfirm: () async {
-                                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                                      await _dbService.removeService(doc.id, prefs.getString('username') ?? "Admin");
-                                    }
+                                  IconButton(
+                                    icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20),
+                                    onPressed: () => showConfirmDialog(
+                                      context: context, 
+                                      title: "Delete Service?", 
+                                      content: "Remove '$sName' permanently?", 
+                                      onConfirm: () async {
+                                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                                        await _dbService.removeService(doc.id, prefs.getString('username') ?? "Admin");
+                                      }
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                onPressed: () => Navigator.pop(ctx), 
-                child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
               ),
             ),
-          ],
-        ),
+            actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            actions: [
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                    side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () => Navigator.pop(ctx), 
+                  child: Text("Close", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error))
+                ),
+              ),
+            ],
+          );
+        }
       ),
     );
   }
@@ -226,26 +278,45 @@ class CategoryDialogs {
     bool isLoading = false;
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Center(child: Text("Add Unit to $categoryName", style: const TextStyle(fontWeight: FontWeight.bold))),
-        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: subItemController, textAlign: TextAlign.center, decoration: InputDecoration(labelText: "$categoryName No", border: const OutlineInputBorder())),
-        ])),
-        actions: [
-          Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-            const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(onPressed: isLoading ? null : () async {
-              String name = subItemController.text.trim(); if (name.isEmpty) return;
-              setDialogState(() => isLoading = true);
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await _dbService.addSubItem(categoryId, name, prefs.getString('username') ?? "Admin");
-              if (context.mounted) Navigator.pop(ctx);
-            }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Save"))),
-          ]),
-        ],
-      )),
+      builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Center(child: Text("Add Unit to $categoryName", style: Theme.of(context).textTheme.titleLarge)),
+          content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: subItemController, 
+              textAlign: TextAlign.center, 
+              style: Theme.of(context).textTheme.bodyLarge,
+              decoration: InputDecoration(labelText: "$categoryName No", border: const OutlineInputBorder())
+            ),
+          ])),
+          actions: [
+            Row(children: [
+              Expanded(child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  side: BorderSide(color: Theme.of(context).colorScheme.error),
+                ),
+                onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+              const SizedBox(width: 12),
+              Expanded(child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.tertiary,
+                  foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                ),
+                onPressed: isLoading ? null : () async {
+                  String name = subItemController.text.trim(); if (name.isEmpty) return;
+                  setDialogState(() => isLoading = true);
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  await _dbService.addSubItem(categoryId, name, prefs.getString('username') ?? "Admin");
+                  if (context.mounted) Navigator.pop(ctx);
+                }, 
+                child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Add")
+              )),
+            ]),
+          ],
+        );
+      }),
     );
   }
 
@@ -258,79 +329,82 @@ class CategoryDialogs {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Center(child: Text("Add Main Meter", style: TextStyle(fontWeight: FontWeight.bold))),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                value: meterType,
-                decoration: const InputDecoration(labelText: "Meter Type", border: OutlineInputBorder()),
-                items: const [
-                  DropdownMenuItem(value: "Residential", child: Text("Residential")),
-                  DropdownMenuItem(value: "Commercial", child: Text("Commercial")),
-                ],
-                onChanged: (v) { if (v != null) setDialogState(() => meterType = v); },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: meterNoController,
-                textAlign: TextAlign.center,
-                decoration: const InputDecoration(labelText: "Meter Number", border: OutlineInputBorder()),
-              ),
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Center(child: Text("Add Main Meter", style: Theme.of(context).textTheme.titleLarge)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: meterType,
+                  decoration: const InputDecoration(labelText: "Meter Type", border: OutlineInputBorder()),
+                  items: const [
+                    DropdownMenuItem(value: "Residential", child: Text("Residential")),
+                    DropdownMenuItem(value: "Commercial", child: Text("Commercial")),
+                  ],
+                  onChanged: (v) { if (v != null) setDialogState(() => meterType = v); },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: meterNoController,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  decoration: const InputDecoration(labelText: "Meter Number", border: OutlineInputBorder()),
+                ),
+              ],
+            ),
+            actions: [
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.tertiary,
+                      foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: isLoading ? null : () async {
+                      String no = meterNoController.text.trim();
+                      if (no.isEmpty) return;
+                      setDialogState(() => isLoading = true);
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await _dbService.addMainMeter({
+                        'meterNo': no,
+                        'meterType': meterType,
+                        'lastReading': 0.0,
+                        'presentReading': 0.0,
+                        'govtBillReading': 0.0,
+                        'lastGovtReading': 0.0,
+                        'govtBillAmount': 0.0,
+                        'unitRate': 0.0,
+                        'lastMonthUnitRate': 0.0,
+                      }, prefs.getString('username') ?? "Admin");
+                      if (context.mounted) Navigator.pop(ctx);
+                    },
+                    child: isLoading 
+                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text("Add"),
+                  ),
+                ),
+              ]),
             ],
-          ),
-          actions: [
-            Row(children: [
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red, width: 1.5),
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: isLoading ? null : () async {
-                    String no = meterNoController.text.trim();
-                    if (no.isEmpty) return;
-                    setDialogState(() => isLoading = true);
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                    await _dbService.addMainMeter({
-                      'meterNo': no,
-                      'meterType': meterType,
-                      'lastReading': 0.0,
-                      'presentReading': 0.0,
-                      'govtBillReading': 0.0,
-                      'lastGovtReading': 0.0,
-                      'govtBillAmount': 0.0,
-                      'unitRate': 0.0,
-                      'lastMonthUnitRate': 0.0,
-                    }, prefs.getString('username') ?? "Admin");
-                    if (context.mounted) Navigator.pop(ctx);
-                  },
-                  child: isLoading 
-                    ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text("Add", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ]),
-          ],
-        ),
+          );
+        }
       ),
     );
   }
@@ -366,9 +440,9 @@ class CategoryDialogs {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Row(
               children: [
-                const Icon(Icons.speed, color: Colors.indigo),
+                Icon(Icons.speed, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
-                Expanded(child: Text("Update Main Meter: ${data['meterNo']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+                Expanded(child: Text("Update Main Meter: ${data['meterNo']}", style: Theme.of(context).textTheme.titleLarge)),
               ],
             ),
             content: SingleChildScrollView(
@@ -376,28 +450,30 @@ class CategoryDialogs {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildReadOnlyRow("Meter Type", data['meterType']),
-                  _buildReadOnlyRow("Meter No", data['meterNo']),
-                  _buildReadOnlyRow("Last Reading", lastReading.toStringAsFixed(1)),
+                  _buildReadOnlyRow(context, "Meter Type", data['meterType']),
+                  _buildReadOnlyRow(context, "Meter No", data['meterNo']),
+                  _buildReadOnlyRow(context, "Last Reading", lastReading.toStringAsFixed(1)),
                   const SizedBox(height: 12),
                   TextField(
                     controller: presentReadingController,
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
                     onChanged: (_) => setDialogState(() {}),
+                    style: Theme.of(context).textTheme.bodyLarge,
                     decoration: const InputDecoration(labelText: "New Present Reading", border: OutlineInputBorder(), isDense: true),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text("Govt. Bill Details", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text("Govt. Bill Details", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
                   ),
-                  _buildReadOnlyRow("Last Govt. Bill Reading", lastGovtReading.toStringAsFixed(1)),
+                  _buildReadOnlyRow(context, "Last Govt. Bill Reading", lastGovtReading.toStringAsFixed(1)),
                   const SizedBox(height: 8),
                   TextField(
                     controller: govtReadingController,
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
                     onChanged: (_) => setDialogState(() {}),
+                    style: Theme.of(context).textTheme.bodyLarge,
                     decoration: const InputDecoration(labelText: "New Govt. Bill Reading", border: OutlineInputBorder(), isDense: true),
                   ),
                   const SizedBox(height: 8),
@@ -406,18 +482,19 @@ class CategoryDialogs {
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
                     onChanged: (_) => setDialogState(() {}),
+                    style: Theme.of(context).textTheme.bodyLarge,
                     decoration: const InputDecoration(labelText: "Govt. Bill Amount", prefixText: "৳ ", border: OutlineInputBorder(), isDense: true),
                   ),
-                  _buildReadOnlyRow("Govt. Bill Unit", govtBillUnit.toStringAsFixed(1)),
-                  _buildReadOnlyRow("Last Month Unit Rate", "৳${lastMonthRate.toStringAsFixed(2)}"),
-                  _buildReadOnlyRow("This Month Unit Rate", "৳${thisMonthRate.toStringAsFixed(2)}"),
-                  _buildReadOnlyRow("Govt. Due/Adv Units", govtDueAdv.toStringAsFixed(1)),
+                  _buildReadOnlyRow(context, "Govt. Bill Unit", govtBillUnit.toStringAsFixed(1)),
+                  _buildReadOnlyRow(context, "Last Month Unit Rate", "৳${lastMonthRate.toStringAsFixed(2)}"),
+                  _buildReadOnlyRow(context, "This Month Unit Rate", "৳${thisMonthRate.toStringAsFixed(2)}"),
+                  _buildReadOnlyRow(context, "Govt. Due/Adv Units", govtDueAdv.toStringAsFixed(1)),
                   
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text("Detailed Statistics (Calculated)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text("Detailed Statistics (Calculated)", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
                   ),
-                  _buildReadOnlyRow("Main Meter Used Unit", mainUsed.toStringAsFixed(1)),
+                  _buildReadOnlyRow(context, "Main Meter Used Unit", mainUsed.toStringAsFixed(1)),
                   
                   StreamBuilder<QuerySnapshot>(
                     stream: _dbService.getSubItemsByMainMeter(data['meterNo']),
@@ -435,8 +512,8 @@ class CategoryDialogs {
                       double balance = mainUsed - totalSubUnits;
                       return Column(
                         children: [
-                          _buildReadOnlyRow("Total Sub-meter Units", totalSubUnits.toStringAsFixed(1)),
-                          _buildReadOnlyRow("Balance Units (Main-Sub)", balance.toStringAsFixed(1), valueColor: balance > 0 ? Colors.red : Colors.green),
+                          _buildReadOnlyRow(context, "Total Sub-meter Units", totalSubUnits.toStringAsFixed(1)),
+                          _buildReadOnlyRow(context, "Balance Units (Main-Sub)", balance.toStringAsFixed(1), valueColor: balance > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary),
                         ],
                       );
                     }
@@ -449,22 +526,22 @@ class CategoryDialogs {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red, width: 1.5),
-                      backgroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                      backgroundColor: Theme.of(context).colorScheme.surface,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.tertiary,
+                      foregroundColor: Theme.of(context).colorScheme.onTertiary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -485,10 +562,10 @@ class CategoryDialogs {
                           context: context,
                           builder: (c) => AlertDialog(
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            title: const Text("Sync Main Meter?", style: TextStyle(fontWeight: FontWeight.bold)),
-                            content: Text("Previous reading was $prevSavedMain. Should this be set as the 'Last Reading' for this month?"),
+                            title: Text("Sync Main Meter?", style: Theme.of(context).textTheme.titleLarge),
+                            content: Text("Previous reading was $prevSavedMain. Should this be set as the 'Last Reading' for this month?", style: Theme.of(context).textTheme.bodyMedium),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No", style: TextStyle(color: Colors.red))),
+                              TextButton(onPressed: () => Navigator.pop(c, false), child: Text("No", style: TextStyle(color: Theme.of(context).colorScheme.error))),
                               TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Yes", style: TextStyle(color: Colors.green))),
                             ],
                           ),
@@ -500,10 +577,10 @@ class CategoryDialogs {
                           context: context,
                           builder: (c) => AlertDialog(
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            title: const Text("Sync Govt. Reading?", style: TextStyle(fontWeight: FontWeight.bold)),
-                            content: Text("Previous Govt. reading was $prevSavedGovt. Should this be set as the 'Last Govt. Reading' for this month?"),
+                            title: Text("Sync Govt. Reading?", style: Theme.of(context).textTheme.titleLarge),
+                            content: Text("Previous Govt. reading was $prevSavedGovt. Should this be set as the 'Last Govt. Reading' for this month?", style: Theme.of(context).textTheme.bodyMedium),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No", style: TextStyle(color: Colors.red))),
+                              TextButton(onPressed: () => Navigator.pop(c, false), child: Text("No", style: TextStyle(color: Theme.of(context).colorScheme.error))),
                               TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Yes", style: TextStyle(color: Colors.green))),
                             ],
                           ),
@@ -534,25 +611,25 @@ class CategoryDialogs {
                     },
                     child: isLoading 
                       ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text("Update", style: TextStyle(fontWeight: FontWeight.bold)),
+                      : const Text("Update"),
                   ),
                 ),
               ]),
             ],
           );
-        },
+        }
       ),
     );
   }
 
-  static Widget _buildReadOnlyRow(String label, String value, {Color? valueColor}) {
+  static Widget _buildReadOnlyRow(BuildContext context, String label, String value, {Color? valueColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
-          Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: valueColor ?? Colors.black87)),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: valueColor)),
         ],
       ),
     );
@@ -567,9 +644,10 @@ class CategoryDialogs {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Center(child: Text("Add Sub Meter", style: TextStyle(fontWeight: FontWeight.bold))),
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Center(child: Text("Add Sub Meter", style: Theme.of(context).textTheme.titleLarge)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -581,7 +659,7 @@ class CategoryDialogs {
                   return DropdownButtonFormField<String>(
                     value: selectedMainMeter,
                     decoration: const InputDecoration(labelText: "Select Main Meter", border: OutlineInputBorder()),
-                    items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text("Meter: ${doc['meterNo']}"))).toList(),
+                    items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text("Meter: ${doc['meterNo']}", style: Theme.of(context).textTheme.bodyMedium))).toList(),
                     onChanged: (v) => setDialogState(() => selectedMainMeter = v),
                   );
                 },
@@ -590,6 +668,7 @@ class CategoryDialogs {
               TextField(
                 controller: subMeterNoController,
                 textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
                 decoration: const InputDecoration(labelText: "Sub Meter Number", border: OutlineInputBorder()),
               ),
             ],
@@ -599,21 +678,21 @@ class CategoryDialogs {
               Expanded(
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red, width: 1.5),
-                    backgroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                    side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                    backgroundColor: Theme.of(context).colorScheme.surface,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.tertiary,
+                    foregroundColor: Theme.of(context).colorScheme.onTertiary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: isLoading ? null : () async {
@@ -629,12 +708,13 @@ class CategoryDialogs {
                   },
                   child: isLoading 
                     ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text("Add", style: TextStyle(fontWeight: FontWeight.bold)),
+                    : const Text("Add"),
                 ),
               ),
             ]),
           ],
-        ),
+        );
+        }
       ),
     );
   }
@@ -651,14 +731,15 @@ class CategoryDialogs {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+        builder: (context, setDialogState) {
+        return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Column(
             children: [
               const Icon(Icons.electric_bolt, color: Colors.amber, size: 40),
               const SizedBox(height: 12),
-              const Text("Electricity - assigned submeter", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-              Text("Update for $subItemName", style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+              Text("Electricity - assigned submeter", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
+              Text("Update for $subItemName", style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
           content: SingleChildScrollView(
@@ -669,12 +750,12 @@ class CategoryDialogs {
                   Container(
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, borderRadius: BorderRadius.circular(8)),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                        Icon(Icons.info_outline, size: 16, color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 8),
-                        Expanded(child: Text("Last updated: ${DatabaseService.formatDuration(existingData?['updatedAt'] as Timestamp?)} ago", style: const TextStyle(fontSize: 11, color: Colors.blue))),
+                        Expanded(child: Text("Last updated: ${DatabaseService.formatDuration(existingData?['updatedAt'] as Timestamp?)} ago", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary))),
                       ],
                     ),
                   ),
@@ -692,7 +773,7 @@ class CategoryDialogs {
                     return DropdownButtonFormField<String>(
                       value: selectedSubMeter,
                       decoration: const InputDecoration(labelText: "Sub-meter No", border: OutlineInputBorder(), isDense: true),
-                      items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text("Sub-meter: ${doc['subMeterNo']} (Main: ${doc['mainMeterNo']})"))).toList(),
+                      items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text("Sub-meter: ${doc['subMeterNo']} (Main: ${doc['mainMeterNo']})", style: Theme.of(context).textTheme.bodyMedium))).toList(),
                       onChanged: isOperator ? null : (v) => setDialogState(() {
                         selectedSubMeter = v;
                         var match = available.firstWhere((d) => d['subMeterNo'] == v);
@@ -703,7 +784,7 @@ class CategoryDialogs {
                   },
                 ),
                 const SizedBox(height: 12),
-                _buildReadOnlyRow("Last Reading (Previous)", lastReadingController.text),
+                _buildReadOnlyRow(context, "Last Reading (Previous)", lastReadingController.text),
                 const SizedBox(height: 12),
                 TextField(
                   controller: presentReadingController, 
@@ -727,22 +808,22 @@ class CategoryDialogs {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red, width: 1.5),
-                      backgroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                      backgroundColor: Theme.of(context).colorScheme.surface,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.tertiary,
+                      foregroundColor: Theme.of(context).colorScheme.onTertiary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -776,13 +857,14 @@ class CategoryDialogs {
 
                       if (context.mounted) Navigator.pop(ctx);
                     }, 
-                    child: Text(isLoading ? "Updating..." : "Update", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(isLoading ? "Updating..." : "Update", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white)),
                   ),
                 ),
               ],
             ),
           ],
-        ),
+        );
+        }
       ),
     );
   }
@@ -814,12 +896,12 @@ class CategoryDialogs {
 
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Center(child: Text("Payment: $subItemName", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20))),
+          title: Center(child: Text("Payment: $subItemName", style: Theme.of(context).textTheme.titleLarge)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min, 
               children: [
-                const Text("Select month for this payment", style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                Text("Select month for this payment", style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center, 
@@ -838,27 +920,28 @@ class CategoryDialogs {
                   ],
                 ),
                 const Divider(height: 24),
-                _buildRow("$mainCategoryName Rent:", "৳${houseRentTotal.toStringAsFixed(1)}"),
+                _buildRow(context, "$mainCategoryName Rent:", "৳${houseRentTotal.toStringAsFixed(1)}"),
                 const SizedBox(height: 4),
-                _buildRow("Electric Bill:", "৳${electricityBill.toStringAsFixed(1)}"),
+                _buildRow(context, "Electric Bill:", "৳${electricityBill.toStringAsFixed(1)}"),
                 const Divider(height: 24),
-                _buildRow("Total:", "৳${(houseRentTotal + electricityBill).toStringAsFixed(1)}", isBold: true),
+                _buildRow(context, "Total:", "৳${(houseRentTotal + electricityBill).toStringAsFixed(1)}", isBold: true),
                 const SizedBox(height: 12),
                 if (!isFuture) ...[
                    TextField(
                     controller: noteController, 
                     textAlign: TextAlign.center, 
                     onChanged: (val) => setDialogState(() => wordCount = _getWordCount(val)),
+                    style: Theme.of(context).textTheme.bodyLarge,
                     decoration: InputDecoration(
                       labelText: "Notes", 
                       border: const OutlineInputBorder(), 
                       isDense: true,
                       counterText: "$wordCount / 100 words",
-                      counterStyle: TextStyle(color: wordCount > 100 ? Colors.red : Colors.blueGrey, fontSize: 10),
+                      counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: wordCount > 100 ? Theme.of(context).colorScheme.error : null),
                     ),
                   ),
                 ] else
-                   const Text("Future payments cannot be recorded.", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+                   Text("Future payments cannot be recorded.", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
 
                 // --- HISTORY SECTION ---
                 FutureBuilder<QuerySnapshot>(
@@ -869,7 +952,7 @@ class CategoryDialogs {
                         children: [
                           const SizedBox(height: 16),
                           const Divider(),
-                          const Text("Payment History", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blue)),
+                          Text("Payment History", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
                           const SizedBox(height: 8),
                           ...snapshot.data!.docs.asMap().entries.map((entry) {
                             var hData = entry.value.data() as Map<String, dynamic>;
@@ -879,10 +962,10 @@ class CategoryDialogs {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Text("$idx. Paid by: ${hData['TenantName'] ?? TenantName}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                  Text("Time: ${_formatTimestamp(hData['paidAt'] as Timestamp?)}", style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                                  Text("$idx. Paid by: ${hData['TenantName'] ?? TenantName}", style: Theme.of(context).textTheme.titleSmall),
+                                  Text("Time: ${_formatTimestamp(hData['paidAt'] as Timestamp?)}", style: Theme.of(context).textTheme.bodySmall),
                                   if ((hData['paymentNotes'] ?? '').toString().isNotEmpty)
-                                    Text("Note: ${hData['paymentNotes']}", style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic)),
+                                    Text("Note: ${hData['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
                                   const SizedBox(height: 4),
                                 ],
                               ),
@@ -903,12 +986,11 @@ class CategoryDialogs {
                 width: double.infinity,
                 child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red, 
-                      side: const BorderSide(color: Colors.red, width: 1.5),
-                      backgroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.error, 
+                      side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
                     ),
                     onPressed: () => Navigator.pop(ctx), 
-                    child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+                    child: const Text("Cancel")
                 ),
               )
             else
@@ -917,20 +999,19 @@ class CategoryDialogs {
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red, 
-                        side: const BorderSide(color: Colors.red, width: 1.5),
-                        backgroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.error, 
+                        side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
                       ),
                       onPressed: () => Navigator.pop(ctx), 
-                      child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+                      child: const Text("Cancel")
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.tertiary,
+                        foregroundColor: Theme.of(context).colorScheme.onTertiary,
                       ),
                       onPressed: (isLoading || wordCount > 100) ? null : () async {
                         setDialogState(() => isLoading = true);
@@ -980,7 +1061,7 @@ class CategoryDialogs {
                       }, 
                     child: isLoading 
                       ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text("Confirm", style: TextStyle(fontWeight: FontWeight.bold))
+                      : const Text("Confirm")
                     ),
                   ),
                 ]
@@ -1007,9 +1088,10 @@ class CategoryDialogs {
      showDialog(
        context: context,
        builder: (ctx) => StatefulBuilder(
-         builder: (context, setDialogState) => AlertDialog(
-           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-           title: Center(child: Text("Services: $categoryName", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+         builder: (context, setDialogState) {
+           return AlertDialog(
+             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+             title: Center(child: Text("Services: $categoryName", style: Theme.of(context).textTheme.titleLarge)),
            content: SizedBox(
              width: double.maxFinite,
              child: StreamBuilder<QuerySnapshot>(
@@ -1017,7 +1099,7 @@ class CategoryDialogs {
                builder: (context, snapshot) {
                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                  var docs = snapshot.data!.docs;
-                 if (docs.isEmpty) return const Center(child: Text("No global services found."));
+                 if (docs.isEmpty) return Center(child: Text("No global services found.", style: Theme.of(context).textTheme.bodyMedium));
 
                  return ListView.builder(
                    shrinkWrap: true,
@@ -1029,8 +1111,8 @@ class CategoryDialogs {
                      bool isChecked = currentAssigned.any((element) => element['name'] == sName);
 
                      return CheckboxListTile(
-                       title: Text(sName),
-                       subtitle: Text("Price: ৳$amount"),
+                       title: Text(sName, style: Theme.of(context).textTheme.bodyLarge),
+                       subtitle: Text("Price: ৳$amount", style: Theme.of(context).textTheme.bodySmall),
                        value: isChecked,
                        onChanged: (bool? value) {
                          setDialogState(() {
@@ -1046,19 +1128,30 @@ class CategoryDialogs {
            ),
            actions: [
              Row(children: [
-               Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+               Expanded(child: OutlinedButton(
+                 style: OutlinedButton.styleFrom(
+                   foregroundColor: Theme.of(context).colorScheme.error,
+                   side: BorderSide(color: Theme.of(context).colorScheme.error),
+                 ),
+                 onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
                const SizedBox(width: 12),
-               Expanded(child: ElevatedButton(onPressed: isLoading ? null : () async {
+               Expanded(child: ElevatedButton(
+                 style: ElevatedButton.styleFrom(
+                   backgroundColor: Theme.of(context).colorScheme.tertiary,
+                   foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                 ),
+                 onPressed: isLoading ? null : () async {
                  setDialogState(() => isLoading = true);
                  SharedPreferences prefs = await SharedPreferences.getInstance();
                  await _dbService.updateCategoryServices(categoryId, currentAssigned, prefs.getString('username') ?? "Admin");
                  if (context.mounted) Navigator.pop(ctx);
-               }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Apply"))),
+               }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Apply"))),
              ]),
            ],
-         ),
-       ),
-     );
+         );
+       },
+     ),
+    );
   }
 
   static void showEditSubItemDetailsDialog({required BuildContext context, required String subItemId, required String currentName, required String currentTenantName, required String currentNidNumber, required String currentNotes}) {
@@ -1076,13 +1169,13 @@ class CategoryDialogs {
           int wordCount = _getWordCount(notesController.text);
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), 
-            title: const Center(
+            title: Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.edit, color: Colors.blueGrey),
-                  SizedBox(width: 8),
-                  Text("Edit sub-item details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text("Edit unit details", style: Theme.of(context).textTheme.titleLarge),
                 ],
               ),
             ), 
@@ -1090,49 +1183,49 @@ class CategoryDialogs {
               child: Column(
                 mainAxisSize: MainAxisSize.min, 
                 children: [
-                  _buildCenteredField(subItemController, "Sub-item Name / Number"),
+                  _buildCenteredField(context, subItemController, "Sub-item Name / Number"),
                   const SizedBox(height: 12),
-                  _buildCenteredField(tenantController, "Tenant Name (Optional)"),
+                  _buildCenteredField(context, tenantController, "Tenant Name (Optional)"),
                   const SizedBox(height: 12),
-                  _buildCenteredField(nidController, "Tenant NID Number"),
+                  _buildCenteredField(context, nidController, "Tenant NID Number"),
                   const SizedBox(height: 12),
                   TextField(
                     controller: notesController, 
                     textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge,
                     onChanged: (val) => setDialogState(() => wordCount = _getWordCount(val)),
                     decoration: InputDecoration(
                       labelText: "Notes (Max 100 words)", 
                       border: const OutlineInputBorder(), 
                       alignLabelWithHint: true,
                       counterText: "$wordCount / 100 words",
-                      counterStyle: TextStyle(color: wordCount > 100 ? Colors.red : Colors.blueGrey, fontWeight: FontWeight.bold),
+                      counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: wordCount > 100 ? Theme.of(context).colorScheme.error : null),
                     ), 
                     maxLines: 3
                   ),
                 ]
               ),
             ), 
-            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             actions: [
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red, 
-                        side: const BorderSide(color: Colors.red, width: 1.5),
-                        backgroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.error, 
+                        side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
                       ),
                       onPressed: () => Navigator.pop(ctx), 
-                      child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+                      child: const Text("Cancel")
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.tertiary,
+                        foregroundColor: Theme.of(context).colorScheme.onTertiary,
                       ),
                       onPressed: (isLoading || wordCount > 100) ? null : () async {
                         setDialogState(() => isLoading = true);
@@ -1155,7 +1248,7 @@ class CategoryDialogs {
                       }, 
                       child: isLoading 
                         ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text("Update", style: TextStyle(fontWeight: FontWeight.bold))
+                        : const Text("Update")
                     ),
                   ),
                 ]
@@ -1167,10 +1260,11 @@ class CategoryDialogs {
     );
   }
 
-  static Widget _buildCenteredField(TextEditingController controller, String label) {
+  static Widget _buildCenteredField(BuildContext context, TextEditingController controller, String label) {
     return TextField(
       controller: controller, 
       textAlign: TextAlign.center,
+      style: Theme.of(context).textTheme.bodyLarge,
       decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
     );
   }
@@ -1185,29 +1279,32 @@ class CategoryDialogs {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
+          builder: (context, setDialogState) {
+          return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Column(
               children: [
-                const Icon(Icons.person_add_outlined, color: Colors.green, size: 40),
+                Icon(Icons.person_add_outlined, color: Theme.of(context).colorScheme.primary, size: 40),
                 const SizedBox(height: 12),
-                Text("Set $subItemName to Occupied", textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                Text("Set $subItemName to Occupied", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("Enter tenant details to proceed", style: TextStyle(color: Colors.blueGrey, fontSize: 13)),
+                Text("Enter tenant details to proceed", style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 16),
                 TextField(
                   controller: tenantController,
                   textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge,
                   decoration: const InputDecoration(labelText: "Tenant Name", border: OutlineInputBorder(), isDense: true),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: nidController,
                   textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge,
                   decoration: const InputDecoration(labelText: "NID Number", border: OutlineInputBorder(), isDense: true),
                 ),
               ],
@@ -1218,20 +1315,20 @@ class CategoryDialogs {
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red, width: 1.5),
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                        side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.tertiary,
+                        foregroundColor: Theme.of(context).colorScheme.onTertiary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: isLoading ? null : () async {
@@ -1254,13 +1351,14 @@ class CategoryDialogs {
                       },
                       child: isLoading 
                         ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text("Proceed", style: TextStyle(fontWeight: FontWeight.bold)),
+                        : const Text("Proceed"),
                     ),
                   ),
                 ],
               ),
             ],
-          ),
+          );
+          }
         ),
       );
     } else {
@@ -1285,13 +1383,14 @@ class CategoryDialogs {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Center(child: Text("Manage Services: $subItemName", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Center(child: Text("Manage Services: $subItemName", style: Theme.of(context).textTheme.titleLarge)),
           content: SizedBox(
             width: double.maxFinite,
             child: categoryServices.isEmpty 
-              ? const Center(child: Text("No category services defined."))
+              ? Center(child: Text("No category services defined.", style: Theme.of(context).textTheme.bodyMedium))
               : ListView.builder(
                   shrinkWrap: true,
                   itemCount: categoryServices.length,
@@ -1302,10 +1401,10 @@ class CategoryDialogs {
                     bool isApplied = !currentExcluded.contains(sName);
 
                     return CheckboxListTile(
-                      title: Text(sName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      title: Text(sName, style: Theme.of(context).textTheme.titleSmall),
                       subtitle: Text(
                         isApplied ? "applied (৳$amount)" : "Unassigned for this sub-item",
-                        style: TextStyle(color: isApplied ? Colors.green : Colors.blueGrey, fontSize: 12),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isApplied ? Colors.green : Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       value: isApplied,
                       onChanged: (bool? value) {
@@ -1324,19 +1423,19 @@ class CategoryDialogs {
               Expanded(
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red, 
-                    side: const BorderSide(color: Colors.red, width: 1.5),
+                    foregroundColor: Theme.of(context).colorScheme.error, 
+                    side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
                   ),
                   onPressed: () => Navigator.pop(ctx), 
-                  child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+                  child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error))
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.tertiary,
+                    foregroundColor: Theme.of(context).colorScheme.onTertiary,
                   ),
                   onPressed: isLoading ? null : () async {
                     setDialogState(() => isLoading = true);
@@ -1349,12 +1448,13 @@ class CategoryDialogs {
                   }, 
                   child: isLoading 
                     ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text("Update", style: TextStyle(fontWeight: FontWeight.bold))
+                    : const Text("Update")
                 ),
               ),
             ]),
           ],
-        ),
+        );
+        }
       ),
     );
   }
@@ -1372,73 +1472,74 @@ class CategoryDialogs {
           double total = quantity * unitPrice;
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Column(
-              children: [
-                const Icon(Icons.wifi, color: Colors.blueAccent, size: 40),
-                const SizedBox(height: 12),
-                Text("Edit 'Wifi Bill' for '$subItemName'", textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text("Service: Wifi Bill", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                      onPressed: () { if (quantity > 1) setDialogState(() => quantity--); },
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
-                      child: Text("$quantity", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline, color: Colors.green),
-                      onPressed: () => setDialogState(() => quantity++),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(labelText: "Wifi cost per device", prefixText: "৳ ", border: OutlineInputBorder()),
-                  onChanged: (val) {
-                    double? p = double.tryParse(val);
-                    if (p != null) setDialogState(() => unitPrice = p);
-                  },
-                  controller: TextEditingController(text: unitPrice.toStringAsFixed(0))..selection = TextSelection.fromPosition(TextSelection.fromPosition(TextPosition(offset: unitPrice.toStringAsFixed(0).length)).extent),
-                ),
-                const SizedBox(height: 16),
-                Text("Total Wifi Bill: ৳${total.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Colors.indigo)),
-              ],
-            ),
+          title: Column(
+            children: [
+              Icon(Icons.wifi_outlined, color: Theme.of(context).colorScheme.primary, size: 40),
+              const SizedBox(height: 12),
+              Text("Edit 'Wifi Bill' for '$subItemName'", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Service: Wifi Bill", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error),
+                    onPressed: () { if (quantity > 1) setDialogState(() => quantity--); },
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outline), borderRadius: BorderRadius.circular(8)),
+                    child: Text("$quantity", style: Theme.of(context).textTheme.headlineMedium),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline, color: Colors.green),
+                    onPressed: () => setDialogState(() => quantity++),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
+                decoration: const InputDecoration(labelText: "Wifi cost per device", prefixText: "৳ ", border: OutlineInputBorder()),
+                onChanged: (val) {
+                  double? p = double.tryParse(val);
+                  if (p != null) setDialogState(() => unitPrice = p);
+                },
+                controller: TextEditingController(text: unitPrice.toStringAsFixed(0))..selection = TextSelection.fromPosition(TextSelection.fromPosition(TextPosition(offset: unitPrice.toStringAsFixed(0).length)).extent),
+              ),
+              const SizedBox(height: 16),
+              Text("Total Wifi Bill: ৳${total.toStringAsFixed(0)}", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),
+            ],
+          ),
             actions: [
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red, width: 1.5),
-                        backgroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                        side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                        backgroundColor: Theme.of(context).colorScheme.surface,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.tertiary,
+                        foregroundColor: Theme.of(context).colorScheme.onTertiary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -1459,7 +1560,7 @@ class CategoryDialogs {
                       },
                       child: isLoading 
                         ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text("Update", style: TextStyle(fontWeight: FontWeight.bold)),
+                        : const Text("Update"),
                     ),
                   ),
                 ],
@@ -1473,14 +1574,23 @@ class CategoryDialogs {
 
   static void showEditSubItemServiceDialog({required BuildContext context, required String subItemId, required String subItemName, required Map<String, dynamic> serviceMap, required List overriddenServices}) {
     final nameController = TextEditingController(text: serviceMap['name']); final amountController = TextEditingController(text: serviceMap['amount'].toString());
-    showDialog(context: context, builder: (ctx) => AlertDialog(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), title: const Center(child: Text("Edit Service")), content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: nameController, decoration: const InputDecoration(labelText: "Name")), TextField(controller: amountController, decoration: const InputDecoration(labelText: "Amount"))]), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")), TextButton(onPressed: () async {
-      List updated = overriddenServices.map((s) => Map<String, dynamic>.from(s)).toList();
-      updated.removeWhere((s) => s['originalName'] == serviceMap['originalName']);
-      updated.add({'originalName': serviceMap['originalName'], 'name': nameController.text.trim(), 'amount': double.tryParse(amountController.text) ?? 0});
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await _dbService.updateSubItemOverriddenServices(subItemId, updated, prefs.getString('username') ?? "Admin");
-      if (context.mounted) Navigator.pop(ctx);
-    }, child: const Text("Save"))]));
+    showDialog(context: context, builder: (ctx) => AlertDialog(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), title: const Center(child: Text("Edit Service")), content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: nameController, decoration: const InputDecoration(labelText: "Name")), TextField(controller: amountController, decoration: const InputDecoration(labelText: "Amount"))]), actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(ctx), 
+        child: Text("Cancel", style: TextStyle(color: Theme.of(context).colorScheme.error))
+      ), 
+      ElevatedButton(
+        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Theme.of(context).colorScheme.onPrimary),
+        onPressed: () async {
+          List updated = overriddenServices.map((s) => Map<String, dynamic>.from(s)).toList();
+          updated.removeWhere((s) => s['originalName'] == serviceMap['originalName']);
+          updated.add({'originalName': serviceMap['originalName'], 'name': nameController.text.trim(), 'amount': double.tryParse(amountController.text) ?? 0});
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await _dbService.updateSubItemOverriddenServices(subItemId, updated, prefs.getString('username') ?? "Admin");
+          if (context.mounted) Navigator.pop(ctx);
+        }, 
+        child: const Text("Save")
+      )]));
   }
 
   static int _getWordCount(String text) {
@@ -1488,7 +1598,16 @@ class CategoryDialogs {
     return text.trim().split(RegExp(r'\s+')).length;
   }
 
-  static Widget _buildRow(String label, String value, {bool isBold = false}) {
-    return Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, fontSize: 15)), Text(value, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: isBold ? Colors.indigo : Colors.black87, fontSize: 15))]));
+  static Widget _buildRow(BuildContext context, String label, String value, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2), 
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+        children: [
+          Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.normal)), 
+          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: isBold ? Theme.of(context).colorScheme.primary : null))
+        ]
+      )
+    );
   }
 }

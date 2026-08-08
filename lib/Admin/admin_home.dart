@@ -77,13 +77,19 @@ class _AdminHomeState extends State<AdminHome> {
               children: [
                 if (settings['showAccounts']!) ...[
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          "Accounts",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 0.8),
+                        Row(
+                          children: [
+                            Icon(Icons.account_balance_wallet_outlined, size: 22, color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Accounts",
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                            ),
+                          ],
                         ),
                         Row(
                           children: [
@@ -95,7 +101,7 @@ class _AdminHomeState extends State<AdminHome> {
                             ),
                             Text(
                               _selectedMonthStr,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.indigo),
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                             ),
                             IconButton(
                               icon: const Icon(Icons.chevron_right, size: 20),
@@ -135,12 +141,12 @@ class _AdminHomeState extends State<AdminHome> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
             child: Row(
-              children: const [
-                Icon(Icons.electric_bolt_outlined, size: 20, color: Colors.blueGrey),
-                SizedBox(width: 8),
+              children: [
+                Icon(Icons.electric_bolt_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
                 Text(
                   "Electricity",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 0.8),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.8),
                 ),
               ],
             ),
@@ -160,12 +166,12 @@ class _AdminHomeState extends State<AdminHome> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
           child: Row(
-            children: const [
-              Icon(Icons.category_outlined, size: 20, color: Colors.blueGrey),
-              SizedBox(width: 8),
+            children: [
+              Icon(Icons.category_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
               Text(
                 "Category",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 0.8),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.8),
               ),
             ],
           ),
@@ -218,7 +224,7 @@ class _AdminHomeState extends State<AdminHome> {
                   children: [
                     Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      color: Colors.blue.shade900,
+                      color: Theme.of(context).primaryColor,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
@@ -229,11 +235,11 @@ class _AdminHomeState extends State<AdminHome> {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.analytics_outlined, color: Colors.white70, size: 14),
+                                    Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.onPrimary, size: 14),
                                     const SizedBox(width: 8),
                                     Text(
                                       "$_selectedMonthStr Total Revenue",
-                                      style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
@@ -248,7 +254,7 @@ class _AdminHomeState extends State<AdminHome> {
                             const SizedBox(height: 4),
                             Text(
                               "৳${grandTotal.toStringAsFixed(2)}",
-                              style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900),
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onPrimary, letterSpacing: -0.5),
                             ),
                             
                             if (_showPieChart || _showBarChart) 
@@ -271,18 +277,18 @@ class _AdminHomeState extends State<AdminHome> {
                               children: [
                                 _buildInteractiveStat("Received", receivedTotal, Colors.greenAccent, Icons.check_circle_outline,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 0)),
-                                Container(width: 1, height: 24, color: Colors.white24),
+                                Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
                                 _buildInteractiveStat("Due", dueTotal, Colors.orangeAccent, Icons.pending_actions,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 1)),
                               ],
                             ),
-                            const Divider(color: Colors.white12, height: 16),
+                            Divider(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2), height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInteractiveStat("Rent", rentTotal, Colors.lightBlueAccent, Icons.home_work_outlined,
+                                _buildInteractiveStat("Rent", rentTotal, Theme.of(context).colorScheme.onPrimary, Icons.home_work_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: true)),
-                                Container(width: 1, height: 24, color: Colors.white24),
+                                Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
                                 _buildInteractiveStat("Utility", utilityTotal, Colors.yellowAccent, Icons.settings_suggest_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: false)),
                               ],
@@ -320,17 +326,17 @@ class _AdminHomeState extends State<AdminHome> {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: active ? Colors.white24 : Colors.transparent,
+          color: active ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Icon(icon, color: Colors.white70, size: 18),
+        child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 18),
       ),
     );
   }
 
   Widget _buildPieChart(double received, double due) {
     double total = received + due;
-    if (total == 0) return const Center(child: Text("No Data", style: TextStyle(color: Colors.white54, fontSize: 10)));
+    if (total == 0) return Center(child: Text("No Data", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary)));
     
     return PieChart(
       PieChartData(
@@ -338,20 +344,20 @@ class _AdminHomeState extends State<AdminHome> {
         centerSpaceRadius: 20,
         sections: [
           PieChartSectionData(
-            color: Colors.greenAccent,
+            color: Colors.green.shade400,
             value: received,
             title: '${((received/total)*100).toStringAsFixed(0)}%',
             radius: 35,
-            titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
-            borderSide: BorderSide(color: Colors.green.shade700, width: 2),
+            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
           ),
           PieChartSectionData(
-            color: Colors.orangeAccent,
+            color: Colors.orange.shade400,
             value: due,
             title: '${((due/total)*100).toStringAsFixed(0)}%',
             radius: 30,
-            titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
-            borderSide: BorderSide(color: Colors.orange.shade700, width: 2),
+            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
           ),
         ],
       ),
@@ -369,9 +375,9 @@ class _AdminHomeState extends State<AdminHome> {
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) => Colors.indigo.shade900,
+            getTooltipColor: (_) => Theme.of(context).colorScheme.secondary,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              return BarTooltipItem(rod.toY.toInt().toString(), const TextStyle(color: Colors.white, fontSize: 10));
+              return BarTooltipItem(rod.toY.toInt().toString(), Theme.of(context).textTheme.labelSmall!.copyWith(color: Colors.white));
             },
           ),
         ),
@@ -406,7 +412,7 @@ class _AdminHomeState extends State<AdminHome> {
           backDrawRodData: BackgroundBarChartRodData(
             show: true,
             toY: y,
-            color: Colors.black12,
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
         ),
       ],
@@ -415,8 +421,8 @@ class _AdminHomeState extends State<AdminHome> {
 
   Widget _buildShimmerHeader() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey.shade300,
-      highlightColor: Colors.grey.shade100,
+      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      highlightColor: Theme.of(context).colorScheme.surface,
       child: Container(
         height: 140,
         margin: const EdgeInsets.all(16),
@@ -447,24 +453,11 @@ class _AdminHomeState extends State<AdminHome> {
 
         return Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 16, bottom: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.dashboard_customize_outlined, size: 20, color: Colors.blueGrey),
-                  SizedBox(width: 8),
-                  Text(
-                    "Units Overview (Category Wise)",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blueGrey, letterSpacing: 0.8),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 16),
             Center(
               child: Text(
-                "$totalDocs Total Units Registered in System",
-                style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontStyle: FontStyle.italic),
+                "Total Units: $totalDocs (In System)",
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
               ),
             ),
             const SizedBox(height: 8),
@@ -509,86 +502,13 @@ class _AdminHomeState extends State<AdminHome> {
                 var categories = catSnap.data!.docs;
                 
                 return Column(
-                  children: categories.map((catDoc) {
-                    return _buildCategorySolidCard(catDoc);
+                  children: categories.asMap().entries.map<Widget>((entry) {
+                    return _buildCategorySolidCard(entry.value, entry.key);
                   }).toList(),
                 );
               },
             ),
           ],
-        );
-      },
-    );
-  }
-
-  Widget _buildCategorySolidCard(QueryDocumentSnapshot catDoc) {
-    String catId = catDoc.id;
-    String catName = (catDoc.data() as Map)['categoryName'] ?? 'Unnamed';
-    
-    // Assign decent solid colors based on index
-    final List<MaterialColor> colors = [Colors.indigo, Colors.teal, Colors.deepPurple, Colors.brown, Colors.cyan];
-    final MaterialColor baseColor = colors[catId.hashCode % colors.length];
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: _dbService.getSubItemsStream(catId),
-      builder: (context, subSnap) {
-        int total = 0;
-        int occupied = 0;
-        int vacant = 0;
-
-        if (subSnap.hasData) {
-          total = subSnap.data!.docs.length;
-          for (var doc in subSnap.data!.docs) {
-            var d = doc.data() as Map<String, dynamic>;
-            String status = d['status'] ?? ((d['tenantName'] ?? '').toString().isNotEmpty ? 'Occupied' : 'Vacant');
-            if (status == 'Occupied') {
-              occupied++;
-            } else {
-              vacant++;
-            }
-          }
-        }
-
-        return Card(
-          elevation: 4,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: baseColor.shade50,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: baseColor.shade200, width: 1.2),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: baseColor,
-                  child: const Icon(Icons.category_outlined, color: Colors.white, size: 16),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    catName.toUpperCase(),
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: baseColor.shade800, letterSpacing: 0.5),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _buildNestedStatItem("Total", total, Colors.blueGrey),
-                const SizedBox(width: 12),
-                _buildNestedStatItem("Occupied", occupied, Colors.green, onTap: () {
-                  DatabaseService.vibrate();
-                  widget.onCategoryTap?.call(0);
-                }),
-                const SizedBox(width: 12),
-                _buildNestedStatItem("Vacant", vacant, Colors.red, onTap: () {
-                  DatabaseService.vibrate();
-                  widget.onCategoryTap?.call(1);
-                }),
-              ],
-            ),
-          ),
         );
       },
     );
@@ -600,11 +520,11 @@ class _AdminHomeState extends State<AdminHome> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+          Text(label, style: Theme.of(context).textTheme.labelSmall),
           const SizedBox(width: 4),
           Text(
             count.toString(),
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: color),
           ),
         ],
       ),
@@ -613,8 +533,8 @@ class _AdminHomeState extends State<AdminHome> {
 
   Widget _buildSubOverviewCard({required String title, required int count, required Color color, required IconData icon, required VoidCallback onTap}) {
     return Card(
-      elevation: 4,
-      color: Colors.white,
+      elevation: 2,
+      color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: color.withOpacity(0.3), width: 1.2)),
       child: InkWell(
         onTap: onTap,
@@ -625,11 +545,11 @@ class _AdminHomeState extends State<AdminHome> {
             children: [
               Icon(icon, color: color, size: 28),
               const SizedBox(height: 8),
-              Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: color)),
+              Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: color)),
               const SizedBox(height: 4),
               Text(
                 count.toString(),
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24, color: color),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: color),
               ),
             ],
           ),
@@ -649,17 +569,100 @@ class _AdminHomeState extends State<AdminHome> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 10, color: Colors.white70),
+              Icon(icon, size: 12, color: Theme.of(context).colorScheme.onPrimary),
               const SizedBox(width: 4),
-              Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+              Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
             ],
           ),
           Text(
             "৳${amount.toStringAsFixed(0)}",
-            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: color, fontWeight: FontWeight.bold),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildUnifiedMeterTable({
+    required String title,
+    required List<String> headers,
+    required List<QueryDocumentSnapshot> meters,
+    required List<Widget> Function(Map<String, dynamic> data, int index) rowBuilder,
+    required Color containerColor,
+    required Color accentColor,
+    required IconData titleIcon,
+  }) {
+    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+          child: Row(
+            children: [
+              Icon(titleIcon, size: 18, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+              ),
+            ],
+          ),
+        ),
+        Card(
+          elevation: 2,
+          color: containerColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: accentColor, width: 1)
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Container(
+                alignment: Alignment.center,
+                constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 48),
+                child: Table(
+                  defaultColumnWidth: const IntrinsicColumnWidth(),
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  border: TableBorder(
+                    verticalInside: BorderSide(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1), width: 1),
+                  ),
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1), width: 0.5))
+                      ),
+                      children: headers.map((h) => Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle)),
+                      )).toList(),
+                    ),
+                    ...List.generate(meters.length, (index) {
+                      var doc = meters[index];
+                      var data = doc.data() as Map<String, dynamic>;
+                      var rows = rowBuilder(data, index);
+                      
+                      return TableRow(
+                        decoration: BoxDecoration(
+                          color: index % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent,
+                        ),
+                        children: rows.map((cell) => Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Center(child: cell),
+                        )).toList(),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -671,209 +674,158 @@ class _AdminHomeState extends State<AdminHome> {
         var mainMeters = snapshot.data!.docs;
 
         if (mainMeters.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Text("No Main Meters found.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text("No Main Meters found.", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
           );
         }
 
-        return InkWell(
-          onTap: widget.isReadOnly ? null : widget.onElectricityTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (showMainVsSub) ...[
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 8, 16, 4),
-                  child: Row(
-                    children: [
-                      Icon(Icons.balance, size: 16, color: Colors.indigo),
-                      SizedBox(width: 8),
-                      Text(
-                        "Main Meter Vs Sub Meter",
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.indigo),
-                      ),
-                    ],
-                  ),
-                ),
-                _buildMainVsSubTable(mainMeters),
-              ],
-              if (showMainVsGovt) ...[
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 16, 16, 4),
-                  child: Row(
-                    children: [
-                      Icon(Icons.receipt_long, size: 16, color: Colors.indigo),
-                      SizedBox(width: 8),
-                      Text(
-                        "Main Meter Vs Govt. Bill",
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.indigo),
-                      ),
-                    ],
-                  ),
-                ),
-                _buildMainVsGovtTable(mainMeters),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMainVsSubTable(List<QueryDocumentSnapshot> mainMeters) {
-    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
-    final dataStyle = Theme.of(context).textTheme.bodyMedium;
-
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.indigo.shade50,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.indigo.shade200, width: 1)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Container(
-            alignment: Alignment.center,
-            width: MediaQuery.of(context).size.width > 500 ? null : MediaQuery.of(context).size.width - 24,
-            child: Table(
-              defaultColumnWidth: const IntrinsicColumnWidth(),
-              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-              children: [
-                TableRow(
-                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
-                  children: [
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("#", textAlign: TextAlign.center, style: textStyle))),
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Main Meter\nUsed Units", textAlign: TextAlign.center, style: textStyle))),
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Total Sub-Meter\nUnits", textAlign: TextAlign.center, style: textStyle))),
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("This Month\nUnit Rate", textAlign: TextAlign.center, style: textStyle))),
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Balance\nUnits", textAlign: TextAlign.center, style: textStyle))),
-                  ],
-                ),
-                ...List.generate(mainMeters.length, (index) {
-                  var doc = mainMeters[index];
-                  var data = doc.data() as Map<String, dynamic>;
-                  String meterNo = data['meterNo'] ?? 'N/A';
+        return Column(
+          children: [
+            if (showMainVsSub)
+              _buildUnifiedMeterTable(
+                title: "Main Meter Vs Sub Meter",
+                titleIcon: Icons.balance,
+                containerColor: Theme.of(context).colorScheme.primaryContainer,
+                accentColor: Theme.of(context).colorScheme.primary,
+                headers: ["#", "Meter Number", "Main Used", "Sub Units", "Unit Rate", "Balance"],
+                meters: mainMeters,
+                rowBuilder: (data, index) {
                   double last = (data['lastReading'] as num?)?.toDouble() ?? 0;
                   double present = (data['presentReading'] ?? last).toDouble();
                   double mainUsed = present - last;
                   double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
                   double unitRate = (data['unitRate'] as num?)?.toDouble() ?? 0;
                   double balance = mainUsed - totalSubPaid;
-
-                  return TableRow(
-                    decoration: BoxDecoration(color: index % 2 == 0 ? Colors.white.withOpacity(0.5) : Colors.transparent),
-                    children: [
-                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${index + 1}", textAlign: TextAlign.center, style: dataStyle))),
-                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(meterNo, textAlign: TextAlign.center, style: textStyle, overflow: TextOverflow.ellipsis))),
-                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(mainUsed.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle))),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Center(
-                          child: Text(totalSubPaid.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle),
-                        ),
+                  
+                  return [
+                    Text("${index + 1}", style: Theme.of(context).textTheme.bodyMedium),
+                    Text(data['meterNo'] ?? 'N/A', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(mainUsed.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
+                    Text(totalSubPaid.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
+                    Text("৳${unitRate.toStringAsFixed(2)}", style: Theme.of(context).textTheme.bodyMedium),
+                    Text(
+                      balance.toStringAsFixed(1),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: balance > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
                       ),
-                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("৳${unitRate.toStringAsFixed(2)}", textAlign: TextAlign.center, style: dataStyle))),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Center(
-                          child: Text(
-                            balance.toStringAsFixed(1),
-                            textAlign: TextAlign.center,
-                            style: (dataStyle ?? const TextStyle()).copyWith(
-                              color: balance > 0 ? Colors.red : Colors.green,
-                              fontWeight: balance > 0 ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMainVsGovtTable(List<QueryDocumentSnapshot> mainMeters) {
-    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
-    final dataStyle = Theme.of(context).textTheme.bodyMedium;
-
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.teal.shade50,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.teal.shade200, width: 1)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Container(
-            alignment: Alignment.center,
-            width: MediaQuery.of(context).size.width > 500 ? null : MediaQuery.of(context).size.width - 24,
-            child: Table(
-              defaultColumnWidth: const IntrinsicColumnWidth(),
-              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-              children: [
-                TableRow(
-                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
-                  children: [
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("#", textAlign: TextAlign.center, style: textStyle))),
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Main Meter\nReadings", textAlign: TextAlign.center, style: textStyle))),
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt. Bill\nReadings", textAlign: TextAlign.center, style: textStyle))),
-                    Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Balance\nUnits", textAlign: TextAlign.center, style: textStyle))),
-                  ],
-                ),
-                ...List.generate(mainMeters.length, (index) {
-                  var doc = mainMeters[index];
-                  var data = doc.data() as Map<String, dynamic>;
-                  String meterNo = data['meterNo'] ?? 'N/A';
+                    ),
+                  ];
+                },
+              ),
+            if (showMainVsGovt)
+              _buildUnifiedMeterTable(
+                title: "Main Meter Vs Govt. Bill",
+                titleIcon: Icons.receipt_long,
+                containerColor: Theme.of(context).colorScheme.secondaryContainer,
+                accentColor: Theme.of(context).colorScheme.secondary,
+                headers: ["#", "Meter Number", "Main Readings", "Govt. Readings", "Balance Units"],
+                meters: mainMeters,
+                rowBuilder: (data, index) {
                   double present = (data['presentReading'] as num?)?.toDouble() ?? 0;
                   double govtPresent = (data['govtBillReading'] as num?)?.toDouble() ?? 0;
                   double balance = govtPresent - present;
                   bool isAlert = balance < -5 || balance > 100;
 
-                  return TableRow(
-                    decoration: BoxDecoration(color: index % 2 == 0 ? Colors.white.withOpacity(0.5) : Colors.transparent),
-                    children: [
-                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${index + 1}", textAlign: TextAlign.center, style: dataStyle))),
-                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(meterNo, textAlign: TextAlign.center, style: textStyle, overflow: TextOverflow.ellipsis))),
-                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(present.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle))),
-                      Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(govtPresent.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle))),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Center(
-                          child: Text(
-                            balance.toStringAsFixed(1),
-                            textAlign: TextAlign.center,
-                            style: (dataStyle ?? const TextStyle()).copyWith(
-                              color: isAlert ? Colors.red : Colors.green,
-                              fontWeight: isAlert ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                        ),
+                  return [
+                    Text("${index + 1}", style: Theme.of(context).textTheme.bodyMedium),
+                    Text(data['meterNo'] ?? 'N/A', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(present.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
+                    Text(govtPresent.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
+                    Text(
+                      balance.toStringAsFixed(1),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: isAlert ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                        fontWeight: isAlert ? FontWeight.bold : FontWeight.normal,
                       ),
-                    ],
-                  );
-                }),
+                    ),
+                  ];
+                },
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCategorySolidCard(QueryDocumentSnapshot catDoc, int index) {
+    String catId = catDoc.id;
+    String catName = (catDoc.data() as Map)['categoryName'] ?? 'Unnamed';
+    
+    // Assign rotating containers based on index to ensure visual difference
+    final List<Color> bgColors = [
+      Theme.of(context).colorScheme.primaryContainer, 
+      Theme.of(context).colorScheme.secondaryContainer, 
+      Theme.of(context).colorScheme.tertiaryContainer,
+    ];
+    final List<Color> accentColors = [
+      Theme.of(context).colorScheme.primary,
+      Theme.of(context).colorScheme.secondary,
+      Theme.of(context).colorScheme.tertiary,
+    ];
+    
+    int idx = index % bgColors.length;
+    final Color bgColor = bgColors[idx];
+    final Color accentColor = accentColors[idx];
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _dbService.getSubItemsStream(catId),
+      builder: (context, subSnap) {
+        int total = 0;
+        int occupied = 0;
+        int vacant = 0;
+
+        if (subSnap.hasData) {
+          total = subSnap.data!.docs.length;
+          for (var doc in subSnap.data!.docs) {
+            var d = doc.data() as Map<String, dynamic>;
+            String status = d['status'] ?? ((d['tenantName'] ?? '').toString().isNotEmpty ? 'Occupied' : 'Vacant');
+            if (status == 'Occupied') occupied++; else vacant++;
+          }
+        }
+
+        return Card(
+          elevation: 2,
+          color: bgColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: accentColor.withOpacity(0.1), width: 1.2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: accentColor,
+                  child: const Icon(Icons.category_outlined, color: Colors.white, size: 16),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    catName.toUpperCase(),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: accentColor, letterSpacing: 0.5),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                _buildNestedStatItem("Total", total, accentColor),
+                const SizedBox(width: 12),
+                _buildNestedStatItem("Occupied", occupied, Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 12),
+                _buildNestedStatItem("Vacant", vacant, Theme.of(context).colorScheme.error),
               ],
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   Widget _buildShimmerList() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey.shade300,
-      highlightColor: Colors.grey.shade100,
+      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      highlightColor: Theme.of(context).colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -895,9 +847,9 @@ class _AdminHomeState extends State<AdminHome> {
       builder: (context) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.85,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
           ),
           child: DefaultTabController(
             length: 2,
@@ -907,26 +859,26 @@ class _AdminHomeState extends State<AdminHome> {
                 const SizedBox(height: 12),
                 Container(
                   width: 40, height: 4,
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2)),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.analytics_outlined, color: Colors.blueAccent),
+                      Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
                         "$_selectedMonthStr Revenue Details",
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ],
                   ),
                 ),
                 TabBar(
-                  labelColor: Colors.blue.shade900,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: Colors.blue.shade900,
+                  labelColor: Theme.of(context).colorScheme.primary,
+                  unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  indicatorColor: Theme.of(context).colorScheme.primary,
                   indicatorSize: TabBarIndicatorSize.tab,
                   tabs: const [
                     Tab(icon: Icon(Icons.check_circle_outline), text: "Received"),
@@ -957,27 +909,27 @@ class _AdminHomeState extends State<AdminHome> {
       builder: (context) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.85,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
           ),
           child: Column(
             children: [
               const SizedBox(height: 12),
               Container(
                 width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2)),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(isRent ? Icons.home_work_outlined : Icons.settings_suggest_outlined, color: Colors.teal),
+                    Icon(isRent ? Icons.home_work_outlined : Icons.settings_suggest_outlined, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 8),
                     Text(
                       "$_selectedMonthStr ${isRent ? 'Rent' : 'Utility'} Details",
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ],
                 ),
@@ -1021,8 +973,8 @@ class _AdminHomeState extends State<AdminHome> {
                                 title: "$resolvedSubName ($tName)",
                                 subtitle: categoryName,
                                 amount: amountToShow,
-                                color: isRent ? Colors.lightBlue : Colors.orangeAccent.shade700,
-                                icon: isRent ? Icons.home_work : Icons.settings_suggest,
+                                color: isRent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
+                                icon: isRent ? Icons.home_work_outlined : Icons.settings_suggest_outlined,
                                 paidBy: data['paidBy'],
                                 paidAt: data['paidAt'],
                                 notes: data['paymentNotes'],
@@ -1037,8 +989,8 @@ class _AdminHomeState extends State<AdminHome> {
                           title: "$resolvedSubName ($tName)",
                           subtitle: categoryName,
                           amount: amountToShow,
-                          color: isRent ? Colors.lightBlue : Colors.orangeAccent.shade700,
-                          icon: isRent ? Icons.home_work : Icons.settings_suggest,
+                          color: isRent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
+                          icon: isRent ? Icons.home_work_outlined : Icons.settings_suggest_outlined,
                         );
                       },
                     );
@@ -1084,8 +1036,8 @@ class _AdminHomeState extends State<AdminHome> {
                     title: "$resolvedSubName ($tName)",
                     subtitle: categoryName,
                     amount: (data['totalAmount'] as num).toDouble(),
-                    color: Colors.green,
-                    icon: Icons.check_circle,
+                    color: Theme.of(context).colorScheme.primary,
+                    icon: Icons.check_circle_outline,
                     paidBy: data['paidBy'],
                     paidAt: data['paidAt'],
                     notes: data['paymentNotes'],
@@ -1100,8 +1052,8 @@ class _AdminHomeState extends State<AdminHome> {
               title: "$resolvedSubName ($tName)",
               subtitle: categoryName,
               amount: (data['totalAmount'] as num).toDouble(),
-              color: Colors.green,
-              icon: Icons.check_circle,
+              color: Theme.of(context).colorScheme.primary,
+              icon: Icons.check_circle_outline,
             );
           },
         );
@@ -1152,8 +1104,8 @@ class _AdminHomeState extends State<AdminHome> {
                       title: "${data['subItemName']} ($tName)",
                       subtitle: categoryName,
                       amount: amount,
-                      color: Colors.orange,
-                      icon: Icons.pending,
+                      color: Theme.of(context).colorScheme.error,
+                      icon: Icons.pending_actions,
                       onTap: () async {
                         var catDoc = await _dbService.getCategoryById(catId);
                         List catServices = (catDoc.data() as Map<String, dynamic>?)?['assignedServices'] ?? [];
@@ -1197,43 +1149,43 @@ class _AdminHomeState extends State<AdminHome> {
     String? notes,
   }) {
     final List<Color> pastelColors = [
-      Colors.blue.shade50,
-      Colors.green.shade50,
-      Colors.orange.shade50,
-      Colors.purple.shade50,
-      Colors.teal.shade50,
-      Colors.pink.shade50,
-      Colors.amber.shade50,
-      Colors.cyan.shade50,
+      const Color(0xFFE8EAFC),
+      const Color(0xFFE0F2F1),
+      const Color(0xFFFFF3E0),
+      const Color(0xFFF3E5F5),
+      const Color(0xFFF1F8E9),
+      const Color(0xFFFCE4EC),
+      const Color(0xFFFFF8E1),
+      const Color(0xFFE1F5FE),
     ];
     Color itemColor = pastelColors[index % pastelColors.length];
 
     return Card(
-      elevation: 2,
+      elevation: 1,
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
       color: itemColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: color.withValues(alpha: 0.1), width: 1)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: color.withOpacity(0.15), width: 1)),
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.1),
+          backgroundColor: Colors.white.withOpacity(0.5),
           child: Icon(icon, color: color, size: 20),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        title: Text(title, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.blueGrey.shade700)),
+            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
             if (paidBy != null)
               Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text("Paid by: $paidBy", style: const TextStyle(fontSize: 10, color: Colors.indigo, fontWeight: FontWeight.bold)),
+                padding: const EdgeInsets.only(top: 4),
+                child: Text("Paid by: $paidBy", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
               ),
             if (paidAt != null)
-              Text("Paid at: ${DatabaseService.formatFullDateTime(paidAt)}", style: const TextStyle(fontSize: 9, color: Colors.blueGrey)),
+              Text("Time: ${DatabaseService.formatFullDateTime(paidAt)}", style: Theme.of(context).textTheme.labelSmall),
             if (notes != null && notes.isNotEmpty)
-              Text("Note: $notes", style: const TextStyle(fontSize: 9, color: Colors.brown, fontStyle: FontStyle.italic)),
+              Text("Note: $notes", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
           ],
         ),
         trailing: Row(
@@ -1241,9 +1193,9 @@ class _AdminHomeState extends State<AdminHome> {
           children: [
             Text(
               "৳${amount.toStringAsFixed(2)}",
-              style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: color),
             ),
-            if (onTap != null) const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+            Icon(Icons.chevron_right, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ],
         ),
       ),
@@ -1276,8 +1228,8 @@ class _AdminHomeState extends State<AdminHome> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Column(
           children: [
-            Text(subName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.indigo)),
-            Text("$tenantName | $catName", style: const TextStyle(fontSize: 13, color: Colors.blueGrey)),
+            Text(subName, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+            Text("$tenantName | $catName", style: Theme.of(context).textTheme.bodyMedium),
             const Divider(height: 24),
           ],
         ),
@@ -1292,22 +1244,22 @@ class _AdminHomeState extends State<AdminHome> {
                     children: [
                       const Icon(Icons.flash_on, color: Colors.amber, size: 16),
                       const SizedBox(width: 8),
-                      const Text("Electricity Breakdown", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleSmall),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _buildDetailRow("Meter No:", data['electricityDetails']['subMeterNo'] ?? 'N/A'),
-                  _buildDetailRow("Reading:", "${data['electricityDetails']['lastReading']} -> ${data['electricityDetails']['presentReading']}"),
-                  _buildDetailRow("Unit Rate:", "৳${(data['electricityDetails']['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2)}"),
-                  _buildDetailRow("Bill Amount:", "৳${(data['electricityBill'] as num?)?.toDouble().toStringAsFixed(2)}", isBold: true, color: Colors.teal),
+                  _buildDetailRow(context, "Meter No:", data['electricityDetails']['subMeterNo'] ?? 'N/A'),
+                  _buildDetailRow(context, "Reading:", "${data['electricityDetails']['lastReading']} -> ${data['electricityDetails']['presentReading']}"),
+                  _buildDetailRow(context, "Unit Rate:", "৳${(data['electricityDetails']['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2)}"),
+                  _buildDetailRow(context, "Bill Amount:", "৳${(data['electricityBill'] as num?)?.toDouble().toStringAsFixed(2)}", isBold: true, color: Theme.of(context).colorScheme.secondary),
                   const Divider(height: 24),
                 ],
                 if (displayServices.isNotEmpty) ...[
                   Row(
                     children: [
-                      const Icon(Icons.list_alt, color: Colors.indigo, size: 16),
+                      Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary, size: 16),
                       const SizedBox(width: 8),
-                      Text(mode == 'rent' ? "Rent Info" : "Services Info", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text(mode == 'rent' ? "Rent Info" : "Services Info", style: Theme.of(context).textTheme.titleSmall),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -1316,22 +1268,22 @@ class _AdminHomeState extends State<AdminHome> {
                     if (name.toLowerCase().contains('wifi') && s['deviceQuantity'] != null) {
                       name = "$name (Devices: ${s['deviceQuantity']})";
                     }
-                    return _buildDetailRow(name, "৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}");
+                    return _buildDetailRow(context, name, "৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}");
                   }),
                 ],
                 const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.indigo.shade50, 
+                    color: Theme.of(context).colorScheme.primaryContainer, 
                     borderRadius: BorderRadius.circular(12), 
-                    border: Border.all(color: Colors.indigo.shade200)
+                    border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2))
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Total", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                      Text("৳${displayTotal.toStringAsFixed(2)}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.indigo)),
+                      Text("Total", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                      Text("৳${displayTotal.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
                     ],
                   ),
                 ),
@@ -1339,14 +1291,14 @@ class _AdminHomeState extends State<AdminHome> {
                   const Divider(height: 32),
                   Row(
                     children: [
-                      const Icon(Icons.info_outline, color: Colors.blueGrey, size: 16),
+                      Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 16),
                       const SizedBox(width: 8),
-                      const Text("Payment Meta", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text("Payment Meta", style: Theme.of(context).textTheme.titleSmall),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  if (data['paidBy'] != null) _buildDetailRow("Collected by:", data['paidBy']),
-                  if (data['paidAt'] != null) _buildDetailRow("Time:", DatabaseService.formatFullDateTime(data['paidAt'])),
+                  if (data['paidBy'] != null) _buildDetailRow(context, "Collected by:", data['paidBy']),
+                  if (data['paidAt'] != null) _buildDetailRow(context, "Time:", DatabaseService.formatFullDateTime(data['paidAt'])),
                   if ((data['paymentNotes'] ?? '').toString().isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -1354,13 +1306,13 @@ class _AdminHomeState extends State<AdminHome> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.brown.shade50,
+                          color: Theme.of(context).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.brown.shade100),
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: Text(
                           "Note: ${data['paymentNotes']}", 
-                          style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.brown)
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)
                         ),
                       ),
                     ),
@@ -1372,15 +1324,13 @@ class _AdminHomeState extends State<AdminHome> {
         actions: [
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.tertiary,
+                foregroundColor: Theme.of(context).colorScheme.onTertiary,
               ),
               onPressed: () => Navigator.pop(context), 
-              child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold))
+              child: const Text("OK")
             ),
           ),
         ],
@@ -1388,14 +1338,14 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isBold = false, Color? color}) {
+  Widget _buildDetailRow(BuildContext context, String label, String value, {bool isBold = false, Color? color}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 13, color: Colors.blueGrey)),
-          Text(value, style: TextStyle(fontSize: 14, fontWeight: isBold ? FontWeight.bold : FontWeight.w600, color: color)),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.w600, color: color)),
         ],
       ),
     );
@@ -1406,11 +1356,11 @@ class _AdminHomeState extends State<AdminHome> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.info_outline, size: 48, color: Colors.grey.shade300),
+          Icon(Icons.info_outline, size: 48, color: Theme.of(context).colorScheme.outline),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+            child: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic)),
           ),
         ],
       ),

@@ -51,7 +51,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         double currentVer = snap['dbVersion']?.toDouble() ?? 1.0;
         if (_lastDBVersion != null && currentVer != _lastDBVersion) {
           // Version changed (Restore happened)
-          DatabaseService.showToast(context, "System Data Updated (V$currentVer)", backgroundColor: Colors.teal);
+          DatabaseService.showToast(context, "System Data Updated (V$currentVer)");
           setState(() {}); // Trigger rebuild
         }
         _lastDBVersion = currentVer;
@@ -113,15 +113,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Center(child: Text("Logout Confirmation", style: TextStyle(fontWeight: FontWeight.bold))),
-          content: const Text("Are you sure you want to logout?", textAlign: TextAlign.center),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          title: Center(child: Text("Logout Confirmation", style: Theme.of(context).textTheme.titleLarge)),
+          content: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error, 
+                      side: BorderSide(color: Theme.of(context).colorScheme.error)
+                    ),
                     onPressed: () => Navigator.pop(context),
                     child: const Text("Cancel"),
                   ),
@@ -129,12 +132,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.error, 
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary
+                    ),
                     onPressed: () {
                       Navigator.pop(context);
                       _handleLogout();
                     },
-                    child: const Text("Logout"),
+                    child: const Text("Close"),
                   ),
                 ),
               ],
@@ -174,30 +180,39 @@ class _AdminDashboardState extends State<AdminDashboard> {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          toolbarHeight: 70,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _appName.isEmpty ? "Loading..." : _appName,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                overflow: TextOverflow.ellipsis,
-              ),
-              Row(
-                children: [
-                  Text(
-                    titles[_currentIndex],
-                    style: const TextStyle(fontSize: 11, color: Colors.blue),
-                  ),
-                  const Text(" | ", style: TextStyle(fontSize: 11, color: Colors.grey)),
-                  Text(
-                    _username.toUpperCase(),
-                    style: TextStyle(fontSize: 11, color: Colors.indigo.shade700, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ],
+          centerTitle: false,
+          title: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 1),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _appName.isEmpty ? "Loading..." : _appName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      titles[_currentIndex],
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                    ),
+                    Text(
+                      " | ", 
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
+                    ),
+                    Text(
+                      _username.toUpperCase(),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary, 
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           actions: [
             InkWell(
@@ -205,7 +220,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               child: StreamBuilder<DocumentSnapshot>(
                 stream: _dbService.getAppConfigStream(),
                 builder: (context, snapshot) {
-                  String current = _username == "User" ? "..." : ""; // Placeholder until package info loads? No, let's use a local state.
                   return FutureBuilder<PackageInfo>(
                     future: PackageInfo.fromPlatform(),
                     builder: (context, pSnap) {
@@ -215,10 +229,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       return Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.logout, color: Colors.red, size: 20),
-                          Text(local, style: TextStyle(fontSize: 8, color: Colors.blueGrey.shade600, fontWeight: FontWeight.bold)),
+                          Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 20),
+                          Text(local, style: Theme.of(context).textTheme.labelSmall),
                           if (remote != null && remote != local)
-                            Text(remote, style: const TextStyle(fontSize: 8, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                            Text(remote, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
                         ],
                       );
                     }
@@ -262,8 +276,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
           type: BottomNavigationBarType.fixed,
           onTap: (index) {
             if (index == 1) {
@@ -274,9 +288,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
             _pageController.animateToPage(index, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
           },
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-            BottomNavigationBarItem(icon: Icon(Icons.category), label: "Category"),
-            BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Settings"),
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: "Home"),
+            BottomNavigationBarItem(icon: Icon(Icons.category_outlined), activeIcon: Icon(Icons.category), label: "Category"),
+            BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: "Settings"),
           ],
         ),
       ),

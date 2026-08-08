@@ -38,43 +38,102 @@ class _CategoryPageState extends State<CategoryPage> {
     DatabaseService.vibrate();
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.add, color: Colors.white)), 
-                title: const Text("New Category"), 
-                subtitle: const Text("Create a new group like 'Shop' or 'Room'", maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: () { Navigator.pop(ctx); CategoryDialogs.showCreateCategoryDialog(context); }
-              ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.teal, child: Icon(Icons.build_circle_outlined, color: Colors.white)), 
-                title: const Text("Manage Services"), 
-                subtitle: const Text("Add services like Water, Wifi, or Garbage", maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddServiceDialog(context); }
-              ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.indigo, child: Icon(Icons.add_chart, color: Colors.white)), 
-                title: const Text("Add Main Meter"), 
-                subtitle: const Text("Register a main meter for electricity billing", maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddMainMeterDialog(context); }
-              ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.blueGrey, child: Icon(Icons.cable, color: Colors.white)), 
-                title: const Text("Add Sub Meter"), 
-                subtitle: const Text("Register a sub-meter linked to a main meter", maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddSubMeterDialog(context); }
-              ),
-            ],
-          ),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
+            _buildActionCard(
+              context, 
+              title: "New Category", 
+              subtitle: "Create a new group like 'Shop' or 'Room'", 
+              icon: Icons.category_outlined, 
+              color: Theme.of(context).colorScheme.primaryContainer,
+              accentColor: Theme.of(context).colorScheme.primary,
+              onTap: () { Navigator.pop(ctx); CategoryDialogs.showCreateCategoryDialog(context); }
+            ),
+            const SizedBox(height: 10),
+            _buildActionCard(
+              context, 
+              title: "Manage Services", 
+              subtitle: "Add global services for categories", 
+              icon: Icons.build_circle_outlined, 
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              accentColor: Theme.of(context).colorScheme.secondary,
+              onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddServiceDialog(context); }
+            ),
+            const SizedBox(height: 10),
+            _buildActionCard(
+              context, 
+              title: "Electricity Meters", 
+              subtitle: "Add Main or Sub-Meters", 
+              icon: Icons.electric_bolt_outlined, 
+              color: Theme.of(context).colorScheme.tertiaryContainer,
+              accentColor: Theme.of(context).colorScheme.tertiary,
+              onTap: () { 
+                Navigator.pop(ctx);
+                _showMeterChoiceMenu(context);
+              }
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionCard(BuildContext context, {required String title, required String subtitle, required IconData icon, required Color color, required Color accentColor, required VoidCallback onTap}) {
+    return Card(
+      elevation: 4,
+      margin: EdgeInsets.zero,
+      color: color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accentColor.withOpacity(0.1))),
+      child: ListTile(
+        onTap: onTap,
+        leading: CircleAvatar(backgroundColor: accentColor, child: Icon(icon, color: Colors.white, size: 20)),
+        title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: accentColor)),
+        subtitle: Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: accentColor.withOpacity(0.7))),
+        trailing: Icon(Icons.arrow_forward_ios, size: 14, color: accentColor),
+      ),
+    );
+  }
+
+  void _showMeterChoiceMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
+            _buildActionCard(
+              context, 
+              title: "Add Main Meter", 
+              subtitle: "Register a master electric meter", 
+              icon: Icons.add_chart_outlined, 
+              color: Theme.of(context).colorScheme.primaryContainer,
+              accentColor: Theme.of(context).colorScheme.primary,
+              onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddMainMeterDialog(context); }
+            ),
+            const SizedBox(height: 10),
+            _buildActionCard(
+              context, 
+              title: "Add Sub Meter", 
+              subtitle: "Register a unit-linked meter", 
+              icon: Icons.cable_outlined, 
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              accentColor: Theme.of(context).colorScheme.secondary,
+              onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddSubMeterDialog(context); }
+            ),
+          ],
         ),
       ),
     );
@@ -88,15 +147,17 @@ class _CategoryPageState extends State<CategoryPage> {
       child: Column(
         children: [
           Material(
-            color: Theme.of(context).primaryColor.withOpacity(0.05),
-            child: const TabBar(
-              labelColor: Colors.blue,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.blue,
-              tabs: [
-                Tab(icon: Icon(Icons.door_front_door, size: 20), text: "Occupied"),
-                Tab(icon: Icon(Icons.meeting_room, size: 20), text: "Vacant"),
-                Tab(icon: Icon(Icons.electric_bolt, size: 20), text: "Meters"),
+            color: Theme.of(context).colorScheme.surface,
+            child: TabBar(
+              labelColor: Theme.of(context).colorScheme.primary,
+              unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              indicatorColor: Theme.of(context).colorScheme.primary,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Theme.of(context).colorScheme.outlineVariant,
+              tabs: const [
+                Tab(icon: Icon(Icons.door_front_door_outlined, size: 20), text: "Occupied"),
+                Tab(icon: Icon(Icons.meeting_room_outlined, size: 20), text: "Vacant"),
+                Tab(icon: Icon(Icons.electric_bolt_outlined, size: 20), text: "Meters"),
               ],
             ),
           ),
@@ -135,7 +196,7 @@ class _CategoryPageState extends State<CategoryPage> {
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           child: Row(
             children: [
-              const Icon(Icons.filter_alt, color: Colors.blue, size: 18),
+              Icon(Icons.filter_alt_outlined, color: Theme.of(context).colorScheme.primary, size: 18),
               const SizedBox(width: 4),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
@@ -145,10 +206,16 @@ class _CategoryPageState extends State<CategoryPage> {
                     var categories = snapshot.data!.docs;
                     return DropdownButtonFormField<String?>(
                       value: _selectedFilterCategoryId,
-                      decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8), border: OutlineInputBorder(), labelText: "Category"),
+                      decoration: InputDecoration(
+                        isDense: true, 
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), 
+                        border: const OutlineInputBorder(), 
+                        labelText: "Category",
+                        labelStyle: Theme.of(context).textTheme.bodySmall,
+                      ),
                       items: [
-                        const DropdownMenuItem<String?>(value: null, child: Text("All Categories")),
-                        ...categories.map((doc) => DropdownMenuItem<String?>(value: doc.id, child: Text((doc.data() as Map)['categoryName'] ?? ''))),
+                        DropdownMenuItem<String?>(value: null, child: Text("All Categories", style: Theme.of(context).textTheme.bodyMedium)),
+                        ...categories.map((doc) => DropdownMenuItem<String?>(value: doc.id, child: Text((doc.data() as Map)['categoryName'] ?? '', style: Theme.of(context).textTheme.bodyMedium))),
                       ],
                       onChanged: (val) => setState(() => _selectedFilterCategoryId = val),
                     );
@@ -159,11 +226,18 @@ class _CategoryPageState extends State<CategoryPage> {
                 const SizedBox(width: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Theme.of(context).colorScheme.outline), 
+                    borderRadius: BorderRadius.circular(8),
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
                   child: Row(
                     children: [
                       IconButton(icon: const Icon(Icons.chevron_left, size: 18), onPressed: () => _moveMonth(-1), constraints: const BoxConstraints(), padding: EdgeInsets.zero),
-                      Text(_selectedMonthStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.indigo)),
+                      Text(
+                        _selectedMonthStr, 
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                      ),
                       IconButton(icon: const Icon(Icons.chevron_right, size: 18), onPressed: () => _moveMonth(1), constraints: const BoxConstraints(), padding: EdgeInsets.zero),
                     ],
                   ),
@@ -184,7 +258,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 categoryDocs = categoryDocs.where((doc) => doc.id == _selectedFilterCategoryId).toList();
               }
 
-              if (categoryDocs.isEmpty) return const Center(child: Text("No categories found."));
+              if (categoryDocs.isEmpty) return Center(child: Text("No categories found.", style: Theme.of(context).textTheme.bodyMedium));
 
               return ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -209,17 +283,6 @@ class _CategoryPageState extends State<CategoryPage> {
 
                       subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
 
-                      final List<Color> cardColors = [
-                        Colors.blue.shade50,
-                        Colors.green.shade50,
-                        Colors.orange.shade50,
-                        Colors.purple.shade50,
-                        Colors.teal.shade50,
-                        Colors.pink.shade50,
-                        Colors.amber.shade50,
-                        Colors.cyan.shade50,
-                      ];
-
                       double catTotal = 0;
                       for (var doc in subDocs) {
                         var d = doc.data() as Map<String, dynamic>;
@@ -233,15 +296,27 @@ class _CategoryPageState extends State<CategoryPage> {
                       }
 
                       bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
-                      final accentColor = Colors.primaries[(i * 3) % Colors.primaries.length];
+                      
+                      final List<Color> bgColors = [
+                        Theme.of(context).colorScheme.primaryContainer, 
+                        Theme.of(context).colorScheme.secondaryContainer, 
+                        Theme.of(context).colorScheme.tertiaryContainer,
+                      ];
+                      final List<Color> accentColors = [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.secondary,
+                        Theme.of(context).colorScheme.tertiary,
+                      ];
+                      int colorIdx = i % bgColors.length;
+                      final Color bgColor = bgColors[colorIdx];
+                      final Color accentColor = accentColors[colorIdx];
 
                       return Card(
-                        elevation: 3,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        color: Colors.white,
+                        elevation: 2,
+                        color: bgColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16), 
-                          side: BorderSide(color: accentColor.withValues(alpha: 0.1), width: 1.2)
+                          side: BorderSide(color: accentColor.withOpacity(0.1), width: 1.2)
                         ),
                         child: ExpansionTile(
                           shape: const Border(),
@@ -260,18 +335,18 @@ class _CategoryPageState extends State<CategoryPage> {
                           title: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(catName.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 0.5, color: accentColor)),
-                              Text("৳${catTotal.toStringAsFixed(2)}", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: accentColor)),
+                              Text(catName.toUpperCase(), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, letterSpacing: 0.5, color: accentColor)),
+                              Text("৳${catTotal.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: accentColor)),
                             ],
                           ),
-                          subtitle: Text("${subDocs.length} units | Assigned services", style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                          subtitle: Text("${subDocs.length} units | Assigned services", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: accentColor.withOpacity(0.7))),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              IconButton(icon: Icon(Icons.settings, color: accentColor, size: 20), onPressed: () => CategoryDialogs.showCategorySettingsDialog(context: context, categoryId: catId, categoryName: catName, dynamicAssignedServices: assignedServices)),
+                              IconButton(icon: Icon(Icons.settings_outlined, color: accentColor, size: 20), onPressed: () => CategoryDialogs.showCategorySettingsDialog(context: context, categoryId: catId, categoryName: catName, dynamicAssignedServices: assignedServices)),
                               if (!widget.isOperator) 
                                 IconButton(
-                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.orangeAccent, size: 20), 
+                                  icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
                                   onPressed: () => CategoryDialogs.showConfirmDialog(
                                     context: context, 
                                     title: "Remove '$catName'?", 
@@ -282,13 +357,12 @@ class _CategoryPageState extends State<CategoryPage> {
                                     },
                                   ),
                                 ),
-                              const Icon(Icons.expand_more),
+                              Icon(Icons.expand_more, color: accentColor),
                             ],
                           ),
                           children: [
                             const Divider(height: 1),
                             ...subDocs.asMap().entries.map((entry) {
-                              int subIdx = entry.key;
                               var subDoc = entry.value;
                               var d = subDoc.data() as Map<String, dynamic>;
                               String subId = subDoc.id;
@@ -300,23 +374,25 @@ class _CategoryPageState extends State<CategoryPage> {
                               double eBillAmount = 0;
                               if (ed != null && ed['isStopped'] != true) eBillAmount = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
                               double total = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillAmount;
-                              Color itemColor = cardColors[subIdx % cardColors.length];
 
                               if (status == 'Vacant') {
                                 return Card(
                                   margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  color: itemColor,
+                                  color: Theme.of(context).colorScheme.errorContainer,
                                   elevation: 2,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.red.shade100, width: 0.8)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12), 
+                                    side: BorderSide(color: Theme.of(context).colorScheme.error.withOpacity(0.2), width: 1)
+                                  ),
                                   child: ExpansionTile(
                                     tilePadding: const EdgeInsets.symmetric(horizontal: 12),
                                     trailing: const SizedBox.shrink(),
                                     title: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Padding(
-                                          padding: EdgeInsets.only(top: 4),
-                                          child: Icon(Icons.meeting_room_outlined, color: Colors.redAccent, size: 24),
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 4),
+                                          child: Icon(Icons.meeting_room_outlined, color: Theme.of(context).colorScheme.error, size: 24),
                                         ),
                                         const SizedBox(width: 10),
                                         Expanded(
@@ -327,14 +403,14 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 children: [
                                                   Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                    decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
-                                                    child: Text(subName, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, fontSize: 18)),
+                                                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(4)),
+                                                    child: Text(subName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.error)),
                                                   ),
                                                   const Spacer(),
                                                   IconButton(
                                                     padding: EdgeInsets.zero,
                                                     constraints: const BoxConstraints(),
-                                                    icon: const Icon(Icons.edit, size: 18, color: Colors.blueGrey),
+                                                    icon: Icon(Icons.edit_outlined, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                                     onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
                                                       context: context, 
                                                       subItemId: subId, 
@@ -348,7 +424,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   PopupMenuButton<String>(
                                                     padding: EdgeInsets.zero,
                                                     constraints: const BoxConstraints(),
-                                                    icon: const Icon(Icons.more_vert, size: 24, color: Colors.blueGrey),
+                                                    icon: Icon(Icons.more_vert, size: 24, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                                     onSelected: (val) async {
                                                       if (val == 'remove') CategoryDialogs.showConfirmDialog(
                                                         context: context, 
@@ -362,18 +438,18 @@ class _CategoryPageState extends State<CategoryPage> {
                                                     },
                                                     itemBuilder: (ctx) => [
                                                       if (!widget.isOperator)
-                                                        const PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red, size: 20), title: Text("Remove Unit", style: TextStyle(color: Colors.red)), dense: true)),
+                                                        PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
                                                     ],
                                                   ),
                                                 ],
                                               ),
                                               const SizedBox(height: 4),
-                                              const Text("Status: Vacant", style: TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                                              Text("Status: Vacant", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.end,
                                                 children: [
                                                   if (ed != null) const Icon(Icons.flash_on, color: Colors.amber, size: 20),
-                                                  Text("৳${total.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, fontSize: 22)),
+                                                  Text("৳${total.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.error)),
                                                 ],
                                               ),
                                             ],
@@ -388,11 +464,11 @@ class _CategoryPageState extends State<CategoryPage> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
-                                              _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Colors.indigo),
+                                              _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
                                               
                                             if ((d['notes'] ?? '').toString().isNotEmpty)
                                               _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
-                                                icon: const Icon(Icons.remove_circle_outline, color: Colors.orange, size: 20), 
+                                                icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
                                                 onPressed: () => CategoryDialogs.showConfirmDialog(
                                                   context: context,
                                                   title: "Remove Note?",
@@ -440,14 +516,14 @@ class _CategoryPageState extends State<CategoryPage> {
 
                                   return Card(
                                     margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    color: isPaid ? const Color(0xFFE8F5E9) : Colors.white,
+                                    color: isPaid ? Theme.of(context).colorScheme.tertiaryContainer : Theme.of(context).colorScheme.secondaryContainer,
                                     elevation: 2,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       side: BorderSide(
                                         color: isOccupied 
-                                          ? (isPaid ? Colors.green.shade200 : Colors.blue.shade100) 
-                                          : Colors.red.shade100, 
+                                          ? (isPaid ? Theme.of(context).colorScheme.tertiary.withOpacity(0.2) : Theme.of(context).colorScheme.secondary.withOpacity(0.2)) 
+                                          : Theme.of(context).colorScheme.error.withOpacity(0.2), 
                                         width: 1
                                       )
                                     ),
@@ -459,36 +535,33 @@ class _CategoryPageState extends State<CategoryPage> {
                                       title: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          // Row 1: Icon, Unit Name Box, Actions
                                           Row(
                                             children: [
                                               Icon(
                                                 isOccupied ? (isPaid ? Icons.check_circle : Icons.door_front_door_outlined) : Icons.meeting_room_outlined,
-                                                color: isOccupied ? (isPaid ? Colors.green : Colors.blue) : Colors.redAccent,
+                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.secondary) : Theme.of(context).colorScheme.error,
                                                 size: 22,
                                               ),
                                               const SizedBox(width: 8),
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(0xFFE3F2FD),
+                                                  color: Theme.of(context).colorScheme.surface,
                                                   borderRadius: BorderRadius.circular(6),
                                                 ),
                                                 child: Text(
                                                   subName,
-                                                  style: TextStyle(
+                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                                     fontWeight: FontWeight.w900, 
-                                                    color: isOccupied ? Colors.blue.shade800 : Colors.redAccent, 
-                                                    fontSize: 18
+                                                    color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary) : Theme.of(context).colorScheme.error, 
                                                   ),
                                                 ),
                                               ),
                                               const Spacer(),
-                                              // Actions
                                               IconButton(
                                                 padding: EdgeInsets.zero,
                                                 constraints: const BoxConstraints(),
-                                                icon: const Icon(Icons.edit_note, size: 22, color: Colors.blueGrey),
+                                                icon: Icon(Icons.edit_note, size: 22, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                                 onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
                                                   context: context, 
                                                   subItemId: subId, 
@@ -502,8 +575,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 Container(
                                                   margin: const EdgeInsets.only(left: 6),
                                                   padding: const EdgeInsets.all(3),
-                                                  decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(4)),
-                                                  child: const Icon(Icons.notes, color: Colors.green, size: 16),
+                                                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(4)),
+                                                  child: Icon(Icons.notes, color: Colors.green, size: 16),
                                                 ),
                                               if (isOccupied)
                                                 Padding(
@@ -511,7 +584,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   child: IconButton(
                                                     padding: EdgeInsets.zero,
                                                     constraints: const BoxConstraints(),
-                                                    icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Colors.blue : Colors.orange, size: 24), 
+                                                    icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : Colors.orange, size: 24), 
                                                     onPressed: () => CategoryDialogs.showMarkAsPaidDialog(context: context, subItemId: subId, subItemName: subName, TenantName: tenant, nidNumber: d['nidNumber'] ?? '', houseRentTotal: total - eBillAmount, electricityBill: eBillAmount, services: active.cast<Map<String, dynamic>>(), electricityDetails: ed, mainCategoryName: catName)
                                                   ),
                                                 ),
@@ -519,7 +592,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               PopupMenuButton<String>(
                                                 padding: EdgeInsets.zero,
                                                 constraints: const BoxConstraints(),
-                                                icon: const Icon(Icons.more_vert, size: 22, color: Colors.blueGrey),
+                                                icon: Icon(Icons.more_vert, size: 22, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                                 onSelected: (val) async {
                                                   if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator);
                                                   if (val == 'stop') {
@@ -547,43 +620,44 @@ class _CategoryPageState extends State<CategoryPage> {
                                                     } else {
                                                       await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
                                                     }
+                                                  } else if (val == 'services') {
+                                                     CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
+                                                  } else if (val == 'remove') {
+                                                     CategoryDialogs.showConfirmDialog(
+                                                      context: context, 
+                                                      title: "Remove '$subName'?", 
+                                                      content: "Are you sure you want to remove this $subName?", 
+                                                      onConfirm: () async { 
+                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                        await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
+                                                      }
+                                                    );
                                                   }
-                                                  if (val == 'services') CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
-                                                  if (val == 'remove') CategoryDialogs.showConfirmDialog(
-                                                    context: context, 
-                                                    title: "Remove '$subName'?", 
-                                                    content: "Are you sure you want to remove this $subName?", 
-                                                    onConfirm: () async { 
-                                                      SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                                      await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
-                                                    }
-                                                  );
                                                 },
                                                 itemBuilder: (ctx) => [
                                                   PopupMenuItem(
                                                     value: ed == null ? 'electric' : 'stop', 
                                                     child: ListTile(
-                                                      leading: Icon(Icons.flash_on, color: ed == null ? Colors.grey : Colors.amber, size: 20), 
+                                                      leading: Icon(Icons.flash_on, color: ed == null ? Theme.of(context).colorScheme.outline : Colors.amber, size: 20), 
                                                       title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
                                                       dense: true
                                                     )
                                                   ),
-                                                  const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest, size: 20), title: Text("Manage Services"), dense: true)),
+                                                  const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
                                                   if (!widget.isOperator)
-                                                    const PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red, size: 20), title: Text("Remove Unit", style: TextStyle(color: Colors.red)), dense: true)),
+                                                    PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
                                                 ],
                                               ),
                                             ],
                                           ),
                                           const SizedBox(height: 4),
-                                          // Row 2: Tenant Name, Electric Icon, Total Amount
                                           Row(
                                             children: [
                                               Padding(
                                                 padding: const EdgeInsets.only(left: 30),
                                                 child: Text(
                                                   isOccupied ? (tenant.isNotEmpty && tenant != 'No Name' ? tenant : 'No Tenant') : 'Vacant',
-                                                  style: TextStyle(fontSize: 15, color: Colors.blueGrey.shade700, fontWeight: FontWeight.bold),
+                                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
                                                 ),
                                               ),
                                               const Spacer(),
@@ -591,25 +665,21 @@ class _CategoryPageState extends State<CategoryPage> {
                                               const SizedBox(width: 4),
                                               Text(
                                                 "৳${displayTotal.toStringAsFixed(2)}",
-                                                style: TextStyle(
+                                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                                   fontWeight: FontWeight.w900, 
-                                                  color: isPaid ? Colors.green.shade700 : Colors.blue.shade800, 
-                                                  fontSize: 20
+                                                  color: isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary, 
                                                 ),
                                               ),
                                             ],
                                           ),
-                                          // Row 3: Status Text
                                           Padding(
                                             padding: const EdgeInsets.only(left: 30, top: 1),
                                             child: Text(
                                               isOccupied 
                                                 ? (isPaid ? "Payment Clear • $_selectedMonthStr" : "${active.length} Services | Due") 
                                                 : "Ready for new tenant",
-                                              style: TextStyle(
-                                                fontSize: 11, 
-                                                color: isOccupied ? (isPaid ? Colors.green : Colors.red) : Colors.redAccent, 
-                                                fontWeight: FontWeight.bold
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.error) : Theme.of(context).colorScheme.error, 
                                               ),
                                             ),
                                           ),
@@ -622,11 +692,11 @@ class _CategoryPageState extends State<CategoryPage> {
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
-                                                _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Colors.indigo),
+                                                _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
 
                                               if ((d['notes'] ?? '').toString().isNotEmpty)
                                                 _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
-                                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.orange, size: 20), 
+                                                  icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
                                                   onPressed: () => CategoryDialogs.showConfirmDialog(
                                                     context: context,
                                                     title: "Remove Note?",
@@ -666,7 +736,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             Center(
                               child: TextButton(
                                 onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
-                                child: Text("Add New $catName", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.indigo)),
+                                child: Text("Add New $catName", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -684,28 +754,33 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color color = Colors.blueGrey, Widget? trailing}) {
+  Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color? color, Widget? trailing}) {
+    final effectiveColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.shade100)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow, 
+        borderRadius: BorderRadius.circular(12), 
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: color),
+              Icon(icon, size: 18, color: effectiveColor),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+              Text(title, style: Theme.of(context).textTheme.titleSmall),
               const Spacer(),
-              if (amount != null) Text("৳${amount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              if (amount != null) Text("৳${amount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleSmall),
               if (trailing != null) trailing,
             ],
           ),
           const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.only(left: 26),
-            child: Text(content, style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+            child: Text(content, style: Theme.of(context).textTheme.bodySmall),
           ),
         ],
       ),
@@ -730,18 +805,18 @@ class _CategoryPageState extends State<CategoryPage> {
               children: [
                 Text(
                   isWifi && devices != null ? "$name (Devices: $devices)" : name, 
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)
                 ),
                 if (isWifi && unitPrice != null)
-                  Text("(৳${unitPrice.toStringAsFixed(0)} per device)", style: const TextStyle(fontSize: 11, color: Colors.blueGrey)),
-                if (isOverridden && !isWifi) const Text("Customized from 'Original'", style: TextStyle(fontSize: 10, color: Colors.blueAccent, fontStyle: FontStyle.italic)),
+                  Text("(৳${unitPrice.toStringAsFixed(0)} per device)", style: Theme.of(context).textTheme.labelSmall),
+                if (isOverridden && !isWifi) Text("Customized from 'Original'", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.secondary, fontStyle: FontStyle.italic)),
               ],
             ),
           ),
-          Text("৳${s['amount'].toStringAsFixed(1)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.teal)),
+          Text("৳${s['amount'].toStringAsFixed(1)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.grey),
+            icon: Icon(Icons.edit_outlined, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
             onPressed: () {
               if (isWifi) {
                 CategoryDialogs.showWifiServiceEditDialog(context: context, subItemId: subId, subItemName: subName, serviceMap: s, overriddenServices: overridden);
@@ -768,18 +843,26 @@ class _CategoryPageState extends State<CategoryPage> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           children: [
             Card(
-              elevation: 3,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Colors.indigo.shade50,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.indigo.shade200, width: 1)),
+              elevation: 2,
+              color: Theme.of(context).colorScheme.primaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16), 
+                side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 1)
+              ),
               child: ExpansionTile(
-                leading: const CircleAvatar(backgroundColor: Colors.indigo, child: Icon(Icons.settings_input_component, color: Colors.white, size: 20)),
-                title: const Text("Main Meters List", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.indigo)),
-                subtitle: Text("${meters.length} total meters found", style: const TextStyle(fontSize: 12)),
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primary, 
+                  child: const Icon(Icons.settings_input_component, color: Colors.white, size: 20)
+                ),
+                title: Text(
+                  "Main Meters List", 
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)
+                ),
+                subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall),
                 children: [
-                  _buildMeterExpandableSection("Residential Meter", resMeters, Icons.home_outlined, Colors.green),
+                  _buildMeterExpandableSection("Residential Meter", resMeters, Icons.home_outlined, Colors.indigo),
                   const SizedBox(height: 8),
-                  _buildMeterExpandableSection("Commercial Meter", comMeters, Icons.business_outlined, Colors.orange),
+                  _buildMeterExpandableSection("Commercial Meter", comMeters, Icons.business_outlined, Colors.teal),
                   const SizedBox(height: 12),
                 ],
               ),
@@ -791,23 +874,32 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, MaterialColor color) {
+  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color) {
     bool isOp = widget.isOperator;
-    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
+    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
 
     return Card(
-      elevation: 2,
+      elevation: 1,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      color: color.shade50,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: color.shade200, width: 1)),
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), 
+        side: BorderSide(color: color.withOpacity(0.3), width: 1)
+      ),
       child: ExpansionTile(
         leading: CircleAvatar(backgroundColor: color, child: Icon(icon, color: Colors.white, size: 20)),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: color.shade800)),
-        subtitle: Text("${meters.length} meters found", style: const TextStyle(fontSize: 12)),
+        title: Text(
+          title, 
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: color)
+        ),
+        subtitle: Text("${meters.length} meters found", style: Theme.of(context).textTheme.bodySmall),
         children: [
           if (meters.isEmpty) 
-            const Padding(padding: EdgeInsets.all(16), child: Text("No meters registered"))
+            Padding(
+              padding: const EdgeInsets.all(16), 
+              child: Text("No meters registered", style: Theme.of(context).textTheme.bodySmall)
+            )
           else 
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -816,27 +908,21 @@ class _CategoryPageState extends State<CategoryPage> {
                 child: Table(
                   defaultColumnWidth: const IntrinsicColumnWidth(),
                   defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  border: TableBorder(
+                    verticalInside: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1),
+                  ),
                   children: [
                     TableRow(
-                      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+                      decoration: BoxDecoration(
+                        color: color,
+                        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5))
+                      ),
                       children: [
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("#", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last\nReadings", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Present\nReadings", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last Govt.\nBill Readings", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("New Govt.\nBill Readings", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt. Bill\nAmounts", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt. Bill\nUnits", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last Month\nUnit Rate", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("This Month\nUnit Rate", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt.\nDue/Adv Units", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Main Meter\nUsed Units", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Total Sub-Meter\nUnits", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Balance Units\n(Main-Sub)", textAlign: TextAlign.center, style: textStyle))),
-                        if (!isOp)
-                          Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Action", textAlign: TextAlign.center, style: textStyle))),
-                      ],
+                        "#", "Meter Number", "Last Readings", "Present Readings", "Last Govt.", "New Govt.", "Govt. Amount", "Govt. Units", "Last Rate", "This Rate", "Due/Adv", "Main Used", "Sub Units", "Balance", "Action"
+                      ].map((h) => Padding(
+                        padding: const EdgeInsets.all(12), 
+                        child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle))
+                      )).toList().sublist(0, isOp ? 14 : 15),
                     ),
                     ...meters.asMap().entries.map((entry) {
                       int idx = entry.key;
@@ -855,53 +941,48 @@ class _CategoryPageState extends State<CategoryPage> {
                       double govtDueAdv = newGovt - pres;
                       double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
                       double balance = mainUsed - totalSubPaid;
-                      final rowColor = idx % 2 == 0 ? Colors.white.withOpacity(0.4) : Colors.transparent;
 
                       Widget wrapCell(Widget child) {
                         return InkWell(
                           onTap: () => CategoryDialogs.showUpdateMainMeterDialog(context: context, data: data, docId: mDoc.id),
-                          child: Padding(padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12), child: Center(child: child)),
+                          child: Padding(padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), child: Center(child: child)),
                         );
                       }
 
                       return TableRow(
-                        decoration: BoxDecoration(color: rowColor),
+                        decoration: BoxDecoration(color: idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent),
                         children: [
-                          wrapCell(Text("${idx + 1}", textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(meterNo, textAlign: TextAlign.center, style: textStyle?.copyWith(color: Colors.blue))),
-                          wrapCell(Text(last.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(pres.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(lastGovt.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(newGovt.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(govtAmt.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(govtUnit.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(lastRate.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(thisRate.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(govtDueAdv.toStringAsFixed(0), textAlign: TextAlign.center, style: (dataStyle ?? const TextStyle()).copyWith(color: govtDueAdv.abs() > 5 ? Colors.orange : null, fontWeight: govtDueAdv.abs() > 5 ? FontWeight.bold : null))),
-                          wrapCell(Text(mainUsed.toStringAsFixed(0), textAlign: TextAlign.center, style: textStyle)),
-                          wrapCell(Text(totalSubPaid.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(balance.toStringAsFixed(0), textAlign: TextAlign.center, style: (textStyle ?? const TextStyle()).copyWith(color: balance > 0 ? Colors.red : Colors.green))),
+                          wrapCell(Text("${idx + 1}", style: dataStyle)),
+                          wrapCell(Text(meterNo, style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary))),
+                          wrapCell(Text(last.toStringAsFixed(0), style: dataStyle)),
+                          wrapCell(Text(pres.toStringAsFixed(0), style: dataStyle)),
+                          wrapCell(Text(lastGovt.toStringAsFixed(0), style: dataStyle)),
+                          wrapCell(Text(newGovt.toStringAsFixed(0), style: dataStyle)),
+                          wrapCell(Text(govtAmt.toStringAsFixed(0), style: dataStyle)),
+                          wrapCell(Text(govtUnit.toStringAsFixed(0), style: dataStyle)),
+                          wrapCell(Text(lastRate.toStringAsFixed(1), style: dataStyle)),
+                          wrapCell(Text(thisRate.toStringAsFixed(1), style: dataStyle)),
+                          wrapCell(Text(govtDueAdv.toStringAsFixed(0), style: dataStyle?.copyWith(color: govtDueAdv.abs() > 5 ? Colors.orange : null, fontWeight: govtDueAdv.abs() > 5 ? FontWeight.bold : null))),
+                          wrapCell(Text(mainUsed.toStringAsFixed(0), style: dataStyle?.copyWith(fontWeight: FontWeight.bold))),
+                          wrapCell(Text(totalSubPaid.toStringAsFixed(0), style: dataStyle)),
+                          wrapCell(Text(balance.toStringAsFixed(0), style: dataStyle?.copyWith(color: balance > 0 ? Colors.red : Colors.green, fontWeight: FontWeight.bold))),
                           if (!isOp)
                             Padding(
                               padding: const EdgeInsets.all(4),
-                              child: Center(
-                                child: IconButton(
-                                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                                  onPressed: () => CategoryDialogs.showConfirmDialog(
-                                    context: context, 
-                                    title: "Remove Meter?", 
-                                    content: "Are you sure you want to remove meter '$meterNo'?", 
-                                    onConfirm: () async {
-                                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                                      await _dbService.removeMainMeter(mDoc.id, prefs.getString('username') ?? "Admin");
-                                    }
-                                  ),
-                                  constraints: const BoxConstraints(),
-                                  padding: EdgeInsets.zero,
+                              child: IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                                onPressed: () => CategoryDialogs.showConfirmDialog(
+                                  context: context, 
+                                  title: "Remove Meter?", 
+                                  content: "Are you sure you want to remove meter '$meterNo'?", 
+                                  onConfirm: () async {
+                                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                                    await _dbService.removeMainMeter(mDoc.id, prefs.getString('username') ?? "Admin");
+                                  }
                                 ),
                               ),
                             ),
-                        ],
+                        ].sublist(0, isOp ? 14 : 15),
                       );
                     }).toList(),
                   ],
@@ -915,7 +996,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Widget _buildSubMeterExpandableSection() {
     bool isOp = widget.isOperator;
-    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
+    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
 
     return StreamBuilder<QuerySnapshot>(
@@ -925,17 +1006,28 @@ class _CategoryPageState extends State<CategoryPage> {
         var subMeters = snapshot.data!.docs;
 
         return Card(
-          elevation: 3,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: Colors.teal.shade50,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.teal.shade200, width: 1)),
+          elevation: 2,
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16), 
+            side: BorderSide(color: Theme.of(context).colorScheme.secondary.withOpacity(0.2), width: 1)
+          ),
           child: ExpansionTile(
-            leading: const CircleAvatar(backgroundColor: Colors.teal, child: Icon(Icons.cable, color: Colors.white, size: 20)),
-            title: const Text("Sub-Meters List", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.teal)),
-            subtitle: Text("${subMeters.length} sub-meters registered", style: const TextStyle(fontSize: 12)),
+            leading: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.secondary, 
+              child: const Icon(Icons.cable, color: Colors.white, size: 20)
+            ),
+            title: Text(
+              "Sub-Meters List", 
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.secondary)
+            ),
+            subtitle: Text("${subMeters.length} sub-meters registered", style: Theme.of(context).textTheme.bodySmall),
             children: [
               if (subMeters.isEmpty) 
-                const Padding(padding: EdgeInsets.all(16), child: Text("No sub-meters found."))
+                Padding(
+                  padding: const EdgeInsets.all(16), 
+                  child: Text("No sub-meters found.", style: Theme.of(context).textTheme.bodySmall)
+                )
               else
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -944,19 +1036,21 @@ class _CategoryPageState extends State<CategoryPage> {
                     child: Table(
                       defaultColumnWidth: const IntrinsicColumnWidth(),
                       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                      border: TableBorder(
+                        verticalInside: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1),
+                      ),
                       children: [
                         TableRow(
-                          decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.secondary,
+                            border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5))
+                          ),
                           children: [
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("#", textAlign: TextAlign.center, style: textStyle))),
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Sub-Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Main-Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last\nReadings", textAlign: TextAlign.center, style: textStyle))),
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Present\nReadings", textAlign: TextAlign.center, style: textStyle))),
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Used\nUnits", textAlign: TextAlign.center, style: textStyle))),
-                            if (!isOp)
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Action", textAlign: TextAlign.center, style: textStyle))),
-                          ],
+                            "#", "Sub-Meter", "Main-Meter", "Last", "Present", "Used", "Action"
+                          ].map((h) => Padding(
+                            padding: const EdgeInsets.all(12), 
+                            child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle))
+                          )).toList().sublist(0, isOp ? 6 : 7),
                         ),
                         ...subMeters.asMap().entries.map((entry) {
                           int idx = entry.key;
@@ -964,38 +1058,33 @@ class _CategoryPageState extends State<CategoryPage> {
                           var sData = sDoc.data() as Map<String, dynamic>;
                           double last = (sData['lastReading'] ?? 0).toDouble();
                           double pres = (sData['presentReading'] ?? last).toDouble();
-                          final rowColor = idx % 2 == 0 ? Colors.white.withOpacity(0.4) : Colors.transparent;
 
                           return TableRow(
-                            decoration: BoxDecoration(color: rowColor),
+                            decoration: BoxDecoration(color: idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent),
                             children: [
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${idx + 1}", textAlign: TextAlign.center, style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['subMeterNo'] ?? '', textAlign: TextAlign.center, style: textStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['mainMeterNo'] ?? '', textAlign: TextAlign.center, style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(last.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(pres.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text((pres - last).toStringAsFixed(0), textAlign: TextAlign.center, style: (textStyle ?? const TextStyle()).copyWith(color: Colors.blue)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${idx + 1}", style: dataStyle))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['subMeterNo'] ?? '', style: dataStyle?.copyWith(fontWeight: FontWeight.bold)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['mainMeterNo'] ?? '', style: dataStyle))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(last.toStringAsFixed(0), style: dataStyle))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(pres.toStringAsFixed(0), style: dataStyle))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text((pres - last).toStringAsFixed(0), style: dataStyle?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)))),
                               if (!isOp)
                                 Padding(
                                   padding: const EdgeInsets.all(4),
-                                  child: Center(
-                                    child: IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                                      onPressed: () => CategoryDialogs.showConfirmDialog(
-                                        context: context, 
-                                        title: "Remove Sub-Meter?", 
-                                        content: "Are you sure you want to remove '${sData['subMeterNo']}'?", 
-                                        onConfirm: () async {
-                                          SharedPreferences prefs = await SharedPreferences.getInstance();
-                                          await _dbService.removeSubMeter(sDoc.id, prefs.getString('username') ?? "Admin");
-                                        }
-                                      ),
-                                      constraints: const BoxConstraints(),
-                                      padding: EdgeInsets.zero,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                    onPressed: () => CategoryDialogs.showConfirmDialog(
+                                      context: context, 
+                                      title: "Remove Sub-Meter?", 
+                                      content: "Are you sure you want to remove '${sData['subMeterNo']}'?", 
+                                      onConfirm: () async {
+                                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                                        await _dbService.removeSubMeter(sDoc.id, prefs.getString('username') ?? "Admin");
+                                      }
                                     ),
                                   ),
                                 ),
-                            ],
+                            ].sublist(0, isOp ? 6 : 7),
                           );
                         }).toList(),
                       ],
@@ -1012,8 +1101,8 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget _buildMeterStat(String label, double val, {bool isBold = false}) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.blueGrey)),
-        Text(val.toStringAsFixed(1), style: TextStyle(fontSize: 15, fontWeight: isBold ? FontWeight.w900 : FontWeight.bold)),
+        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        Text(val.toStringAsFixed(1), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: isBold ? FontWeight.w900 : FontWeight.bold)),
       ],
     );
   }

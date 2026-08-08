@@ -199,28 +199,30 @@ class _UpdateGuardState extends State<UpdateGuard> {
           children: [
             Text(
               "A new version of the app ($_remoteVersion) is available. Your current version is $_localVersion.",
-              style: const TextStyle(fontSize: 14),
+              style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               "Contact with the authority to get the update.",
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.red, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error),
             ),
           ],
         ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, side: BorderSide(color: Colors.grey.shade300)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.tertiary,
+                foregroundColor: Theme.of(context).colorScheme.onTertiary,
+              ),
               onPressed: () {
                 Navigator.of(ctx).pop();
-                _isPopupShowing = false;
-              },
-              child: const Text("OK"),
+              }, 
+              child: const Text("OK")
             ),
           ),
         ],

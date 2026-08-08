@@ -49,8 +49,8 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_appName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const Text("Viewer Mode", style: TextStyle(fontSize: 11, color: Colors.blue)),
+            Text(_appName, style: Theme.of(context).textTheme.titleMedium),
+            Text("Viewer Mode", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
           ],
         ),
         actions: [
@@ -60,19 +60,27 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: const Center(child: Text("Logout", style: TextStyle(fontWeight: FontWeight.bold))),
-                  content: const Text("Are you sure you want to logout from viewer mode?", textAlign: TextAlign.center),
-                  actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  title: Center(child: Text("Logout", style: Theme.of(context).textTheme.titleLarge)),
+                  content: Text("Are you sure you want to logout from viewer mode?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+                  actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   actions: [
                     Row(
                       children: [
                         Expanded(child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
-                          onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Theme.of(context).colorScheme.error, 
+                            side: BorderSide(color: Theme.of(context).colorScheme.error)
+                          ),
+                          onPressed: () => Navigator.pop(ctx), 
+                          child: const Text("Cancel")
+                        )),
                         const SizedBox(width: 12),
                         Expanded(
                           child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.error, 
+                              foregroundColor: Theme.of(context).colorScheme.onPrimary
+                            ),
                             onPressed: () {
                               Navigator.pop(ctx);
                               _handleLogout();
@@ -98,10 +106,10 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.logout, color: Colors.red, size: 20),
-                        Text(local, style: TextStyle(fontSize: 8, color: Colors.blueGrey.shade600, fontWeight: FontWeight.bold)),
+                        Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 20),
+                        Text(local, style: Theme.of(context).textTheme.labelSmall),
                         if (remote != null && remote != local)
-                          Text(remote, style: const TextStyle(fontSize: 8, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                          Text(remote, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
                       ],
                     );
                   }
