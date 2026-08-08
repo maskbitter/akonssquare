@@ -121,7 +121,7 @@ class _AdminHomeState extends State<AdminHome> {
                   _buildElectricitySection(settings),
 
                 if (settings['showCategory']!)
-                  _buildCategorySection(),
+                  _buildCategorySection(settings),
                 
                 const SizedBox(height: 80),
               ],
@@ -159,7 +159,7 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _buildCategorySection() {
+  Widget _buildCategorySection(Map<String, bool> settings) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -176,7 +176,7 @@ class _AdminHomeState extends State<AdminHome> {
             ],
           ),
         ),
-        _buildCategoryOverviewCard(),
+        _buildCategoryOverviewCard(settings),
       ],
     );
   }
@@ -431,7 +431,7 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _buildCategoryOverviewCard() {
+  Widget _buildCategoryOverviewCard(Map<String, bool> settings) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('sub_items').snapshots(),
       builder: (context, snapshot) {
@@ -495,19 +495,25 @@ class _AdminHomeState extends State<AdminHome> {
               ),
             ),
             // Static Category List
-            StreamBuilder<QuerySnapshot>(
-              stream: _dbService.getCategoriesStream(),
-              builder: (context, catSnap) {
-                if (!catSnap.hasData) return const SizedBox.shrink();
-                var categories = catSnap.data!.docs;
-                
-                return Column(
-                  children: categories.asMap().entries.map<Widget>((entry) {
-                    return _buildCategorySolidCard(entry.value, entry.key);
-                  }).toList(),
-                );
-              },
-            ),
+            if (settings['showCategory']!)
+              StreamBuilder<QuerySnapshot>(
+                stream: _dbService.getCategoriesStream(),
+                builder: (context, catSnap) {
+                  if (!catSnap.hasData) return const SizedBox.shrink();
+                  var allCategories = catSnap.data!.docs;
+                  
+                  // Filter based on individual category visibility settings
+                  var visibleCategories = allCategories.where((catDoc) {
+                    return settings['cat_${catDoc.id}'] ?? true;
+                  }).toList();
+
+                  return Column(
+                    children: visibleCategories.asMap().entries.map<Widget>((entry) {
+                      return _buildCategorySolidCard(entry.value, entry.key);
+                    }).toList(),
+                  );
+                },
+              ),
           ],
         );
       },

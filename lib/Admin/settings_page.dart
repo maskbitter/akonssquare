@@ -40,17 +40,11 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _handleBackup(BuildContext context) async {
     HapticFeedback.mediumImpact();
     if (_isProcessing) return;
-    setState(() {
-      _isProcessing = true;
-      _progress = 0.0;
-    });
+    setState(() { _isProcessing = true; _progress = 0.0; });
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String actor = prefs.getString('username') ?? "Unknown";
-      Map<String, dynamic> data = await _dbService.exportDatabase(
-        actor,
-        onProgress: (p) => setState(() => _progress = p),
-      );
+      Map<String, dynamic> data = await _dbService.exportDatabase(actor, onProgress: (p) => setState(() => _progress = p));
       String jsonStr = await compute(jsonEncode, data);
       final directory = await getTemporaryDirectory();
       String fileName = _getBackupFileName(data['dbVersion'] ?? 0);
@@ -59,9 +53,7 @@ class _SettingsPageState extends State<SettingsPage> {
       await Share.shareXFiles([XFile(file.path)], text: 'Database Backup v${data['dbVersion']}');
     } catch (e) {
       if (context.mounted) DatabaseService.showToast(context, "Backup Error: $e", backgroundColor: Theme.of(context).colorScheme.error);
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
-    }
+    } finally { if (mounted) setState(() => _isProcessing = false); }
   }
 
   Future<void> _handleLocalSave(BuildContext context) async {
@@ -70,31 +62,16 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String actor = prefs.getString('username') ?? "Unknown";
-      setState(() {
-        _isProcessing = true;
-        _progress = 0.0;
-      });
-      Map<String, dynamic> data = await _dbService.exportDatabase(
-        actor,
-        onProgress: (p) => setState(() => _progress = p),
-      );
+      setState(() { _isProcessing = true; _progress = 0.0; });
+      Map<String, dynamic> data = await _dbService.exportDatabase(actor, onProgress: (p) => setState(() => _progress = p));
       String jsonStr = await compute(jsonEncode, data);
       String fileName = _getBackupFileName(data['dbVersion'] ?? 0);
       final Uint8List bytes = Uint8List.fromList(utf8.encode(jsonStr));
-      String? result = await FilePicker.saveFile(
-        fileName: fileName,
-        bytes: bytes,
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
-      if (context.mounted && result != null) {
-        DatabaseService.showToast(context, "Backup saved: $fileName");
-      }
+      String? result = await FilePicker.saveFile(fileName: fileName, bytes: bytes, type: FileType.custom, allowedExtensions: ['json']);
+      if (context.mounted && result != null) DatabaseService.showToast(context, "Backup saved: $fileName");
     } catch (e) {
       if (context.mounted) DatabaseService.showToast(context, "Local Save Error: $e", backgroundColor: Theme.of(context).colorScheme.error);
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
-    }
+    } finally { if (mounted) setState(() => _isProcessing = false); }
   }
 
   Future<void> _handleRestore(BuildContext context) async {
@@ -103,10 +80,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
       if (result == null || result.files.single.path == null) return;
-      setState(() {
-        _isProcessing = true;
-        _progress = 0.0;
-      });
+      setState(() { _isProcessing = true; _progress = 0.0; });
       File file = File(result.files.single.path!);
       String content = await file.readAsString();
       Map<String, dynamic> importData = await compute(_parseJson, content);
@@ -116,7 +90,7 @@ class _SettingsPageState extends State<SettingsPage> {
       String role = prefs.getString('userRole') ?? 'admin';
       bool proceed = false;
       if (role == 'superadmin') {
-        if (backupVersion > serverVersion) proceed = await _showConfirmDialog(context, "Restore New Data?", "This will overwrite all current data with backup v$backupVersion.");
+        if (backupVersion > serverVersion) proceed = await _showConfirmDialog(context, "Restore New Data?", "This will overwrite all data with v$backupVersion.");
         else if (backupVersion == serverVersion) proceed = await _showConfirmDialog(context, "Re-upload Version?", "This backup matches the current server.");
         else {
           bool first = await _showConfirmDialog(context, "WARNING: Older Version", "This backup is OLDER than current. Restore anyway?");
@@ -141,9 +115,7 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } catch (e) {
        if (context.mounted) DatabaseService.showToast(context, "Restore Error: $e", backgroundColor: Theme.of(context).colorScheme.error);
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
-    }
+    } finally { if (mounted) setState(() => _isProcessing = false); }
   }
 
   static Map<String, dynamic> _parseJson(String jsonStr) => jsonDecode(jsonStr);
@@ -160,7 +132,7 @@ class _SettingsPageState extends State<SettingsPage> {
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Center(child: Text("Backup Required!", style: TextStyle(fontWeight: FontWeight.bold))),
-            content: const Text("It is strongly recommended to backup before wiping all data.", textAlign: TextAlign.center),
+            content: const Text("It is recommended to backup before wiping.", textAlign: TextAlign.center),
             actions: [
               Row(children: [
                 Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel"))),
@@ -228,8 +200,42 @@ class _SettingsPageState extends State<SettingsPage> {
       secondary: icon != null ? Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20) : null,
       title: Text(title, style: isSub ? Theme.of(context).textTheme.bodyMedium : Theme.of(context).textTheme.bodyLarge),
       value: value,
+      dense: true,
       activeColor: Theme.of(context).colorScheme.primary,
       onChanged: (val) { HapticFeedback.selectionClick(); onChanged(val); },
+    );
+  }
+
+  Widget _buildSubVisibilityRadio(String title, bool isVisible, Function(bool) onChanged, {IconData? icon}) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 48, right: 16),
+      child: InkWell(
+        onTap: () => onChanged(!isVisible),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              if (icon != null) Icon(icon, size: 16, color: Theme.of(context).colorScheme.secondary),
+              if (icon != null) const SizedBox(width: 8),
+              Expanded(child: Text(title, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.secondary))),
+              Radio<bool>(
+                value: true,
+                groupValue: isVisible,
+                visualDensity: VisualDensity.compact,
+                activeColor: Theme.of(context).colorScheme.secondary,
+                onChanged: (v) => onChanged(true),
+              ),
+              Radio<bool>(
+                value: false,
+                groupValue: isVisible,
+                visualDensity: VisualDensity.compact,
+                activeColor: Theme.of(context).colorScheme.error,
+                onChanged: (v) => onChanged(false),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -241,154 +247,179 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 1. System Config
             StreamBuilder<DocumentSnapshot>(
               stream: _dbService.getAppConfigStream(),
               builder: (context, snapshot) {
-                bool isEnabled = true;
-                if (snapshot.hasData && snapshot.data!.exists) {
-                  var data = snapshot.data!.data() as Map<String, dynamic>?;
-                  isEnabled = data?['isPopupEnabled'] ?? true;
-                }
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Card(
-                    elevation: 2, color: Theme.of(context).colorScheme.primaryContainer,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: ExpansionTile(
-                      leading: Icon(Icons.settings_suggest_outlined, color: Theme.of(context).colorScheme.primary),
-                      title: Text("System Configuration", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                      subtitle: Text("Control system notifications", style: Theme.of(context).textTheme.bodySmall),
-                      children: [
-                        SwitchListTile(
-                          title: Text("Enable Update Notifications", style: Theme.of(context).textTheme.bodyLarge),
-                          value: isEnabled, activeColor: Theme.of(context).colorScheme.primary,
-                          onChanged: (val) async {
-                            await _dbService.updatePopupStatus(val);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+                bool isEnabled = snapshot.data?.exists == true ? snapshot.data!['isPopupEnabled'] ?? true : true;
+                return _buildSettingsCard(
+                  context,
+                  icon: Icons.settings_suggest_outlined,
+                  title: "System Configuration",
+                  subtitle: "Control system behavior and notifications",
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  accentColor: Theme.of(context).colorScheme.primary,
+                  children: [
+                    _buildVisibilitySwitch("Enable Update Notifications", isEnabled, (val) => _dbService.updatePopupStatus(val)),
+                  ],
                 );
               }
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Card(
-                elevation: 2, color: Theme.of(context).colorScheme.secondaryContainer,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: ExpansionTile(
-                  leading: Icon(Icons.security_outlined, color: Theme.of(context).colorScheme.secondary),
-                  title: Text("Dashboard Visibility", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.secondary)),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(children: [
-                        Icon(Icons.person_search_outlined, size: 20, color: Theme.of(context).colorScheme.secondary),
-                        const SizedBox(width: 12),
-                        Text("Role:", style: Theme.of(context).textTheme.titleSmall),
-                        const SizedBox(width: 12),
-                        DropdownButton<String>(
-                          value: _selectedRoleForVisibility,
-                          items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))],
-                          onChanged: (val) { if (val != null) setState(() => _selectedRoleForVisibility = val); },
-                        ),
-                      ]),
+
+            // 2. Dashboard Visibility
+            _buildSettingsCard(
+              context,
+              icon: Icons.security_outlined,
+              title: "Dashboard Visibility Control",
+              subtitle: "Control what sections are visible to different roles",
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              accentColor: Theme.of(context).colorScheme.secondary,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(children: [
+                    const Icon(Icons.person_search_outlined, size: 20),
+                    const SizedBox(width: 12),
+                    const Text("Role:", style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 12),
+                    DropdownButton<String>(
+                      value: _selectedRoleForVisibility,
+                      items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))],
+                      onChanged: (val) { if (val != null) setState(() => _selectedRoleForVisibility = val); },
                     ),
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: _dbService.getDashboardVisibilityStream(_selectedRoleForVisibility),
-                      builder: (context, snapshot) {
-                        Map<String, bool> settings = {'showAccounts': true, 'showElectricity': true, 'showMainVsSub': true, 'showMainVsGovt': true, 'showCategory': true};
-                        if (snapshot.hasData && snapshot.data!.exists) {
-                          var data = snapshot.data!.data() as Map<String, dynamic>;
-                          (data['settings'] ?? {}).forEach((k, v) => settings[k] = v as bool);
-                        }
-                        return Column(children: [
-                          _buildVisibilitySwitch("Show Accounts", settings['showAccounts']!, (val) { settings['showAccounts'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, settings); }, icon: Icons.account_balance_wallet_outlined),
-                          _buildVisibilitySwitch("Show Electricity", settings['showElectricity']!, (val) { settings['showElectricity'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, settings); }, icon: Icons.electric_bolt_outlined),
-                          _buildVisibilitySwitch("Show Category", settings['showCategory']!, (val) { settings['showCategory'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, settings); }, icon: Icons.category_outlined),
-                        ]);
-                      }
-                    ),
-                  ],
+                  ]),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Card(
-                elevation: 2, color: Theme.of(context).colorScheme.tertiaryContainer,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: ExpansionTile(
-                  leading: Icon(Icons.storage_outlined, color: Theme.of(context).colorScheme.tertiary),
-                  title: Text("Data Management", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary)),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(children: [
-                        Row(children: [
-                          Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _handleBackup(context), child: const Text("Backup"))),
-                          const SizedBox(width: 12),
-                          Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _handleRestore(context), child: const Text("Restore"))),
-                        ]),
-                        const SizedBox(height: 12),
-                        SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _handleLocalSave(context), child: const Text("Save Locally"))),
-                        if (_isProcessing) LinearProgressIndicator(value: _progress, color: Theme.of(context).colorScheme.primary),
-                        FutureBuilder<SharedPreferences>(
-                          future: SharedPreferences.getInstance(),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData && snapshot.data!.getString('userRole') == 'superadmin') {
-                              return Column(children: [
-                                const Divider(),
-                                SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _handleWipe(context), child: const Text("Wipe Data"))),
-                              ]);
-                            }
-                            return const SizedBox.shrink();
+                const Divider(height: 1),
+                StreamBuilder<DocumentSnapshot>(
+                  stream: _dbService.getDashboardVisibilityStream(_selectedRoleForVisibility),
+                  builder: (context, snapshot) {
+                    Map<String, bool> s = {
+                      'showAccounts': true, 
+                      'showElectricity': true, 
+                      'showMainVsSub': true, 
+                      'showMainVsGovt': true, 
+                      'showCategory': true,
+                      'showTotalOccupied': true,
+                      'showTotalVacant': true,
+                    };
+                    if (snapshot.hasData && snapshot.data!.exists) {
+                      var data = snapshot.data!.data() as Map<String, dynamic>;
+                      (data['settings'] ?? {}).forEach((k, v) => s[k] = v as bool);
+                    }
+                    return Column(children: [
+                      _buildVisibilitySwitch("Show Accounts Section", s['showAccounts']!, (val) { s['showAccounts'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.account_balance_wallet_outlined),
+                      
+                      // Electricity Nested
+                      _buildVisibilitySwitch("Show Electricity Section", s['showElectricity']!, (val) { s['showElectricity'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.electric_bolt_outlined),
+                      if (s['showElectricity']!) ...[
+                        _buildSubVisibilityRadio("Main vs Sub-Meter", s['showMainVsSub']!, (val) { s['showMainVsSub'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.compare_arrows),
+                        _buildSubVisibilityRadio("Main vs Govt. Bill", s['showMainVsGovt']!, (val) { s['showMainVsGovt'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.receipt_long),
+                      ],
+
+                      // Category Nested
+                      _buildVisibilitySwitch("Show Category Section", s['showCategory']!, (val) { s['showCategory'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.category_outlined),
+                      if (s['showCategory']!) ...[
+                        _buildSubVisibilityRadio("Total Occupied", s['showTotalOccupied']!, (v){ s['showTotalOccupied'] = v; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.door_front_door_outlined),
+                        _buildSubVisibilityRadio("Total Vacant", s['showTotalVacant']!, (v){ s['showTotalVacant'] = v; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.meeting_room_outlined),
+                        StreamBuilder<QuerySnapshot>(
+                          stream: _dbService.getCategoriesStream(),
+                          builder: (context, catSnap) {
+                            if (!catSnap.hasData) return const SizedBox.shrink();
+                            return Column(children: catSnap.data!.docs.map((doc) {
+                              String catName = (doc.data() as Map)['categoryName'] ?? '';
+                              String key = "cat_${doc.id}";
+                              bool isVisible = s[key] ?? true;
+                              return _buildSubVisibilityRadio(catName, isVisible, (val) { s[key] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.label_outline);
+                            }).toList());
                           },
                         ),
-                      ]),
-                    ),
-                  ],
+                      ],
+                      
+                      const Divider(indent: 16, endIndent: 16),
+                      FutureBuilder<SharedPreferences>(
+                        future: SharedPreferences.getInstance(),
+                        builder: (context, ps) {
+                          bool h = ps.data?.getBool('isHapticEnabled') ?? true;
+                          return _buildVisibilitySwitch("Haptic Pulse Feedback", h, (v) async { (await SharedPreferences.getInstance()).setBool('isHapticEnabled', v); if(v) DatabaseService.vibrate(); setState((){}); }, icon: Icons.vibration_outlined);
+                        }
+                      ),
+                    ]);
+                  }
                 ),
-              ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Card(
-                elevation: 2, color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: ExpansionTile(
-                  leading: Icon(Icons.manage_accounts_outlined, color: Theme.of(context).colorScheme.primary),
-                  title: Text("Account Management", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(children: [
-                        SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _showUserDialog(context), child: const Text("Add Account"))),
-                        const SizedBox(height: 12),
-                        _buildUsersTable(),
-                      ]),
+
+            // 3. Data Management
+            _buildSettingsCard(
+              context,
+              icon: Icons.storage_outlined,
+              title: "Data Management",
+              subtitle: "Backup and restore database records",
+              color: Theme.of(context).colorScheme.tertiaryContainer,
+              accentColor: Theme.of(context).colorScheme.tertiary,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(children: [
+                    Row(children: [
+                      Expanded(child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _handleBackup(context), icon: const Icon(Icons.cloud_upload_outlined), label: const Text("Backup"))),
+                      const SizedBox(width: 12),
+                      Expanded(child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _handleRestore(context), icon: const Icon(Icons.cloud_download_outlined), label: const Text("Restore"))),
+                    ]),
+                    const SizedBox(height: 12),
+                    SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), onPressed: () => _handleLocalSave(context), icon: const Icon(Icons.save_alt), label: const Text("Save Locally"))),
+                    if (_isProcessing) LinearProgressIndicator(value: _progress, color: Theme.of(context).colorScheme.primary),
+                    FutureBuilder<SharedPreferences>(
+                      future: SharedPreferences.getInstance(),
+                      builder: (context, snapshot) {
+                        if (snapshot.data?.getString('userRole') == 'superadmin') {
+                          return Padding(padding: const EdgeInsets.only(top: 16), child: Column(children: [
+                            const Divider(),
+                            SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white), onPressed: () => _handleWipe(context), icon: const Icon(Icons.delete_forever), label: const Text("Wipe All Data"))),
+                          ]));
+                        }
+                        return const SizedBox.shrink();
+                      },
                     ),
-                  ],
+                  ]),
                 ),
-              ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Card(
-                elevation: 2, color: Theme.of(context).colorScheme.surfaceContainer,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: ExpansionTile(
-                  leading: Icon(Icons.palette_outlined, color: Theme.of(context).colorScheme.primary),
-                  title: Text("Theme & Appearance", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _showThemeSelectionDialog(context), child: const Text("Change Theme"))),
-                    ),
-                  ],
+
+            // 4. Account Management
+            _buildSettingsCard(
+              context,
+              icon: Icons.manage_accounts_outlined,
+              title: "Account Management",
+              subtitle: "Create and manage system access",
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              accentColor: Theme.of(context).colorScheme.primary,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(children: [
+                    SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _showUserDialog(context), icon: const Icon(Icons.person_add_alt_1_outlined), label: const Text("Add New Account"))),
+                    const SizedBox(height: 12),
+                    _buildUsersListRow(),
+                  ]),
                 ),
-              ),
+              ],
+            ),
+
+            // 5. Theme
+            _buildSettingsCard(
+              context,
+              icon: Icons.palette_outlined,
+              title: "Theme & Appearance",
+              subtitle: "Customize look and feel of your app",
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              accentColor: Theme.of(context).colorScheme.primary,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), label: const Text("Change App Theme"))),
+                ),
+              ],
             ),
           ],
         ),
@@ -396,109 +427,135 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showThemeSelectionDialog(BuildContext context) {
-    String localSelectedTheme = ThemeManager.appThemeNotifier.value;
-    final List<String> themes = ["Default Theme"];
-    bool isApplying = false;
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: isApplying ? null : Center(child: Text("Select Theme", style: Theme.of(context).textTheme.titleLarge)),
-          content: isApplying ? const CircularProgressIndicator() : DropdownButton<String>(
-            value: localSelectedTheme, isExpanded: true,
-            items: themes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-            onChanged: (val) { if (val != null) setDialogState(() => localSelectedTheme = val); },
-          ),
-          actions: isApplying ? null : [
-            Row(children: [
-              Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () async {
-                setDialogState(() => isApplying = true);
-                await Future.delayed(const Duration(milliseconds: 500));
-                await ThemeManager.setTheme(localSelectedTheme);
-                if (ctx.mounted) Navigator.pop(ctx);
-              }, child: const Text("Apply"))),
-            ]),
-          ],
-        );
-      }),
+  Widget _buildSettingsCard(BuildContext context, {required IconData icon, required String title, required String subtitle, required Color color, required Color accentColor, required List<Widget> children}) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accentColor.withOpacity(0.1))),
+      child: ExpansionTile(
+        leading: Icon(icon, color: accentColor),
+        title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: accentColor, fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+        children: children,
+      ),
     );
   }
 
-  Widget _buildUsersTable() {
+  Widget _buildUsersListRow() {
     return StreamBuilder<QuerySnapshot>(
       stream: _dbService.getUsersStream(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const LinearProgressIndicator();
         var users = snapshot.data!.docs;
-        return Table(
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: [
-            ...users.map((doc) {
-              var data = doc.data() as Map<String, dynamic>;
-              return TableRow(children: [
-                Padding(padding: const EdgeInsets.all(8.0), child: Text(data['username'] ?? '')),
-                Padding(padding: const EdgeInsets.all(8.0), child: Text(data['role'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold))),
-                IconButton(icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary), onPressed: () => _showUserDialog(context, docId: doc.id, currentData: data)),
-                IconButton(icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error), onPressed: () => _confirmRemove(doc.id, data['username'])),
-              ]);
-            }).toList(),
-          ],
-        );
+        return Column(children: users.map((doc) {
+          var data = doc.data() as Map<String, dynamic>;
+          String role = (data['role'] ?? 'viewer').toString().toLowerCase();
+          
+          Color roleColor = Theme.of(context).colorScheme.surface;
+          if (role == 'admin') roleColor = Theme.of(context).colorScheme.errorContainer;
+          else if (role == 'operator') roleColor = Theme.of(context).colorScheme.secondaryContainer;
+          else roleColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+
+          return Card(
+            elevation: 2,
+            margin: const EdgeInsets.only(bottom: 8),
+            color: roleColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(role == 'admin' ? Icons.security : role == 'operator' ? Icons.build_circle : Icons.visibility, size: 20, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(data['username'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text(role.toUpperCase(), style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                  Text(data['password'] ?? '', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+                  const SizedBox(width: 8),
+                  IconButton(icon: Icon(Icons.edit_outlined, size: 18, color: Theme.of(context).colorScheme.primary), onPressed: () => _showUserDialog(context, docId: doc.id, currentData: data)),
+                  IconButton(icon: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error), onPressed: () => _confirmRemove(doc.id, data['username'])),
+                ],
+              ),
+            ),
+          );
+        }).toList());
       },
     );
   }
 
-  void _showUserDialog(BuildContext context, {String? docId, Map<String, dynamic>? currentData}) {
-    final userController = TextEditingController(text: currentData?['username'] ?? '');
-    final passController = TextEditingController(text: currentData?['password'] ?? '');
-    String selectedRole = currentData?['role'] ?? 'operator';
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Center(child: Text(docId == null ? "Add Account" : "Edit Account", style: Theme.of(context).textTheme.titleLarge)),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: userController, decoration: const InputDecoration(labelText: "Username")),
-            TextField(controller: passController, decoration: const InputDecoration(labelText: "Password")),
-            DropdownButton<String>(value: selectedRole, items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))], onChanged: (v) => setDialogState(() => selectedRole = v!)),
+  void _showThemeSelectionDialog(BuildContext context) {
+    String local = ThemeManager.appThemeNotifier.value;
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setST) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Center(child: Text("Select Theme", style: Theme.of(context).textTheme.titleLarge)),
+        content: DropdownButton<String>(
+          value: local, isExpanded: true, items: ["Default Theme"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+          onChanged: (val) { if (val != null) setST(() => local = val); },
+        ),
+        actions: [
+          Row(children: [
+            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+            const SizedBox(width: 12),
+            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () async {
+              await ThemeManager.setTheme(local);
+              if (ctx.mounted) Navigator.pop(ctx);
+            }, child: const Text("Apply"))),
           ]),
-          actions: [
-            Row(children: [
-              Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), onPressed: () async {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                await _dbService.saveUser(userController.text, passController.text, selectedRole, prefs.getString('username') ?? '', docId: docId);
-                if (ctx.mounted) Navigator.pop(ctx);
-              }, child: const Text("Save"))),
-            ]),
-          ],
-        );
-      }),
-    );
+        ],
+      );
+    }));
+  }
+
+  void _showUserDialog(BuildContext context, {String? docId, Map<String, dynamic>? currentData}) {
+    final uC = TextEditingController(text: currentData?['username'] ?? '');
+    final pC = TextEditingController(text: currentData?['password'] ?? '');
+    String role = currentData?['role'] ?? 'operator';
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setST) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Center(child: Text(docId == null ? "Add Account" : "Edit Account", style: Theme.of(context).textTheme.titleLarge)),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: uC, decoration: const InputDecoration(labelText: "Username", border: OutlineInputBorder())),
+          const SizedBox(height: 12),
+          TextField(controller: pC, decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder())),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(value: role, decoration: const InputDecoration(border: OutlineInputBorder(), labelText: "Role"), items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))], onChanged: (v) => setST(() => role = v!)),
+        ]),
+        actions: [
+          Row(children: [
+            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+            const SizedBox(width: 12),
+            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), onPressed: () async {
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              await _dbService.saveUser(uC.text, pC.text, role, prefs.getString('username') ?? '', docId: docId);
+              if (ctx.mounted) Navigator.pop(ctx);
+            }, child: const Text("Save"))),
+          ]),
+        ],
+      );
+    }));
   }
 
   void _confirmRemove(String docId, String username) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Remove Account?"),
-        content: Text("Are you sure you want to remove user '$username'?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-          TextButton(onPressed: () async {
-            SharedPreferences prefs = await SharedPreferences.getInstance();
-            await _dbService.removeUser(docId, prefs.getString('username') ?? '');
-            if (mounted) Navigator.pop(ctx);
-          }, child: const Text("Remove", style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text("Remove Account?"), content: Text("Are you sure you want to remove user '$username'?"),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+        TextButton(onPressed: () async {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await _dbService.removeUser(docId, prefs.getString('username') ?? '');
+          if (mounted) Navigator.pop(ctx);
+        }, child: const Text("Remove", style: TextStyle(color: Colors.red))),
+      ],
+    ));
   }
 }
