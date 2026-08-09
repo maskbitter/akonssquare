@@ -203,7 +203,9 @@ class _CategoryPageState extends State<CategoryPage> {
                   stream: _dbService.getCategoriesStream(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const LinearProgressIndicator();
-                    var categories = snapshot.data!.docs;
+                    var categories = snapshot.data!.docs.toList();
+                    categories.sort((a, b) => ((a.data() as Map)['categoryName'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['categoryName'] ?? '').toString().toLowerCase()));
+                    
                     return DropdownButtonFormField<String?>(
                       value: _selectedFilterCategoryId,
                       decoration: InputDecoration(
@@ -321,43 +323,91 @@ class _CategoryPageState extends State<CategoryPage> {
                         child: ExpansionTile(
                           shape: const Border(),
                           collapsedShape: const Border(),
-                          leading: CircleAvatar(
-                            backgroundColor: accentColor, 
-                            child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Icon(Icons.category_outlined, color: Theme.of(context).colorScheme.onPrimary, size: 20),
-                        if (hasElectric) 
-                          Positioned(right: 0, bottom: 0, child: Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 10)),
-                      ],
-                    ),
-                          ),
-                          title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                          iconColor: accentColor,
+                          collapsedIconColor: accentColor,
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(catName.toUpperCase(), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, letterSpacing: 0.5, color: accentColor)),
-                              Text("৳${catTotal.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: accentColor)),
-                            ],
-                          ),
-                          subtitle: Text("${subDocs.length} units | Assigned services", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: accentColor.withOpacity(0.7))),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(icon: Icon(Icons.settings_outlined, color: accentColor, size: 20), onPressed: () => CategoryDialogs.showCategorySettingsDialog(context: context, categoryId: catId, categoryName: catName, dynamicAssignedServices: assignedServices)),
-                              if (!widget.isOperator) 
-                                IconButton(
-                                  icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
-                                  onPressed: () => CategoryDialogs.showConfirmDialog(
-                                    context: context, 
-                                    title: "Remove '$catName'?", 
-                                    content: "Are you sure you want to remove this category?", 
-                                    onConfirm: () async { 
-                                      SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                      await _dbService.removeCategory(catId, prefs.getString('username') ?? "Admin"); 
-                                    },
+                              Row(
+                                children: [
+                                  Icon(Icons.category_outlined, color: accentColor, size: 22),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      catName.toUpperCase(),
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w900, 
+                                        color: accentColor, 
+                                        letterSpacing: 0.5
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              Icon(Icons.expand_more, color: accentColor),
+                                  const Spacer(),
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
+                                    onPressed: () => CategoryDialogs.showCategorySettingsDialog(
+                                      context: context, 
+                                      categoryId: catId, 
+                                      categoryName: catName, 
+                                      dynamicAssignedServices: assignedServices
+                                    ),
+                                  ),
+                                  if (!widget.isOperator) ...[
+                                    const SizedBox(width: 12),
+                                    IconButton(
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
+                                      onPressed: () => CategoryDialogs.showConfirmDialog(
+                                        context: context, 
+                                        title: "Remove '$catName'?", 
+                                        content: "Are you sure you want to remove this category?", 
+                                        onConfirm: () async { 
+                                          SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                          await _dbService.removeCategory(catId, prefs.getString('username') ?? "Admin"); 
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 30),
+                                    child: Text(
+                                      "${subDocs.length} units | Assigned services",
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: accentColor.withOpacity(0.7),
+                                        fontWeight: FontWeight.bold
+                                      ),
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      if (hasElectric) Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 18),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "৳${catTotal.toStringAsFixed(2)}",
+                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                          fontWeight: FontWeight.w900, 
+                                          color: accentColor
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                           children: [
@@ -386,7 +436,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                   ),
                                   child: ExpansionTile(
                                     tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                                    trailing: const SizedBox.shrink(),
+                                    iconColor: Theme.of(context).colorScheme.error,
+                                    collapsedIconColor: Theme.of(context).colorScheme.error,
                                     title: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -531,7 +582,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                       shape: const Border(),
                                       collapsedShape: const Border(),
                                       tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                                      trailing: const SizedBox.shrink(),
+                                      iconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.secondary) : Theme.of(context).colorScheme.error,
+                                      collapsedIconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.secondary) : Theme.of(context).colorScheme.error,
                                       title: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
@@ -835,7 +887,9 @@ class _CategoryPageState extends State<CategoryPage> {
       stream: _dbService.getMainMetersStream(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        var meters = snapshot.data!.docs;
+        var meters = snapshot.data!.docs.toList();
+        meters.sort((a, b) => ((a.data() as Map)['meterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['meterNo'] ?? '').toString().toLowerCase()));
+        
         var resMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Residential').toList();
         var comMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Commercial').toList();
 
@@ -860,9 +914,23 @@ class _CategoryPageState extends State<CategoryPage> {
                 ),
                 subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall),
                 children: [
-                  _buildMeterExpandableSection("Residential Meter", resMeters, Icons.home_outlined, Theme.of(context).colorScheme.primary),
+                  _buildMeterExpandableSection(
+                    "Residential Meter", 
+                    resMeters, 
+                    Icons.home_outlined, 
+                    Theme.of(context).colorScheme.primary,
+                    bgColor: Theme.of(context).colorScheme.tertiaryContainer,
+                    accentColor: Theme.of(context).colorScheme.tertiary,
+                  ),
                   const SizedBox(height: 8),
-                  _buildMeterExpandableSection("Commercial Meter", comMeters, Icons.business_outlined, Theme.of(context).colorScheme.secondary),
+                  _buildMeterExpandableSection(
+                    "Commercial Meter", 
+                    comMeters, 
+                    Icons.business_outlined, 
+                    Theme.of(context).colorScheme.secondary,
+                    bgColor: Theme.of(context).colorScheme.secondaryContainer,
+                    accentColor: Theme.of(context).colorScheme.secondary,
+                  ),
                   const SizedBox(height: 12),
                 ],
               ),
@@ -874,26 +942,28 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color) {
+  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color, {Color? bgColor, Color? accentColor}) {
     bool isOp = widget.isOperator;
     final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
+    final effectiveBgColor = bgColor ?? Theme.of(context).colorScheme.surface;
+    final effectiveAccentColor = accentColor ?? color;
 
     return Card(
       elevation: 1,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      color: Theme.of(context).colorScheme.surface,
+      color: effectiveBgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16), 
-        side: BorderSide(color: color.withOpacity(0.3), width: 1)
+        side: BorderSide(color: effectiveAccentColor.withOpacity(0.3), width: 1)
       ),
       child: ExpansionTile(
-        leading: CircleAvatar(backgroundColor: color, child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20)),
+        leading: CircleAvatar(backgroundColor: effectiveAccentColor, child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20)),
         title: Text(
           title, 
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: color)
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: effectiveAccentColor)
         ),
-        subtitle: Text("${meters.length} meters found", style: Theme.of(context).textTheme.bodySmall),
+        subtitle: Text("${meters.length} meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: effectiveAccentColor.withOpacity(0.7))),
         children: [
           if (meters.isEmpty) 
             Padding(
@@ -914,7 +984,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   children: [
                     TableRow(
                       decoration: BoxDecoration(
-                        color: color,
+                        color: effectiveAccentColor,
                         border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5))
                       ),
                       children: [
@@ -1003,7 +1073,8 @@ class _CategoryPageState extends State<CategoryPage> {
       stream: _dbService.getSubMetersStream(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const LinearProgressIndicator();
-        var subMeters = snapshot.data!.docs;
+        var subMeters = snapshot.data!.docs.toList();
+        subMeters.sort((a, b) => ((a.data() as Map)['subMeterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['subMeterNo'] ?? '').toString().toLowerCase()));
 
         return Card(
           elevation: 2,

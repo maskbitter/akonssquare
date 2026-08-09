@@ -10,6 +10,7 @@ import 'package:akonssquare/Admin/admin_home.dart';
 import 'package:akonssquare/Admin/settings_page.dart';
 import 'package:akonssquare/Common/database_service.dart';
 import 'package:akonssquare/Common/update_guard.dart';
+import 'package:akonssquare/Common/automation_guide.dart';
 import 'dart:async';
 
 class AdminDashboard extends StatefulWidget {
@@ -183,35 +184,40 @@ class _AdminDashboardState extends State<AdminDashboard> {
           centerTitle: false,
           title: Padding(
             padding: const EdgeInsets.symmetric(vertical: 1),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _appName.isEmpty ? "Loading..." : _appName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      titles[_currentIndex],
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
-                    ),
-                    Text(
-                      " | ", 
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
-                    ),
-                    Text(
-                      _username.toUpperCase(),
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary, 
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _appName.isEmpty ? "Loading..." : _appName,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        titles[_currentIndex],
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      Text(
+                        " | ", 
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
+                      ),
+                      Text(
+                        _username.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.secondary, 
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [

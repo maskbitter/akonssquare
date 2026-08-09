@@ -16,6 +16,7 @@ import 'package:akonssquare/Common/firebase_options.dart';
 
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:akonssquare/Common/automation_guide.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,11 +35,16 @@ class MyApp extends StatelessWidget {
     return ValueListenableBuilder<String>(
       valueListenable: ThemeManager.appThemeNotifier,
       builder: (context, themeName, child) {
-        return MaterialApp(
-          title: 'AkonsSquare',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeManager.getThemeByName(themeName),
-          home: const SplashScreen(),
+        return ValueListenableBuilder<String>(
+          valueListenable: ThemeManager.appFontNotifier,
+          builder: (context, fontName, child) {
+            return MaterialApp(
+              title: 'AkonsSquare',
+              debugShowCheckedModeBanner: false,
+              theme: ThemeManager.getThemeByName(themeName, fontName: fontName),
+              home: const SplashScreen(),
+            );
+          },
         );
       },
     );
@@ -355,6 +361,9 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     const SizedBox(height: 10),
                     GestureDetector(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
+                      },
                       onLongPress: _showMasterKeyDialog,
                       child: Column(
                         children: [

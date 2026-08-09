@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors -->
+    <color name="primary">#283593</color> <!-- indigo.shade800 -->
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#E8EAF6</color> <!-- indigo.shade50 -->
+    <color name="on_primary_container">#1A237E</color> <!-- indigo.shade900 -->
+
+    <!-- Secondary Colors -->
+    <color name="secondary">#00838F</color> <!-- cyan.shade800 -->
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="secondary_container">#E0F7FA</color>
+
+    <!-- Tertiary (Success) Colors -->
+    <color name="tertiary">#2E7D32</color>
+    <color name="on_tertiary">#FFFFFF</color>
+
+    <!-- Error Colors -->
+    <color name="error">#D32F2F</color>
+    <color name="on_error">#FFFFFF</color>
+
+    <!-- Surface Colors -->
+    <color name="surface">#FFFFFF</color>
+    <color name="on_surface">#1A237E</color>
+    <color name="surface_container_low">#F8F9FF</color>
+
+    <!-- Custom Categories -->
+    <color name="warning">#F57C00</color>
+    <color name="info">#0288D1</color>
+    <color name="gold">#FFD700</color>
+    <color name="active">#4CAF50</color>
+    <color name="pending">#FFA000</color>
+</resources>

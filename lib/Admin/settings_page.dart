@@ -247,26 +247,7 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. System Config
-            StreamBuilder<DocumentSnapshot>(
-              stream: _dbService.getAppConfigStream(),
-              builder: (context, snapshot) {
-                bool isEnabled = snapshot.data?.exists == true ? snapshot.data!['isPopupEnabled'] ?? true : true;
-                return _buildSettingsCard(
-                  context,
-                  icon: Icons.settings_suggest_outlined,
-                  title: "System Configuration",
-                  subtitle: "Control system behavior and notifications",
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  accentColor: Theme.of(context).colorScheme.primary,
-                  children: [
-                    _buildVisibilitySwitch("Enable Update Notifications", isEnabled, (val) => _dbService.updatePopupStatus(val)),
-                  ],
-                );
-              }
-            ),
-
-            // 2. Dashboard Visibility
+            // Dashboard Visibility
             _buildSettingsCard(
               context,
               icon: Icons.security_outlined,
@@ -275,6 +256,37 @@ class _SettingsPageState extends State<SettingsPage> {
               color: Theme.of(context).colorScheme.secondaryContainer,
               accentColor: Theme.of(context).colorScheme.secondary,
               children: [
+                // Nested System Config at the top
+                StreamBuilder<DocumentSnapshot>(
+                  stream: _dbService.getAppConfigStream(),
+                  builder: (context, snapshot) {
+                    bool isEnabled = snapshot.data?.exists == true ? snapshot.data!['isPopupEnabled'] ?? true : true;
+                    return Card(
+                      elevation: 3,
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      color: Theme.of(context).colorScheme.surface,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ExpansionTile(
+                        leading: Icon(Icons.settings_suggest_outlined, color: Theme.of(context).colorScheme.primary),
+                        iconColor: Theme.of(context).colorScheme.primary,
+                        collapsedIconColor: Theme.of(context).colorScheme.primary,
+                        title: Text("System Configuration", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                        subtitle: const Text("System behavior & Experience", style: TextStyle(fontSize: 10)),
+                        children: [
+                          _buildVisibilitySwitch("Enable Update Notifications", isEnabled, (val) => _dbService.updatePopupStatus(val)),
+                          FutureBuilder<SharedPreferences>(
+                            future: SharedPreferences.getInstance(),
+                            builder: (context, ps) {
+                              bool h = ps.data?.getBool('isHapticEnabled') ?? true;
+                              return _buildVisibilitySwitch("Haptic Pulse Feedback", h, (v) async { (await SharedPreferences.getInstance()).setBool('isHapticEnabled', v); if(v) DatabaseService.vibrate(); setState((){}); }, icon: Icons.vibration_outlined);
+                            }
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                ),
+                
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(children: [
@@ -307,41 +319,60 @@ class _SettingsPageState extends State<SettingsPage> {
                       (data['settings'] ?? {}).forEach((k, v) => s[k] = v as bool);
                     }
                     return Column(children: [
-                      _buildVisibilitySwitch("Show Accounts Section", s['showAccounts']!, (val) { s['showAccounts'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.account_balance_wallet_outlined),
+                      Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: _buildVisibilitySwitch("Show Accounts Section", s['showAccounts']!, (val) { s['showAccounts'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.account_balance_wallet_outlined),
+                      ),
                       
                       // Electricity Nested
-                      _buildVisibilitySwitch("Show Electricity Section", s['showElectricity']!, (val) { s['showElectricity'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.electric_bolt_outlined),
-                      if (s['showElectricity']!) ...[
-                        _buildSubVisibilityRadio("Main vs Sub-Meter", s['showMainVsSub']!, (val) { s['showMainVsSub'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.compare_arrows),
-                        _buildSubVisibilityRadio("Main vs Govt. Bill", s['showMainVsGovt']!, (val) { s['showMainVsGovt'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.receipt_long),
-                      ],
+                      Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Column(
+                          children: [
+                            _buildVisibilitySwitch("Show Electricity Section", s['showElectricity']!, (val) { s['showElectricity'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.electric_bolt_outlined),
+                            if (s['showElectricity']!) ...[
+                              _buildSubVisibilityRadio("Main vs Sub-Meter", s['showMainVsSub']!, (val) { s['showMainVsSub'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.compare_arrows),
+                              _buildSubVisibilityRadio("Main vs Govt. Bill", s['showMainVsGovt']!, (val) { s['showMainVsGovt'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.receipt_long),
+                              const SizedBox(height: 8),
+                            ],
+                          ],
+                        ),
+                      ),
 
                       // Category Nested
-                      _buildVisibilitySwitch("Show Category Section", s['showCategory']!, (val) { s['showCategory'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.category_outlined),
-                      if (s['showCategory']!) ...[
-                        _buildSubVisibilityRadio("Total Occupied", s['showTotalOccupied']!, (v){ s['showTotalOccupied'] = v; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.door_front_door_outlined),
-                        _buildSubVisibilityRadio("Total Vacant", s['showTotalVacant']!, (v){ s['showTotalVacant'] = v; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.meeting_room_outlined),
-                        StreamBuilder<QuerySnapshot>(
-                          stream: _dbService.getCategoriesStream(),
-                          builder: (context, catSnap) {
-                            if (!catSnap.hasData) return const SizedBox.shrink();
-                            return Column(children: catSnap.data!.docs.map((doc) {
-                              String catName = (doc.data() as Map)['categoryName'] ?? '';
-                              String key = "cat_${doc.id}";
-                              bool isVisible = s[key] ?? true;
-                              return _buildSubVisibilityRadio(catName, isVisible, (val) { s[key] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.label_outline);
-                            }).toList());
-                          },
+                      Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        color: Theme.of(context).colorScheme.tertiaryContainer,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Column(
+                          children: [
+                            _buildVisibilitySwitch("Show Category Section", s['showCategory']!, (val) { s['showCategory'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.category_outlined),
+                            if (s['showCategory']!) ...[
+                              _buildSubVisibilityRadio("Total Occupied", s['showTotalOccupied']!, (v){ s['showTotalOccupied'] = v; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.door_front_door_outlined),
+                              _buildSubVisibilityRadio("Total Vacant", s['showTotalVacant']!, (v){ s['showTotalVacant'] = v; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.meeting_room_outlined),
+                              StreamBuilder<QuerySnapshot>(
+                                stream: _dbService.getCategoriesStream(),
+                                builder: (context, catSnap) {
+                                  if (!catSnap.hasData) return const SizedBox.shrink();
+                                  return Column(children: catSnap.data!.docs.map((doc) {
+                                    String catName = (doc.data() as Map)['categoryName'] ?? '';
+                                    String key = "cat_${doc.id}";
+                                    bool isVisible = s[key] ?? true;
+                                    return _buildSubVisibilityRadio(catName, isVisible, (val) { s[key] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.label_outline);
+                                  }).toList());
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          ],
                         ),
-                      ],
-                      
-                      const Divider(indent: 16, endIndent: 16),
-                      FutureBuilder<SharedPreferences>(
-                        future: SharedPreferences.getInstance(),
-                        builder: (context, ps) {
-                          bool h = ps.data?.getBool('isHapticEnabled') ?? true;
-                          return _buildVisibilitySwitch("Haptic Pulse Feedback", h, (v) async { (await SharedPreferences.getInstance()).setBool('isHapticEnabled', v); if(v) DatabaseService.vibrate(); setState((){}); }, icon: Icons.vibration_outlined);
-                        }
                       ),
                     ]);
                   }
@@ -454,7 +485,34 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), label: const Text("Change App Theme"))),
+                  child: Column(
+                    children: [
+                      SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), label: const Text("Change App Theme"))),
+                      const SizedBox(height: 16),
+                      // Font Selection Dropdown
+                      ValueListenableBuilder<String>(
+                        valueListenable: ThemeManager.appFontNotifier,
+                        builder: (context, currentFont, child) {
+                          return DropdownButtonFormField<String>(
+                            value: currentFont,
+                            decoration: InputDecoration(
+                              labelText: "App Font Family",
+                              prefixIcon: const Icon(Icons.font_download_outlined),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            items: ThemeManager.supportedFonts.map((f) => DropdownMenuItem(value: f, child: Text(f, style: const TextStyle(fontWeight: FontWeight.bold)))).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                ThemeManager.setFont(val);
+                                DatabaseService.showToast(context, "Font changed to $val");
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -472,6 +530,8 @@ class _SettingsPageState extends State<SettingsPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accentColor.withOpacity(0.1))),
       child: ExpansionTile(
         leading: Icon(icon, color: accentColor),
+        iconColor: accentColor,
+        collapsedIconColor: accentColor,
         title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: accentColor, fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
         children: children,
@@ -484,7 +544,9 @@ class _SettingsPageState extends State<SettingsPage> {
       stream: _dbService.getUsersStream(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const LinearProgressIndicator();
-        var users = snapshot.data!.docs;
+        var users = snapshot.data!.docs.toList();
+        users.sort((a, b) => ((a.data() as Map)['username'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['username'] ?? '').toString().toLowerCase()));
+        
         return Column(children: users.map((doc) {
           var data = doc.data() as Map<String, dynamic>;
           String role = (data['role'] ?? 'viewer').toString().toLowerCase();
