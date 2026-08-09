@@ -9,12 +9,6 @@ class ThemeManager {
   static List<Color> sessionColorPool = [];
 
   static final List<Color> _niceSeeds = [
-    Colors.indigo,
-    Colors.teal,
-    Colors.deepPurple,
-    Colors.blueGrey,
-    Colors.brown,
-    Colors.deepOrange,
     const Color(0xFF2C3E50), // Midnight Blue
     const Color(0xFF16A085), // Green Sea
     const Color(0xFF8E44AD), // Wisteria
@@ -55,25 +49,19 @@ class ThemeManager {
     String? savedTheme = prefs.getString('app_theme');
     String? savedFont = prefs.getString('app_font');
     
-    // Choose a random seed for this session (for main elements like AppBar/Buttons)
+    // Choose random pool for this session
     var pool = List<Color>.from(_niceSeeds)..shuffle();
     _sessionSeedColor = pool.first;
     sessionColorPool = pool;
 
-    // Migration for renamed theme
-    if (savedTheme == "App Theme(Normal)") {
-      savedTheme = "Default Theme";
-      await prefs.setString('app_theme', savedTheme);
-    }
-    
-    appThemeNotifier.value = "Default Theme"; 
+    appThemeNotifier.value = savedTheme ?? "Default Theme"; 
     appFontNotifier.value = savedFont ?? "Poppins";
   }
 
   static Future<void> setTheme(String themeName) async {
-    appThemeNotifier.value = "Default Theme"; 
+    appThemeNotifier.value = themeName; 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('app_theme', "Default Theme");
+    await prefs.setString('app_theme', themeName);
   }
 
   static Future<void> setFont(String fontName) async {
@@ -83,17 +71,29 @@ class ThemeManager {
   }
 
   static Color getCardColor(int index, {double alpha = 1.0}) {
+    if (appThemeNotifier.value == "Default Theme") {
+      final List<Color> colors = [Colors.indigo.shade800, Colors.cyan.shade800, const Color(0xFF2E7D32)];
+      return colors[index % colors.length].withValues(alpha: alpha);
+    }
     if (sessionColorPool.isEmpty) return _sessionSeedColor.withValues(alpha: alpha);
     return sessionColorPool[index % sessionColorPool.length].withValues(alpha: alpha);
   }
 
   static Color getCardContainerColor(int index, {double alpha = 1.0}) {
+    if (appThemeNotifier.value == "Default Theme") {
+      final List<Color> colors = [Colors.indigo.shade50, const Color(0xFFE0F7FA), const Color(0xFFE8F5E9)];
+      return colors[index % colors.length].withValues(alpha: alpha);
+    }
     if (sessionColorPool.isEmpty) return _sessionSeedColor.withValues(alpha: 0.1);
     Color seed = sessionColorPool[index % sessionColorPool.length];
     return ColorScheme.fromSeed(seedColor: seed).primaryContainer.withValues(alpha: alpha);
   }
 
   static Color getCardOnContainerColor(int index) {
+    if (appThemeNotifier.value == "Default Theme") {
+      final List<Color> colors = [Colors.indigo.shade900, Colors.cyan.shade900, const Color(0xFF1B5E20)];
+      return colors[index % colors.length];
+    }
     if (sessionColorPool.isEmpty) return Colors.black;
     Color seed = sessionColorPool[index % sessionColorPool.length];
     return ColorScheme.fromSeed(seedColor: seed).onPrimaryContainer;
@@ -107,10 +107,34 @@ class ThemeManager {
   static ThemeData getThemeByName(String themeName, {String? fontName}) {
     final activeFont = fontName ?? appFontNotifier.value;
     
-    final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: _sessionSeedColor,
-      brightness: Brightness.light,
-    );
+    ColorScheme colorScheme;
+    if (themeName == "Default Theme") {
+      colorScheme = ColorScheme.fromSeed(
+        seedColor: Colors.indigo,
+        brightness: Brightness.light,
+      ).copyWith(
+        primary: Colors.indigo.shade800,
+        onPrimary: Colors.white,
+        primaryContainer: Colors.indigo.shade50,
+        onPrimaryContainer: Colors.indigo.shade900,
+        secondary: Colors.cyan.shade800,
+        onSecondary: Colors.white,
+        secondaryContainer: const Color(0xFFE0F7FA),
+        onSecondaryContainer: Colors.cyan.shade900,
+        tertiary: const Color(0xFF2E7D32),
+        onTertiary: Colors.white,
+        tertiaryContainer: const Color(0xFFE8F5E9),
+        onTertiaryContainer: const Color(0xFF1B5E20),
+        surface: Colors.white,
+        onSurface: Colors.indigo.shade900,
+        surfaceContainerLow: const Color(0xFFF8F9FF),
+      );
+    } else {
+      colorScheme = ColorScheme.fromSeed(
+        seedColor: _sessionSeedColor,
+        brightness: Brightness.light,
+      );
+    }
 
     final TextTheme baseTextTheme = _getTextTheme(activeFont, colorScheme.onSurface);
 

@@ -614,7 +614,7 @@ class _SettingsPageState extends State<SettingsPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text("Select Theme", style: Theme.of(context).textTheme.titleLarge)),
         content: DropdownButton<String>(
-          value: local, isExpanded: true, items: ["Default Theme"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+          value: local, isExpanded: true, items: ["Default Theme", "Random Color Theme"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
           onChanged: (val) { if (val != null) setST(() => local = val); },
         ),
         actions: [
