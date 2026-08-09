@@ -174,6 +174,7 @@ class ThemeManager {
           bronze: const Color(0xFFCD7F32),
           premium: const Color(0xFF673AB7),
           verified: const Color(0xFF2196F3),
+          electric: themeName == "Default Theme" ? const Color(0xFFFFD700) : colorScheme.secondary,
         ),
       ],
       cardTheme: CardThemeData(
@@ -254,6 +255,7 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color? bronze;
   final Color? premium;
   final Color? verified;
+  final Color? electric;
 
   AppColors({
     this.success,
@@ -270,6 +272,7 @@ class AppColors extends ThemeExtension<AppColors> {
     this.bronze,
     this.premium,
     this.verified,
+    this.electric,
   });
 
   @override
@@ -288,6 +291,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? bronze,
     Color? premium,
     Color? verified,
+    Color? electric,
   }) {
     return AppColors(
       success: success ?? this.success,
@@ -304,6 +308,7 @@ class AppColors extends ThemeExtension<AppColors> {
       bronze: bronze ?? this.bronze,
       premium: premium ?? this.premium,
       verified: verified ?? this.verified,
+      electric: electric ?? this.electric,
     );
   }
 
@@ -325,6 +330,7 @@ class AppColors extends ThemeExtension<AppColors> {
       bronze: Color.lerp(bronze, other.bronze, t),
       premium: Color.lerp(premium, other.premium, t),
       verified: Color.lerp(verified, other.verified, t),
+      electric: Color.lerp(electric, other.electric, t),
     );
   }
 }
@@ -356,4 +362,5 @@ extension AppThemeExtension on BuildContext {
   Color get pending => appColors.pending!;
   Color get gold => appColors.gold!;
   Color get premium => appColors.premium!;
+  Color get electric => appColors.electric!;
 }

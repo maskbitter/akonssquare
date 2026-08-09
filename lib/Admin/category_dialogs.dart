@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:akonssquare/Common/database_service.dart';
 import 'package:flutter/services.dart';
+import 'package:akonssquare/Common/theme_manager.dart';
 
 class CategoryDialogs {
   static final DatabaseService _dbService = DatabaseService();
@@ -752,7 +753,7 @@ class CategoryDialogs {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Column(
             children: [
-            Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.secondary, size: 40),
+            Icon(Icons.electric_bolt, color: context.electric, size: 40),
               const SizedBox(height: 12),
               Text("Electricity - assigned submeter", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
               Text("Update for $subItemName", style: Theme.of(context).textTheme.bodySmall),

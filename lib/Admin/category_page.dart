@@ -74,9 +74,9 @@ class _CategoryPageState extends State<CategoryPage> {
               context, 
               title: "Electricity Meters", 
               subtitle: "Add Main or Sub-Meters", 
-              icon: Icons.electric_bolt_outlined, 
+              icon: Icons.electric_bolt, 
               color: Theme.of(context).colorScheme.tertiaryContainer,
-              accentColor: Theme.of(context).colorScheme.tertiary,
+              accentColor: context.electric,
               onTap: () { 
                 Navigator.pop(ctx);
                 _showMeterChoiceMenu(context);
@@ -158,7 +158,7 @@ class _CategoryPageState extends State<CategoryPage> {
               tabs: const [
                 Tab(icon: Icon(Icons.door_front_door_outlined, size: 20), text: "Occupied"),
                 Tab(icon: Icon(Icons.meeting_room_outlined, size: 20), text: "Vacant"),
-                Tab(icon: Icon(Icons.electric_bolt_outlined, size: 20), text: "Meters"),
+                Tab(icon: Icon(Icons.electric_bolt, size: 20), text: "Meters"),
               ],
             ),
           ),
@@ -386,7 +386,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                   ),
                                   Row(
                                     children: [
-                                      if (hasElectric) Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 18),
+                                      if (hasElectric) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                                       const SizedBox(width: 4),
                                       Text(
                                         "৳${catTotal.toStringAsFixed(2)}",
@@ -496,7 +496,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.end,
                                                 children: [
-                                                  if (ed != null) Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 20),
+                                                  if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 20),
                                                   Text("৳${total.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: itemOnBgColor)),
                                                 ],
                                               ),
@@ -533,11 +533,11 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 _buildSectionBox(
                                                   "Electric Bills", 
                                                   "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
-                                                  Icons.flash_on, 
+                                                  Icons.electric_bolt, 
                                                   amount: eBillAmount, 
-                                                  color: Theme.of(context).colorScheme.secondary,
+                                                  color: context.electric,
                                                   trailing: IconButton(
-                                                    icon: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.secondary, size: 22), 
+                                                    icon: Icon(Icons.electric_bolt, color: context.electric, size: 22), 
                                                     onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
                                                   )
                                                 ),
@@ -687,7 +687,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   PopupMenuItem(
                                                     value: ed == null ? 'electric' : 'stop', 
                                                     child: ListTile(
-                                                      leading: Icon(Icons.flash_on, color: ed == null ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.secondary, size: 20), 
+                                                      leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
                                                       title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
                                                       dense: true
                                                     )
@@ -710,7 +710,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 ),
                                               ),
                                               const Spacer(),
-                                              if (ed != null) Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 18),
+                                              if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                                               const SizedBox(width: 4),
                                               Text(
                                                 "৳${displayTotal.toStringAsFixed(2)}",
@@ -762,11 +762,11 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 _buildSectionBox(
                                                   "Electric Bills", 
                                                   "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
-                                                  Icons.flash_on, 
+                                                  Icons.electric_bolt, 
                                                   amount: eBillAmount, 
-                                                  color: Theme.of(context).colorScheme.secondary,
+                                                  color: context.electric,
                                                   trailing: IconButton(
-                                                    icon: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.secondary, size: 22), 
+                                                    icon: Icon(Icons.electric_bolt, color: context.electric, size: 22), 
                                                     onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
                                                   )
                                                 ),

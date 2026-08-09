@@ -146,7 +146,7 @@ class _AdminHomeState extends State<AdminHome> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.electric_bolt_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.electric_bolt, size: 20, color: context.electric),
                 const SizedBox(width: 8),
                 Text(
                   "Electricity",
@@ -620,7 +620,7 @@ class _AdminHomeState extends State<AdminHome> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(titleIcon, size: 18, color: Theme.of(context).colorScheme.primary),
+              Icon(titleIcon, size: 18, color: context.electric),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -1247,7 +1247,7 @@ class _AdminHomeState extends State<AdminHome> {
                 if (showElec && data['electricityDetails'] != null) ...[
                   Row(
                     children: [
-                      Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 16),
+                      Icon(Icons.electric_bolt, color: context.electric, size: 16),
                       const SizedBox(width: 8),
                       Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleSmall),
                     ],

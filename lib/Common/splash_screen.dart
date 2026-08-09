@@ -174,7 +174,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    "SECURE PROPERTY MANAGEMENT",
+                    "PERSONAL PROPERTY MANAGEMENT",
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: const Color(0xFF00FFC2).withValues(alpha: 0.8),
                       fontWeight: FontWeight.bold,

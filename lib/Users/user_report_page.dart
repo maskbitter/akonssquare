@@ -107,7 +107,7 @@ class UserReportPage extends StatelessWidget {
                     context,
                     "Electricity Total",
                     "৳${data['electricityBill']}",
-                    valueColor: Theme.of(context).colorScheme.secondary,
+                    valueColor: context.electric,
                     isBold: true,
                   ),
                 ],
@@ -313,7 +313,7 @@ class UserReportPage extends StatelessWidget {
                                       children: [
                                         _buildCompactSummary(context, "Rent", "৳${data['houseRentTotal']}", Theme.of(context).colorScheme.onSurface),
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
-                                        _buildCompactSummary(context, "Electric", "৳${data['electricityBill']}", Theme.of(context).colorScheme.secondary),
+                                        _buildCompactSummary(context, "Electric", "৳${data['electricityBill']}", context.electric),
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
                                         _buildCompactSummary(context, "Total", "৳${data['totalAmount']}", ThemeManager.getCardColor(index + 2), isBold: true),
                                       ],

@@ -533,11 +533,11 @@ class _UserDashboardState extends State<UserDashboard> {
                         child: ExpansionTile(
                           shape: const Border(),
                           collapsedShape: const Border(),
-                          iconColor: Theme.of(context).colorScheme.secondary,
-                          collapsedIconColor: Theme.of(context).colorScheme.secondary,
+                          iconColor: context.electric,
+                          collapsedIconColor: context.electric,
                           leading: CircleAvatar(
-                            backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
-                            child: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.secondary, size: 20),
+                            backgroundColor: context.electric.withValues(alpha: 0.1),
+                            child: Icon(Icons.electric_bolt, color: context.electric, size: 20),
                           ),
                           title: Text("Electricity Bill", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                           subtitle: Text("Usage: ${((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)} units", style: Theme.of(context).textTheme.bodySmall),
