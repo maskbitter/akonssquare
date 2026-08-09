@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:akonssquare/Common/database_service.dart';
 import 'package:akonssquare/Admin/category_dialogs.dart';
+import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:ui';
@@ -234,7 +235,7 @@ class _AdminHomeState extends State<AdminHome> {
                   children: [
                     Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      color: Theme.of(context).primaryColor,
+                      color: Theme.of(context).colorScheme.primary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
@@ -285,21 +286,21 @@ class _AdminHomeState extends State<AdminHome> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInteractiveStat("Received", receivedTotal, Theme.of(context).colorScheme.tertiary, Icons.check_circle_outline,
+                                _buildInteractiveStat("Received", receivedTotal, Theme.of(context).colorScheme.onPrimary, Icons.check_circle_outline,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 0)),
-                                Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
-                                _buildInteractiveStat("Due", dueTotal, Theme.of(context).colorScheme.error, Icons.pending_actions,
+                                Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)),
+                                _buildInteractiveStat("Due", dueTotal, Theme.of(context).colorScheme.onPrimary, Icons.pending_actions,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 1)),
                               ],
                             ),
-                            Divider(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2), height: 16),
+                            Divider(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2), height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 _buildInteractiveStat("Rent", rentTotal, Theme.of(context).colorScheme.onPrimary, Icons.home_work_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: true)),
-                                Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
-                                _buildInteractiveStat("Utility", utilityTotal, Theme.of(context).colorScheme.secondary, Icons.settings_suggest_outlined,
+                                Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)),
+                                _buildInteractiveStat("Utility", utilityTotal, Theme.of(context).colorScheme.onPrimary, Icons.settings_suggest_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: false)),
                               ],
                             ),
@@ -481,7 +482,7 @@ class _AdminHomeState extends State<AdminHome> {
                       child: _buildSubOverviewCard(
                         title: "Total Occupied",
                         count: occupiedCount,
-                        color: Theme.of(context).colorScheme.tertiary,
+                        color: ThemeManager.getCardColor(0),
                         icon: Icons.door_front_door_outlined,
                         onTap: () {
                           DatabaseService.vibrate();
@@ -496,7 +497,7 @@ class _AdminHomeState extends State<AdminHome> {
                       child: _buildSubOverviewCard(
                         title: "Total Vacant",
                         count: vacantCount,
-                        color: Theme.of(context).colorScheme.error,
+                        color: ThemeManager.getCardColor(1),
                         icon: Icons.meeting_room_outlined,
                         onTap: () {
                           DatabaseService.vibrate();
@@ -775,21 +776,8 @@ class _AdminHomeState extends State<AdminHome> {
     String catId = catDoc.id;
     String catName = (catDoc.data() as Map)['categoryName'] ?? 'Unnamed';
     
-    // Assign rotating containers based on index to ensure visual difference
-    final List<Color> bgColors = [
-      Theme.of(context).colorScheme.primaryContainer, 
-      Theme.of(context).colorScheme.secondaryContainer, 
-      Theme.of(context).colorScheme.tertiaryContainer,
-    ];
-    final List<Color> accentColors = [
-      Theme.of(context).colorScheme.primary,
-      Theme.of(context).colorScheme.secondary,
-      Theme.of(context).colorScheme.tertiary,
-    ];
-    
-    int idx = index % bgColors.length;
-    final Color bgColor = bgColors[idx];
-    final Color accentColor = accentColors[idx];
+    final Color accentColor = ThemeManager.getCardColor(index);
+    final Color bgColor = ThemeManager.getCardContainerColor(index);
 
     return StreamBuilder<QuerySnapshot>(
       stream: _dbService.getSubItemsStream(catId),
@@ -827,11 +815,11 @@ class _AdminHomeState extends State<AdminHome> {
                 Expanded(
                   child: Text(
                     catName.toUpperCase(),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: accentColor, letterSpacing: 0.5),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: ThemeManager.getCardOnContainerColor(index), letterSpacing: 0.5),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                _buildNestedStatItem("Total", total, accentColor),
+                _buildNestedStatItem("Total", total, ThemeManager.getCardOnContainerColor(index)),
                 const SizedBox(width: 12),
                 _buildNestedStatItem("Occupied", occupied, Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 12),
@@ -1170,17 +1158,8 @@ class _AdminHomeState extends State<AdminHome> {
     Timestamp? paidAt,
     String? notes,
   }) {
-    final List<Color> pastelColors = [
-      Theme.of(context).colorScheme.primaryContainer,
-      Theme.of(context).colorScheme.secondaryContainer,
-      Theme.of(context).colorScheme.tertiaryContainer,
-      Theme.of(context).colorScheme.surfaceContainer,
-      Theme.of(context).colorScheme.surfaceContainerHigh,
-      Theme.of(context).colorScheme.surfaceContainerHighest,
-      Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.7),
-      Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.7),
-    ];
-    Color itemColor = pastelColors[index % pastelColors.length];
+    Color itemColor = ThemeManager.getCardContainerColor(index + 5, alpha: 0.7);
+    Color effectiveColor = ThemeManager.getCardColor(index + 5);
 
     return Card(
       elevation: 1,

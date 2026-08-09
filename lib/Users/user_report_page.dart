@@ -254,12 +254,12 @@ class UserReportPage extends StatelessWidget {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
+                            color: ThemeManager.getCardContainerColor(index + 2, alpha: 0.5),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
                             ],
-                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                            border: Border.all(color: ThemeManager.getCardColor(index + 2).withValues(alpha: 0.1)),
                           ),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(20),
@@ -273,10 +273,10 @@ class UserReportPage extends StatelessWidget {
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+                                          color: ThemeManager.getCardColor(index + 2).withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(12),
                                         ),
-                                        child: Icon(Icons.calendar_month_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                                        child: Icon(Icons.calendar_month_outlined, color: ThemeManager.getCardColor(index + 2), size: 20),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -315,7 +315,7 @@ class UserReportPage extends StatelessWidget {
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
                                         _buildCompactSummary(context, "Electric", "৳${data['electricityBill']}", Theme.of(context).colorScheme.secondary),
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
-                                        _buildCompactSummary(context, "Total", "৳${data['totalAmount']}", Theme.of(context).colorScheme.primary, isBold: true),
+                                        _buildCompactSummary(context, "Total", "৳${data['totalAmount']}", ThemeManager.getCardColor(index + 2), isBold: true),
                                       ],
                                     ),
                                   ),

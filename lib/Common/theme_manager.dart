@@ -6,6 +6,7 @@ class ThemeManager {
   static final ValueNotifier<String> appThemeNotifier = ValueNotifier<String>("Default Theme");
   static final ValueNotifier<String> appFontNotifier = ValueNotifier<String>("Poppins");
   static Color _sessionSeedColor = Colors.indigo;
+  static List<Color> sessionColorPool = [];
 
   static final List<Color> _niceSeeds = [
     Colors.indigo,
@@ -19,6 +20,23 @@ class ThemeManager {
     const Color(0xFF8E44AD), // Wisteria
     const Color(0xFF2980B9), // Belize Hole
     const Color(0xFFD35400), // Pumpkin
+    const Color(0xFFC0392B), // Pomegranate
+    const Color(0xFF27AE60), // Nephritis
+    const Color(0xFFF39C12), // Orange
+    const Color(0xFFE67E22), // Carrot
+    const Color(0xFF7F8C8D), // Asbestos
+    Colors.indigo,
+    Colors.teal,
+    Colors.deepPurple,
+    Colors.blueGrey,
+    Colors.brown,
+    Colors.deepOrange,
+    Colors.blue,
+    Colors.cyan,
+    Colors.pink,
+    Colors.purple,
+    Colors.orange,
+    Colors.amber,
   ];
 
   static List<String> get supportedFonts => [
@@ -37,8 +55,10 @@ class ThemeManager {
     String? savedTheme = prefs.getString('app_theme');
     String? savedFont = prefs.getString('app_font');
     
-    // Choose a random seed for this session
-    _sessionSeedColor = (_niceSeeds..shuffle()).first;
+    // Choose a random seed for this session (for main elements like AppBar/Buttons)
+    var pool = List<Color>.from(_niceSeeds)..shuffle();
+    _sessionSeedColor = pool.first;
+    sessionColorPool = pool;
 
     // Migration for renamed theme
     if (savedTheme == "App Theme(Normal)") {
@@ -60,6 +80,28 @@ class ThemeManager {
     appFontNotifier.value = fontName;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('app_font', fontName);
+  }
+
+  static Color getCardColor(int index, {double alpha = 1.0}) {
+    if (sessionColorPool.isEmpty) return _sessionSeedColor.withValues(alpha: alpha);
+    return sessionColorPool[index % sessionColorPool.length].withValues(alpha: alpha);
+  }
+
+  static Color getCardContainerColor(int index, {double alpha = 1.0}) {
+    if (sessionColorPool.isEmpty) return _sessionSeedColor.withValues(alpha: 0.1);
+    Color seed = sessionColorPool[index % sessionColorPool.length];
+    return ColorScheme.fromSeed(seedColor: seed).primaryContainer.withValues(alpha: alpha);
+  }
+
+  static Color getCardOnContainerColor(int index) {
+    if (sessionColorPool.isEmpty) return Colors.black;
+    Color seed = sessionColorPool[index % sessionColorPool.length];
+    return ColorScheme.fromSeed(seedColor: seed).onPrimaryContainer;
+  }
+
+  static Color getContrastColor(Color background) {
+    // Calculates relative luminance to decide between white and black text
+    return background.computeLuminance() > 0.5 ? Colors.black : Colors.white;
   }
 
   static ThemeData getThemeByName(String themeName, {String? fontName}) {
