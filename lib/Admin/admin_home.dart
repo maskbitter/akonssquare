@@ -699,7 +699,7 @@ class _AdminHomeState extends State<AdminHome> {
                 titleIcon: Icons.balance,
                 containerColor: Theme.of(context).colorScheme.primaryContainer,
                 accentColor: Theme.of(context).colorScheme.primary,
-                headers: ["#", "Meter\nNumber", "Main Meter\nUsed Units", "Sub-Meter\Total Units", "This Month\nUnit Rate", "Balance Units"],
+                headers: ["#", "Meter\nNumber", "Main Meter\nUsed Units", "Sub-Meter\nTotal Units", "This Month\nUnit Rate", "Balance Units"],
                 meters: mainMeters,
                 rowBuilder: (data, index) {
                   double last = (data['lastReading'] as num?)?.toDouble() ?? 0;

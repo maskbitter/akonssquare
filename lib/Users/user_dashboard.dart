@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:akonssquare/Common/database_service.dart';
@@ -137,50 +138,53 @@ class _UserDashboardState extends State<UserDashboard> {
       UserReportPage(subItemId: widget.subItemId),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: Text(_appName.isEmpty ? "Loading..." : _appName, style: Theme.of(context).textTheme.titleMedium),
-        centerTitle: true,
-        actions: [
-          InkWell(
-            onTap: _showLogoutConfirmationDialog,
-            child: StreamBuilder<DocumentSnapshot>(
-              stream: _dbService.getAppConfigStream(),
-              builder: (context, snapshot) {
-                return FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (context, pSnap) {
-                    String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
-                    String? remote = snapshot.data?.exists == true ? snapshot.data!['requiredVersion'] : null;
-                    
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 20),
-                        Text(local, style: Theme.of(context).textTheme.labelSmall),
-                        if (remote != null && remote != local)
-                          Text(remote, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
-                      ],
-                    );
-                  }
-                );
-              }
+    return Theme(
+      data: ThemeManager.getThemeByName("Default Theme"),
+      child: Scaffold(
+        appBar: AppBar(
+          toolbarHeight: 70,
+          title: Text(_appName.isEmpty ? "Loading..." : _appName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          centerTitle: true,
+          actions: [
+            InkWell(
+              onTap: _showLogoutConfirmationDialog,
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: _dbService.getAppConfigStream(),
+                builder: (context, snapshot) {
+                  return FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, pSnap) {
+                      String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
+                      String? remote = snapshot.data?.exists == true ? snapshot.data!['requiredVersion'] : null;
+                      
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.logout, color: Colors.red, size: 20),
+                          Text(local, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          if (remote != null && remote != local)
+                            Text(remote, style: const TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold)),
+                        ],
+                      );
+                    }
+                  );
+                }
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: UpdateGuard(child: pages[_currentIndex]),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: "Dashboard"),
-          BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), activeIcon: Icon(Icons.analytics), label: "History"),
-        ],
+            const SizedBox(width: 16),
+          ],
+        ),
+        body: UpdateGuard(child: pages[_currentIndex]),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          selectedItemColor: Colors.indigo.shade800,
+          unselectedItemColor: Colors.grey,
+          onTap: (index) => setState(() => _currentIndex = index),
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: "Dashboard"),
+            BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), activeIcon: Icon(Icons.analytics), label: "History"),
+          ],
+        ),
       ),
     );
   }
@@ -275,78 +279,115 @@ class _UserDashboardState extends State<UserDashboard> {
               double totalBill = servicesSum + electricityBill;
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Card(
-                      elevation: 2,
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-                        child: Column(
-                          children: [
-                            Text(_categoryName, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                            const SizedBox(height: 6),
-                            Row(
-                              mainAxisAlignment: TenantName.isNotEmpty 
-                                  ? MainAxisAlignment.spaceBetween 
-                                  : MainAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    subName, 
-                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(letterSpacing: -0.5),
-                                    overflow: TextOverflow.ellipsis,
+                    // --- MODERN HEADER CARD ---
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.indigo.shade800,
+                            Colors.indigo.shade500,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.indigo.withOpacity(0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _categoryName.toUpperCase(),
+                                    style: const TextStyle(color: Colors.white70, letterSpacing: 1.5, fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
-                                ),
-                                if (TenantName.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Chip(
-                                      label: Text(
-                                        TenantName, 
-                                        style: Theme.of(context).textTheme.labelSmall,
-                                        overflow: TextOverflow.ellipsis,
-                                      ), 
-                                      backgroundColor: Theme.of(context).colorScheme.surface,
-                                      visualDensity: VisualDensity.compact,
-                                      side: BorderSide.none,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      padding: EdgeInsets.zero,
-                                    ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    subName,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 24),
                                   ),
                                 ],
-                              ],
-                            ),
-                            if (nidNumber.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Text("NID: $nidNumber", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                               ),
-                            if (createdAt != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Text("Using for: $durationText", style: Theme.of(context).textTheme.labelSmall),
+                              const CircleAvatar(
+                                radius: 24,
+                                backgroundColor: Colors.white24,
+                                child: Icon(Icons.person_outline, color: Colors.white, size: 28),
                               ),
-                            const Divider(height: 32),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.receipt_long_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
-                                const SizedBox(width: 10),
-                                Text(
-                                  "Total Outstanding: ৳${totalBill.toStringAsFixed(2)}",
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Theme.of(context).colorScheme.primary),
-                                ),
-                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          if (TenantName.isNotEmpty) ...[
+                            Text(
+                              "Tenant: $TenantName",
+                              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                             ),
+                            const SizedBox(height: 4),
                           ],
-                        ),
+                          if (nidNumber.isNotEmpty)
+                            Text(
+                              "NID: $nidNumber",
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                        ],
                       ),
                     ),
-                    
+
+                    const SizedBox(height: 24),
+
+                    // --- OUTSTANDING BILL SECTION ---
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.grey.shade200),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.pending_actions, color: Colors.red, size: 20),
+                              const SizedBox(width: 8),
+                              Text("CURRENT OUTSTANDING", style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "৳${totalBill.toStringAsFixed(2)}",
+                            style: TextStyle(color: Colors.indigo.shade800, fontWeight: FontWeight.w900, fontSize: 28),
+                          ),
+                          const SizedBox(height: 4),
+                          if (createdAt != null)
+                            Text("Active since: ${DatabaseService.formatMonthYear(createdAt)}", style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // --- PENDING MONTHS ---
                     StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance.collection('billing_history').where('subItemId', isEqualTo: widget.subItemId).snapshots(),
                       builder: (context, historySnapshot) {
@@ -371,31 +412,29 @@ class _UserDashboardState extends State<UserDashboard> {
                         
                         if (pendingMonths.isEmpty) return const SizedBox.shrink();
                         
-                        return Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 12.0),
-                          child: Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 8,
-                            runSpacing: 8,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 24.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                "Pending:", 
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)
+                              const Text("UNPAID MONTHS", style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: pendingMonths.map((m) => Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.red.withOpacity(0.1)),
+                                  ),
+                                  child: Text(
+                                    m, 
+                                    style: const TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold)
+                                  ),
+                                )).toList(),
                               ),
-                              ...pendingMonths.map((m) => Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Theme.of(context).colorScheme.error.withOpacity(0.2)),
-                                ),
-                                child: Text(
-                                  m, 
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)
-                                ),
-                              )),
                             ],
                           ),
                         );
@@ -403,73 +442,87 @@ class _UserDashboardState extends State<UserDashboard> {
                     ),
 
                     if (notes.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Text("Notes", style: Theme.of(context).textTheme.titleSmall),
+                      const Text("ADMIN NOTES", style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       const SizedBox(height: 8),
-                      Card(
-                        elevation: 1,
-                        color: Theme.of(context).colorScheme.surface,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: ListTile(
-                          dense: true,
-                          leading: Icon(Icons.note_alt_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
-                          title: Text(notes, style: Theme.of(context).textTheme.bodySmall),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.indigo.withOpacity(0.1)),
                         ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    Text("Bill Details", style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    if (ed != null && !isElectricStopped)
-                      Card(
-                        elevation: 1,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          leading: const Icon(Icons.electric_bolt, color: Colors.amber, size: 22),
-                          title: Text("Electricity Bill", style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
-                          subtitle: Text(
-                            "Used: ${((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)} units",
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          trailing: Text(
-                            "৳${electricityBill.toStringAsFixed(2)}",
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary),
-                          ),
+                        child: Row(
                           children: [
-                            const Divider(height: 1),
-                            const SizedBox(height: 6),
-                            _buildInfoRow("Main Meter No:", ed['mainMeterNo'] ?? 'N/A', icon: Icons.settings_input_component),
-                            _buildInfoRow("Sub-Meter No:", ed['subMeterNo'] ?? 'N/A', icon: Icons.numbers),
-                            _buildInfoRow("Last Readings:", "${(ed['lastReading'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.history),
-                            _buildInfoRow("Present Readings:", "${(ed['presentReading'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.visibility),
-                            _buildInfoRow("Used Units:", (((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)).toStringAsFixed(2), isBold: true, icon: Icons.electric_bolt),
-                            _buildInfoRow("Price per Unit:", "৳${(ed['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.payments_outlined),
-                            const SizedBox(height: 6),
+                            const Icon(Icons.info_outline, color: Colors.indigo, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(notes, style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic))),
                           ],
                         ),
                       ),
-                    ...activeServices.map((s) {
-                      String? wifiSubtitle;
-                      if (s['name'].toString().toLowerCase().contains("wifi") && s['deviceQuantity'] != null) {
-                        wifiSubtitle = "৳${s['wifiCost'] ?? 200} (per Device)";
-                      }
+                      const SizedBox(height: 24),
+                    ],
 
-                      return _buildDetailCard(
-                        icon: Icons.check_circle_outline,
-                        color: Theme.of(context).colorScheme.secondary,
-                        title: s['name'].toString().toLowerCase().contains("wifi") 
-                            ? "${s['name']} (Devices: ${s['deviceQuantity'] ?? 1})" 
-                            : s['name'],
-                        amount: (s['amount'] as num).toDouble(),
-                        subtitle: wifiSubtitle,
+                    const Text("BILL BREAKDOWN", style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                    const SizedBox(height: 12),
+
+                    if (ed != null && !isElectricStopped)
+                      Card(
+                        elevation: 0,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.amber.withOpacity(0.1),
+                            child: const Icon(Icons.electric_bolt, color: Colors.amber, size: 20),
+                          ),
+                          title: const Text("Electricity Bill", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          subtitle: Text("Usage: ${((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)} units", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          trailing: Text("৳${electricityBill.toStringAsFixed(2)}", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                          children: [
+                            const Divider(height: 1),
+                            const SizedBox(height: 8),
+                            _buildInfoRow("Meter Number", ed['subMeterNo'] ?? 'N/A', icon: Icons.numbers),
+                            _buildInfoRow("Reading Range", "${(ed['lastReading'] as num?)?.toDouble().toStringAsFixed(1)} ➜ ${(ed['presentReading'] as num?)?.toDouble().toStringAsFixed(1)}", icon: Icons.sync_alt),
+                            _buildInfoRow("Price per Unit", "৳${(ed['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.payments_outlined),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
+
+                    ...activeServices.map((s) {
+                      bool isWifi = s['name'].toString().toLowerCase().contains("wifi");
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: (isWifi ? Colors.blue : Colors.teal).withOpacity(0.1),
+                            child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Colors.blue : Colors.teal, size: 20),
+                          ),
+                          title: Text(
+                            isWifi ? "${s['name']} (x${s['deviceQuantity'] ?? 1})" : s['name'],
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: isWifi ? Text("৳${s['wifiCost'] ?? 0} per device", style: const TextStyle(fontSize: 11, color: Colors.grey)) : null,
+                          trailing: Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                        ),
                       );
                     }),
+
                     if (activeServices.isEmpty && (ed == null || isElectricStopped))
-                      Center(child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text("No active charges for this month.", style: Theme.of(context).textTheme.bodySmall),
+                      const Center(child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Text("No active charges found for this period.", style: TextStyle(color: Colors.grey, fontSize: 13)),
                       )),
                   ],
                 ),

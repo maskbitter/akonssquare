@@ -362,12 +362,30 @@ class _SettingsPageState extends State<SettingsPage> {
                   padding: const EdgeInsets.all(16),
                   child: Column(children: [
                     Row(children: [
-                      Expanded(child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _handleBackup(context), icon: const Icon(Icons.cloud_upload_outlined), label: const Text("Backup"))),
+                      Expanded(child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), 
+                        onPressed: _isProcessing ? null : () => _handleBackup(context), 
+                        icon: _isProcessing ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.cloud_upload_outlined), 
+                        label: const Text("Backup")
+                      )),
                       const SizedBox(width: 12),
-                      Expanded(child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _handleRestore(context), icon: const Icon(Icons.cloud_download_outlined), label: const Text("Restore"))),
+                      Expanded(child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), 
+                        onPressed: _isProcessing ? null : () => _handleRestore(context), 
+                        icon: _isProcessing ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.cloud_download_outlined), 
+                        label: const Text("Restore")
+                      )),
                     ]),
                     const SizedBox(height: 12),
-                    SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), onPressed: () => _handleLocalSave(context), icon: const Icon(Icons.save_alt), label: const Text("Save Locally"))),
+                    SizedBox(
+                      width: double.infinity, 
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), 
+                        onPressed: _isProcessing ? null : () => _handleLocalSave(context), 
+                        icon: _isProcessing ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_alt), 
+                        label: const Text("Save Locally")
+                      )
+                    ),
                     if (_isProcessing) ...[
                       const SizedBox(height: 16),
                       LinearProgressIndicator(value: _progress, backgroundColor: Theme.of(context).colorScheme.outlineVariant, color: Theme.of(context).colorScheme.primary, minHeight: 6),
@@ -386,7 +404,15 @@ class _SettingsPageState extends State<SettingsPage> {
                         if (snapshot.data?.getString('userRole') == 'superadmin') {
                           return Padding(padding: const EdgeInsets.only(top: 16), child: Column(children: [
                             const Divider(),
-                            SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white), onPressed: () => _handleWipe(context), icon: const Icon(Icons.delete_forever), label: const Text("Wipe All Data"))),
+                            SizedBox(
+                              width: double.infinity, 
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white), 
+                                onPressed: _isProcessing ? null : () => _handleWipe(context), 
+                                icon: _isProcessing ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.delete_forever), 
+                                label: const Text("Wipe All Data")
+                              )
+                            ),
                           ]));
                         }
                         return const SizedBox.shrink();

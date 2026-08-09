@@ -782,8 +782,14 @@ class CategoryDialogs {
                       return !isAssigned || isCurrent;
                     }).toList();
 
+                    // Safety check: Ensure selected value exists in items
+                    String? dropdownValue = selectedSubMeter;
+                    if (dropdownValue != null && !available.any((d) => d['subMeterNo'] == dropdownValue)) {
+                      dropdownValue = null;
+                    }
+
                     return DropdownButtonFormField<String>(
-                      value: selectedSubMeter,
+                      value: dropdownValue,
                       decoration: const InputDecoration(labelText: "Sub-meter No", border: OutlineInputBorder(), isDense: true),
                       items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text("Sub-meter: ${doc['subMeterNo']} (Main: ${doc['mainMeterNo']})", style: Theme.of(context).textTheme.bodyMedium))).toList(),
                       onChanged: isOperator ? null : (v) => setDialogState(() {

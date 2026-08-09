@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:akonssquare/Common/theme_manager.dart';
+import 'package:akonssquare/Common/database_service.dart';
 
 class UserReportPage extends StatelessWidget {
   final String subItemId;
@@ -36,7 +38,7 @@ class UserReportPage extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Center(child: Text("Details for ${data['monthYear']}", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge)),
+        title: Center(child: Text("Details for ${data['monthYear']}", textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
         content: SizedBox(
           width: double.maxFinite,
           child: SingleChildScrollView(
@@ -47,21 +49,21 @@ class UserReportPage extends StatelessWidget {
                 if (data['TenantName'] != null && data['TenantName'].toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2),
-                    child: Text("Tenant: ${data['TenantName']}", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                    child: Text("Tenant: ${data['TenantName']}", style: TextStyle(color: Colors.indigo.shade800, fontWeight: FontWeight.bold)),
                   ),
                 if (data['nidNumber'] != null && data['nidNumber'].toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: Text("NID: ${data['nidNumber']}", style: Theme.of(context).textTheme.bodyLarge),
+                    child: Text("NID: ${data['nidNumber']}", style: const TextStyle(fontSize: 14)),
                   ),
                 if (data['paymentNotes'] != null && data['paymentNotes'].toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: Text("Note: ${data['paymentNotes']}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
+                    child: Text("Note: ${data['paymentNotes']}", style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey), textAlign: TextAlign.center),
                   ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 12, bottom: 8),
-                  child: Text("Rent & Services", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                const Padding(
+                  padding: EdgeInsets.only(top: 12, bottom: 8),
+                  child: Text("Rent & Services", style: TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
                 ...services.map((s) {
                   String name = s['name'] ?? 'Service';
@@ -92,9 +94,9 @@ class UserReportPage extends StatelessWidget {
                 ),
                 const Divider(),
                 if (ed != null) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12, bottom: 8),
-                    child: Text("Electricity Details", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 12, bottom: 8),
+                    child: Text("Electricity Details", style: TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                   _buildDetailRow(context, "Meter No:", ed['mainSubMeterNo'] ?? 'N/A'),
                   _buildDetailRow(context, "Reading:", "${ed['lastReading']} -> ${ed['presentReading']}"),
@@ -105,7 +107,7 @@ class UserReportPage extends StatelessWidget {
                     context,
                     "Electricity Total",
                     "৳${data['electricityBill']}",
-                    valueColor: Theme.of(context).colorScheme.secondary,
+                    valueColor: Colors.cyan.shade800,
                     isBold: true,
                   ),
                 ],
@@ -113,15 +115,15 @@ class UserReportPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
+                    color: Colors.indigo.shade50,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
+                    border: Border.all(color: Colors.indigo.withOpacity(0.2)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Grand Total", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                      Text("৳${data['totalAmount']}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                      const Text("Grand Total", style: TextStyle(color: Colors.indigo, fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text("৳${data['totalAmount']}", style: TextStyle(color: Colors.indigo.shade900, fontSize: 22, fontWeight: FontWeight.w900)),
                     ],
                   ),
                 ),
@@ -134,8 +136,8 @@ class UserReportPage extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.tertiary,
-                foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                backgroundColor: const Color(0xFF2E7D32),
+                foregroundColor: Colors.white,
               ),
               onPressed: () => Navigator.pop(ctx), 
               child: const Text("OK")
@@ -158,15 +160,16 @@ class UserReportPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
                 if (subtitle != null)
-                  Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic)),
+                  Text(subtitle, style: const TextStyle(fontSize: 10, color: Colors.indigo, fontStyle: FontStyle.italic)),
               ],
             ),
           ),
           Text(
             value,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            style: TextStyle(
+              fontSize: 12,
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
               color: valueColor,
             ),
@@ -178,157 +181,185 @@ class UserReportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('sub_items').doc(subItemId).snapshots(),
-      builder: (context, subSnapshot) {
-        if (!subSnapshot.hasData) return const Center(child: CircularProgressIndicator());
-        var subData = subSnapshot.data!.data() as Map<String, dynamic>?;
-        if (subData == null) return const Center(child: Text("Data not found"));
+    return Theme(
+      data: ThemeManager.getThemeByName("Default Theme"),
+      child: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('sub_items').doc(subItemId).snapshots(),
+        builder: (context, subSnapshot) {
+          if (!subSnapshot.hasData) return const Center(child: CircularProgressIndicator());
+          var subData = subSnapshot.data!.data() as Map<String, dynamic>?;
+          if (subData == null) return const Center(child: Text("Data not found"));
 
-        DateTime? createdAt = (subData['createdAt'] as Timestamp?)?.toDate();
-        String subName = subData['subItemName'] ?? 'Unnamed';
+          DateTime? createdAt = (subData['createdAt'] as Timestamp?)?.toDate();
+          String subName = subData['subItemName'] ?? 'Unnamed';
 
-        return Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    subName,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.primary),
+          return Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.indigo.shade800, Colors.indigo.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(height: 4),
-                  Text("Subscription Info", style: Theme.of(context).textTheme.labelSmall),
-                  const SizedBox(height: 12),
-                  _buildSummaryItem("Using Since", createdAt != null ? "${createdAt.day.toString().padLeft(2, '0')}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.year}" : 'N/A', Theme.of(context).colorScheme.onSurface),
-                  const SizedBox(height: 4),
-                  _buildSummaryItem("Total Duration", _formatDuration(createdAt), Theme.of(context).colorScheme.primary, isBold: true),
-                ],
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      subName,
+                      style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text("PAYMENT HISTORY", style: TextStyle(color: Colors.white70, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        _buildHeaderSummary("Joined", createdAt != null ? "${createdAt.day}-${createdAt.month}-${createdAt.year}" : 'N/A'),
+                        Container(width: 1, height: 30, color: Colors.white24),
+                        _buildHeaderSummary("Total Duration", _formatDuration(createdAt)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('billing_history')
-                    .where('subItemId', isEqualTo: subItemId)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-                  if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}", style: Theme.of(context).textTheme.bodyMedium));
-                  
-                  var docs = snapshot.data!.docs;
-                  docs.sort((a, b) {
-                    Timestamp t1 = (a.data() as Map)['createdAt'] ?? Timestamp.now();
-                    Timestamp t2 = (b.data() as Map)['createdAt'] ?? Timestamp.now();
-                    return t2.compareTo(t1); 
-                  });
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('billing_history')
+                      .where('subItemId', isEqualTo: subItemId)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                    
+                    var docs = snapshot.data!.docs;
+                    docs.sort((a, b) {
+                      Timestamp t1 = (a.data() as Map)['createdAt'] ?? Timestamp.now();
+                      Timestamp t2 = (b.data() as Map)['createdAt'] ?? Timestamp.now();
+                      return t2.compareTo(t1); 
+                    });
 
-                  var displayDocs = docs.take(3).toList();
+                    if (docs.isEmpty) {
+                      return const Center(child: Text("No record of paid rent found.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)));
+                    }
 
-                  if (displayDocs.isEmpty) {
-                    return Center(child: Text("No record of paid rent found.", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic)));
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    itemCount: displayDocs.length,
-                    itemBuilder: (context, index) {
-                      var data = displayDocs[index].data() as Map<String, dynamic>;
-                      return Card(
-                        elevation: 1,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () => _showDetailsDialog(context, data),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 12,
-                                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                      child: Text("${index + 1}", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: docs.length,
+                      itemBuilder: (context, index) {
+                        var data = docs[index].data() as Map<String, dynamic>;
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+                            ],
+                            border: Border.all(color: Colors.grey.shade100),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => _showDetailsDialog(context, data),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.indigo.withOpacity(0.05),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(Icons.calendar_month_outlined, color: Colors.indigo, size: 20),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              data['monthYear'] ?? 'N/A',
+                                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                                            ),
+                                            const Text("Payment received", style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(30),
+                                        ),
+                                        child: const Text("PAID", style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w900)),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
-                                    Text(data['monthYear'] ?? 'N/A', style: Theme.of(context).textTheme.titleMedium),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.tertiaryContainer,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Theme.of(context).colorScheme.tertiary.withOpacity(0.3)),
-                                      ),
-                                      child: Text(
-                                        "PAID", 
-                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold)
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (data['TenantName'] != null && data['TenantName'].toString().isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8.0),
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        "Tenant: ${data['TenantName']} ${data['nidNumber'] != null ? '(NID: ${data['nidNumber']})' : ''}",
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
-                                      ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                      children: [
+                                        _buildCompactSummary("Rent", "৳${data['houseRentTotal']}", Colors.black87),
+                                        Container(width: 1, height: 20, color: Colors.grey.shade200),
+                                        _buildCompactSummary("Electric", "৳${data['electricityBill']}", Colors.cyan.shade800),
+                                        Container(width: 1, height: 20, color: Colors.grey.shade200),
+                                        _buildCompactSummary("Total", "৳${data['totalAmount']}", Colors.indigo, isBold: true),
+                                      ],
                                     ),
                                   ),
-                                const Divider(height: 24),
-                                Row(
-                                  children: [
-                                    _buildSummaryItem("Rent/Services", "৳${data['houseRentTotal']}", Theme.of(context).colorScheme.onSurface),
-                                    _buildSummaryItem("Electricity", "৳${data['electricityBill']}", Theme.of(context).colorScheme.secondary),
-                                    _buildSummaryItem("Total Paid", "৳${data['totalAmount']}", Theme.of(context).colorScheme.primary, isBold: true),
-                                  ],
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildSummaryItem(String label, String value, Color color, {bool isBold = false}) {
-    return Builder(
-      builder: (context) {
-        return Expanded(
-          child: Column(
-            children: [
-              Text(label, style: Theme.of(context).textTheme.labelSmall),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-                  color: color,
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeaderSummary(String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactSummary(String label, String value, Color color, {bool isBold = false}) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.grey)),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isBold ? FontWeight.w900 : FontWeight.bold,
+            color: color,
           ),
-        );
-      }
+        ),
+      ],
     );
   }
 }
