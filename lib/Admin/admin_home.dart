@@ -387,7 +387,7 @@ class _AdminHomeState extends State<AdminHome> {
           touchTooltipData: BarTouchTooltipData(
             getTooltipColor: (_) => Theme.of(context).colorScheme.secondary,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              return BarTooltipItem(rod.toY.toInt().toString(), Theme.of(context).textTheme.labelSmall!.copyWith(color: Colors.white));
+              return BarTooltipItem(rod.toY.toInt().toString(), Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onSecondary));
             },
           ),
         ),
@@ -1177,8 +1177,8 @@ class _AdminHomeState extends State<AdminHome> {
       Theme.of(context).colorScheme.surfaceContainer,
       Theme.of(context).colorScheme.surfaceContainerHigh,
       Theme.of(context).colorScheme.surfaceContainerHighest,
-      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
-      Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.7),
+      Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.7),
+      Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.7),
     ];
     Color itemColor = pastelColors[index % pastelColors.length];
 

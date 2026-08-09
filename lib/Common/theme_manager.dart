@@ -5,6 +5,21 @@ import 'package:google_fonts/google_fonts.dart';
 class ThemeManager {
   static final ValueNotifier<String> appThemeNotifier = ValueNotifier<String>("Default Theme");
   static final ValueNotifier<String> appFontNotifier = ValueNotifier<String>("Poppins");
+  static Color _sessionSeedColor = Colors.indigo;
+
+  static final List<Color> _niceSeeds = [
+    Colors.indigo,
+    Colors.teal,
+    Colors.deepPurple,
+    Colors.blueGrey,
+    Colors.brown,
+    Colors.deepOrange,
+    const Color(0xFF2C3E50), // Midnight Blue
+    const Color(0xFF16A085), // Green Sea
+    const Color(0xFF8E44AD), // Wisteria
+    const Color(0xFF2980B9), // Belize Hole
+    const Color(0xFFD35400), // Pumpkin
+  ];
 
   static List<String> get supportedFonts => [
     "Poppins",
@@ -22,6 +37,9 @@ class ThemeManager {
     String? savedTheme = prefs.getString('app_theme');
     String? savedFont = prefs.getString('app_font');
     
+    // Choose a random seed for this session
+    _sessionSeedColor = (_niceSeeds..shuffle()).first;
+
     // Migration for renamed theme
     if (savedTheme == "App Theme(Normal)") {
       savedTheme = "Default Theme";
@@ -48,40 +66,8 @@ class ThemeManager {
     final activeFont = fontName ?? appFontNotifier.value;
     
     final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.indigo,
+      seedColor: _sessionSeedColor,
       brightness: Brightness.light,
-    ).copyWith(
-      primary: Colors.indigo.shade800,
-      onPrimary: Colors.white,
-      primaryContainer: Colors.indigo.shade50,
-      onPrimaryContainer: Colors.indigo.shade900,
-      secondary: Colors.cyan.shade800,
-      onSecondary: Colors.white,
-      secondaryContainer: const Color(0xFFE0F7FA), // Soft Cyan
-      onSecondaryContainer: Colors.cyan.shade900,
-      tertiary: const Color(0xFF2E7D32), // Success Green
-      onTertiary: Colors.white,
-      tertiaryContainer: const Color(0xFFE8F5E9), 
-      onTertiaryContainer: const Color(0xFF1B5E20),
-      error: const Color(0xFFD32F2F), // Standard Red
-      onError: Colors.white,
-      errorContainer: const Color(0xFFFFEBEE), 
-      onErrorContainer: const Color(0xFFB71C1C),
-      surface: Colors.white,
-      onSurface: Colors.indigo.shade900,
-      surfaceContainerLowest: Colors.white,
-      surfaceContainerLow: const Color(0xFFF8F9FF),
-      surfaceContainer: const Color(0xFFF0F2FF),
-      surfaceContainerHigh: const Color(0xFFE8EAFC),
-      surfaceContainerHighest: const Color(0xFFE0E2F9),
-      outline: const Color(0xFFD0D3F0),
-      outlineVariant: const Color(0xFFE8EAFC),
-      // Adding missing M3 roles
-      inverseSurface: Colors.indigo.shade900,
-      onInverseSurface: Colors.indigo.shade50,
-      inversePrimary: Colors.indigo.shade200,
-      scrim: Colors.black,
-      shadow: Colors.black,
     );
 
     final TextTheme baseTextTheme = _getTextTheme(activeFont, colorScheme.onSurface);
@@ -110,7 +96,7 @@ class ThemeManager {
         ),
       ],
       cardTheme: CardThemeData(
-        color: Colors.white,
+        color: colorScheme.surface,
         elevation: 1,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
@@ -119,7 +105,7 @@ class ThemeManager {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
@@ -128,10 +114,7 @@ class ThemeManager {
         elevation: 0,
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
-        titleTextStyle: baseTextTheme.titleLarge?.copyWith(
-          fontSize: 18, 
-          fontWeight: FontWeight.bold, 
-        ),
+        titleTextStyle: baseTextTheme.titleLarge,
       ),
       tabBarTheme: TabBarThemeData(
         labelColor: colorScheme.primary,

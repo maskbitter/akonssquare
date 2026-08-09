@@ -148,7 +148,7 @@ class _UserDashboardState extends State<UserDashboard> {
             onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
             },
-            child: Text(_appName.isEmpty ? "Loading..." : _appName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))
+            child: Text(_appName.isEmpty ? "Loading..." : _appName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold))
           ),
           centerTitle: true,
           actions: [
@@ -173,11 +173,11 @@ class _UserDashboardState extends State<UserDashboard> {
                           return Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(local, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+                              Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 9)),
                               if (remote != null && remote != local)
-                                Text("Latest: $remote", style: const TextStyle(fontSize: 8, color: Colors.red, fontWeight: FontWeight.bold)),
-                              const Icon(Icons.logout, color: Colors.red, size: 18),
-                              Text("DB V-$dbVersion", style: const TextStyle(fontSize: 9, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 8)),
+                              Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 18),
+                              Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 9)),
                             ],
                           );
                         }
@@ -193,8 +193,8 @@ class _UserDashboardState extends State<UserDashboard> {
         body: UpdateGuard(child: pages[_currentIndex]),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
-          selectedItemColor: Colors.indigo.shade800,
-          unselectedItemColor: Colors.grey,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
           onTap: (index) => setState(() => _currentIndex = index),
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: "Home"),
@@ -305,8 +305,8 @@ class _UserDashboardState extends State<UserDashboard> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.indigo.shade800,
-                            Colors.indigo.shade500,
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -314,7 +314,7 @@ class _UserDashboardState extends State<UserDashboard> {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.indigo.withOpacity(0.3),
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                             blurRadius: 15,
                             offset: const Offset(0, 8),
                           ),
@@ -332,19 +332,19 @@ class _UserDashboardState extends State<UserDashboard> {
                                 children: [
                                   Text(
                                     _categoryName.toUpperCase(),
-                                    style: const TextStyle(color: Colors.white70, letterSpacing: 1.5, fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     subName,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 24),
+                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
                                   ),
                                 ],
                               ),
-                              const CircleAvatar(
+                              CircleAvatar(
                                 radius: 24,
-                                backgroundColor: Colors.white24,
-                                child: Icon(Icons.person_outline, color: Colors.white, size: 28),
+                                backgroundColor: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
+                                child: Icon(Icons.person_outline, color: Theme.of(context).colorScheme.onPrimary, size: 28),
                               ),
                             ],
                           ),
@@ -352,14 +352,14 @@ class _UserDashboardState extends State<UserDashboard> {
                           if (TenantName.isNotEmpty) ...[
                             Text(
                               "Tenant: $TenantName",
-                              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 4),
                           ],
                           if (nidNumber.isNotEmpty)
                             Text(
                               "NID: $nidNumber",
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7)),
                             ),
                         ],
                       ),
@@ -372,11 +372,11 @@ class _UserDashboardState extends State<UserDashboard> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                          BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
                         ],
                       ),
                       child: Column(
@@ -384,19 +384,19 @@ class _UserDashboardState extends State<UserDashboard> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.pending_actions, color: Colors.red, size: 20),
+                              Icon(Icons.pending_actions, color: Theme.of(context).colorScheme.error, size: 20),
                               const SizedBox(width: 8),
-                              Text("CURRENT OUTSTANDING", style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                              Text("CURRENT OUTSTANDING", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                             ],
                           ),
                           const SizedBox(height: 8),
                           Text(
                             "৳${totalBill.toStringAsFixed(2)}",
-                            style: TextStyle(color: Colors.indigo.shade800, fontWeight: FontWeight.w900, fontSize: 28),
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
                           ),
                           const SizedBox(height: 4),
                           if (createdAt != null)
-                            Text("Active since: ${DatabaseService.formatMonthYear(createdAt)}", style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                            Text("Active since: ${DatabaseService.formatMonthYear(createdAt)}", style: Theme.of(context).textTheme.labelSmall),
                         ],
                       ),
                     ),
@@ -433,7 +433,7 @@ class _UserDashboardState extends State<UserDashboard> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text("UNPAID MONTHS", style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                              Text("UNPAID MONTHS", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                               const SizedBox(height: 12),
                               Wrap(
                                 spacing: 8,
@@ -441,13 +441,13 @@ class _UserDashboardState extends State<UserDashboard> {
                                 children: pendingMonths.map((m) => Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                   decoration: BoxDecoration(
-                                    color: Colors.red.withOpacity(0.05),
+                                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.05),
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.red.withOpacity(0.1)),
+                                    border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1)),
                                   ),
                                   child: Text(
                                     m, 
-                                    style: const TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold)
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)
                                   ),
                                 )).toList(),
                               ),
@@ -458,28 +458,28 @@ class _UserDashboardState extends State<UserDashboard> {
                     ),
 
                     if (notes.isNotEmpty) ...[
-                      const Text("ADMIN NOTES", style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                      Text("ADMIN NOTES", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       const SizedBox(height: 8),
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.indigo.withOpacity(0.05),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.indigo.withOpacity(0.1)),
+                          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.info_outline, color: Colors.indigo, size: 20),
+                            Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary, size: 20),
                             const SizedBox(width: 12),
-                            Expanded(child: Text(notes, style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic))),
+                            Expanded(child: Text(notes, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic))),
                           ],
                         ),
                       ),
                       const SizedBox(height: 24),
                     ],
 
-                    const Text("BILL BREAKDOWN", style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                    Text("BILL BREAKDOWN", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                     const SizedBox(height: 12),
 
                     if (ed != null && !isElectricStopped)
@@ -488,20 +488,20 @@ class _UserDashboardState extends State<UserDashboard> {
                         margin: const EdgeInsets.only(bottom: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: Colors.grey.shade200),
+                          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: ExpansionTile(
                           shape: const Border(),
                           collapsedShape: const Border(),
-                          iconColor: Colors.amber,
-                          collapsedIconColor: Colors.amber,
+                          iconColor: Theme.of(context).colorScheme.secondary,
+                          collapsedIconColor: Theme.of(context).colorScheme.secondary,
                           leading: CircleAvatar(
-                            backgroundColor: Colors.amber.withOpacity(0.1),
-                            child: const Icon(Icons.electric_bolt, color: Colors.amber, size: 20),
+                            backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+                            child: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.secondary, size: 20),
                           ),
-                          title: const Text("Electricity Bill", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                          subtitle: Text("Usage: ${((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)} units", style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                          trailing: Text("৳${electricityBill.toStringAsFixed(2)}", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                          title: Text("Electricity Bill", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                          subtitle: Text("Usage: ${((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)} units", style: Theme.of(context).textTheme.bodySmall),
+                          trailing: Text("৳${electricityBill.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                           children: [
                             const Divider(height: 1),
                             const SizedBox(height: 8),
@@ -518,29 +518,29 @@ class _UserDashboardState extends State<UserDashboard> {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey.shade200),
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: (isWifi ? Colors.blue : Colors.teal).withOpacity(0.1),
-                            child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Colors.blue : Colors.teal, size: 20),
+                            backgroundColor: (isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary).withValues(alpha: 0.1),
+                            child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary, size: 20),
                           ),
                           title: Text(
                             isWifi ? "${s['name']} (x${s['deviceQuantity'] ?? 1})" : s['name'],
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: isWifi ? Text("৳${s['wifiCost'] ?? 0} per device", style: const TextStyle(fontSize: 11, color: Colors.grey)) : null,
-                          trailing: Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                          subtitle: isWifi ? Text("৳${s['wifiCost'] ?? 0} per device", style: Theme.of(context).textTheme.bodySmall) : null,
+                          trailing: Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                         ),
                       );
                     }),
 
                     if (activeServices.isEmpty && (ed == null || isElectricStopped))
-                      const Center(child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Text("No active charges found for this period.", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      Center(child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Text("No active charges found for this period.", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       )),
                   ],
                 ),

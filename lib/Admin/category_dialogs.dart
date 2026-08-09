@@ -752,7 +752,7 @@ class CategoryDialogs {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Column(
             children: [
-              const Icon(Icons.electric_bolt, color: Colors.orange, size: 40),
+            Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.secondary, size: 40),
               const SizedBox(height: 12),
               Text("Electricity - assigned submeter", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
               Text("Update for $subItemName", style: Theme.of(context).textTheme.bodySmall),
@@ -857,8 +857,6 @@ class CategoryDialogs {
                       if (pres < last) { _showValidationWarning(context, "Reading cannot be lower than previous."); return; }
                       if (selectedMainMeter == null || selectedSubMeter == null) { _showValidationWarning(context, "Please select both Main and Sub meters."); return; }
                       
-                      double prevSavedReading = (existingData?['presentReading'] ?? 0).toDouble();
-                      bool shouldSync = false;
                       setDialogState(() => isLoading = true);
                       SharedPreferences prefs = await SharedPreferences.getInstance();
                       String actor = prefs.getString('username') ?? "Admin";
@@ -881,7 +879,7 @@ class CategoryDialogs {
 
                       if (context.mounted) Navigator.pop(ctx);
                     }, 
-                    child: Text(isLoading ? "Updating..." : "Update", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white)),
+                    child: Text(isLoading ? "Updating..." : "Update", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
                   ),
                 ),
               ],
@@ -1391,7 +1389,7 @@ class CategoryDialogs {
         title: "Set to Vacant?", 
         content: "Are you sure you want to set $subItemName to Vacant? Renter info will be cleared.", 
         confirmText: "Proceed",
-        confirmColor: Colors.orange,
+        confirmColor: Theme.of(context).colorScheme.error,
         onConfirm: () async {
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await _dbService.updateSubItemStatus(subItemId, 'Vacant', prefs.getString('username') ?? "Admin");

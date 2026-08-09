@@ -38,7 +38,7 @@ class _CategoryPageState extends State<CategoryPage> {
     DatabaseService.vibrate();
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         decoration: BoxDecoration(
@@ -106,7 +106,7 @@ class _CategoryPageState extends State<CategoryPage> {
   void _showMeterChoiceMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
@@ -636,7 +636,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   child: IconButton(
                                                     padding: EdgeInsets.zero,
                                                     constraints: const BoxConstraints(),
-                                                    icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : Colors.orange, size: 24), 
+                                                    icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.secondary, size: 24), 
                                                     onPressed: () => CategoryDialogs.showMarkAsPaidDialog(context: context, subItemId: subId, subItemName: subName, TenantName: tenant, nidNumber: d['nidNumber'] ?? '', houseRentTotal: total - eBillAmount, electricityBill: eBillAmount, services: active.cast<Map<String, dynamic>>(), electricityDetails: ed, mainCategoryName: catName)
                                                   ),
                                                 ),
@@ -767,7 +767,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
                                                   Icons.flash_on, 
                                                   amount: eBillAmount, 
-                                                  color: Colors.amber,
+                                                  color: Theme.of(context).colorScheme.secondary,
                                                   trailing: IconButton(
                                                     icon: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.secondary, size: 22), 
                                                     onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)

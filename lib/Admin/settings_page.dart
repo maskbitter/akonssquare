@@ -284,8 +284,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         leading: Icon(Icons.settings_suggest_outlined, color: Theme.of(context).colorScheme.primary),
                         iconColor: Theme.of(context).colorScheme.primary,
                         collapsedIconColor: Theme.of(context).colorScheme.primary,
-                        title: Text("System Configuration", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
-                        subtitle: const Text("System behavior & Experience", style: TextStyle(fontSize: 10)),
+                        title: Text("System Configuration", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                        subtitle: Text("System behavior & Experience", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9)),
                         children: [
                           _buildVisibilitySwitch("Enable Update Notifications", isEnabled, (val) => _dbService.updatePopupStatus(val)),
                           FutureBuilder<SharedPreferences>(
@@ -589,8 +589,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(data['username'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        Text(role.toUpperCase(), style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600)),
+                        Text(data['username'] ?? '', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(role.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -671,7 +671,7 @@ class _SettingsPageState extends State<SettingsPage> {
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await _dbService.removeUser(docId, prefs.getString('username') ?? '');
           if (mounted) Navigator.pop(ctx);
-        }, child: const Text("Remove", style: TextStyle(color: Colors.red))),
+        }, child: Text("Remove", style: TextStyle(color: Theme.of(context).colorScheme.error))),
       ],
     ));
   }
