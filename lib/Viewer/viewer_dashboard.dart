@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:akonssquare/Admin/admin_home.dart';
 import 'package:akonssquare/Common/database_service.dart';
 import 'package:akonssquare/Common/update_guard.dart';
+import 'package:akonssquare/Common/automation_guide.dart';
 import 'package:akonssquare/main.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -46,12 +47,17 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_appName, style: Theme.of(context).textTheme.titleMedium),
-            Text("Viewer Mode", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
-          ],
+        title: GestureDetector(
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_appName, style: Theme.of(context).textTheme.titleMedium),
+              Text("Viewer Mode", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+            ],
+          ),
         ),
         actions: [
           InkWell(

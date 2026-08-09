@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ThemeManager {
   static final ValueNotifier<String> appThemeNotifier = ValueNotifier<String>("Default Theme");
+  static final ValueNotifier<String> appFontNotifier = ValueNotifier<String>("Poppins");
+
+  static List<String> get supportedFonts => [
+    "Poppins",
+    "Inter",
+    "Montserrat",
+    "Urbanist",
+    "Plus Jakarta Sans",
+    "Roboto",
+    "Crimson Pro",
+    "Hind Siliguri (Bangla)",
+  ];
 
   static Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     String? savedTheme = prefs.getString('app_theme');
+    String? savedFont = prefs.getString('app_font');
     
     // Migration for renamed theme
     if (savedTheme == "App Theme(Normal)") {
@@ -15,6 +29,7 @@ class ThemeManager {
     }
     
     appThemeNotifier.value = "Default Theme"; 
+    appFontNotifier.value = savedFont ?? "Poppins";
   }
 
   static Future<void> setTheme(String themeName) async {
@@ -23,7 +38,15 @@ class ThemeManager {
     await prefs.setString('app_theme', "Default Theme");
   }
 
-  static ThemeData getThemeByName(String themeName) {
+  static Future<void> setFont(String fontName) async {
+    appFontNotifier.value = fontName;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_font', fontName);
+  }
+
+  static ThemeData getThemeByName(String themeName, {String? fontName}) {
+    final activeFont = fontName ?? appFontNotifier.value;
+    
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: Colors.indigo,
       brightness: Brightness.light,
@@ -36,11 +59,11 @@ class ThemeManager {
       onSecondary: Colors.white,
       secondaryContainer: const Color(0xFFE0F7FA), // Soft Cyan
       onSecondaryContainer: Colors.cyan.shade900,
-      tertiary: const Color(0xFF2E7D32), // Success Green (Add, Update, OK, Apply)
+      tertiary: const Color(0xFF2E7D32), // Success Green
       onTertiary: Colors.white,
       tertiaryContainer: const Color(0xFFE8F5E9), 
       onTertiaryContainer: const Color(0xFF1B5E20),
-      error: const Color(0xFFD32F2F), // Standard Red (Remove, Close, Cancel)
+      error: const Color(0xFFD32F2F), // Standard Red
       onError: Colors.white,
       errorContainer: const Color(0xFFFFEBEE), 
       onErrorContainer: const Color(0xFFB71C1C),
@@ -53,12 +76,39 @@ class ThemeManager {
       surfaceContainerHighest: const Color(0xFFE0E2F9),
       outline: const Color(0xFFD0D3F0),
       outlineVariant: const Color(0xFFE8EAFC),
+      // Adding missing M3 roles
+      inverseSurface: Colors.indigo.shade900,
+      onInverseSurface: Colors.indigo.shade50,
+      inversePrimary: Colors.indigo.shade200,
+      scrim: Colors.black,
+      shadow: Colors.black,
     );
+
+    final TextTheme baseTextTheme = _getTextTheme(activeFont, colorScheme.onSurface);
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: colorScheme.surfaceContainerLow,
+      textTheme: baseTextTheme,
+      extensions: [
+        AppColors(
+          success: const Color(0xFF2E7D32),
+          onSuccess: Colors.white,
+          warning: const Color(0xFFF57C00),
+          onWarning: Colors.white,
+          info: const Color(0xFF0288D1),
+          onInfo: Colors.white,
+          active: const Color(0xFF4CAF50),
+          inactive: const Color(0xFF9E9E9E),
+          pending: const Color(0xFFFFA000),
+          gold: const Color(0xFFFFD700),
+          silver: const Color(0xFFC0C0C0),
+          bronze: const Color(0xFFCD7F32),
+          premium: const Color(0xFF673AB7),
+          verified: const Color(0xFF2196F3),
+        ),
+      ],
       cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 1,
@@ -78,21 +128,10 @@ class ThemeManager {
         elevation: 0,
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
-        titleTextStyle: TextStyle(
+        titleTextStyle: baseTextTheme.titleLarge?.copyWith(
           fontSize: 18, 
           fontWeight: FontWeight.bold, 
-          color: colorScheme.onSurface
         ),
-      ),
-      textTheme: TextTheme(
-        headlineMedium: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: colorScheme.onSurface),
-        titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
-        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
-        titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
-        bodyLarge: TextStyle(fontSize: 15, color: colorScheme.onSurface),
-        bodyMedium: TextStyle(fontSize: 13, color: colorScheme.onSurface),
-        bodySmall: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-        labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: colorScheme.onSurfaceVariant),
       ),
       tabBarTheme: TabBarThemeData(
         labelColor: colorScheme.primary,
@@ -108,4 +147,149 @@ class ThemeManager {
       ),
     );
   }
+
+  static TextTheme _getTextTheme(String fontName, Color onSurface) {
+    TextTheme base;
+    switch (fontName) {
+      case "Inter": base = GoogleFonts.interTextTheme(); break;
+      case "Montserrat": base = GoogleFonts.montserratTextTheme(); break;
+      case "Urbanist": base = GoogleFonts.urbanistTextTheme(); break;
+      case "Plus Jakarta Sans": base = GoogleFonts.plusJakartaSansTextTheme(); break;
+      case "Roboto": base = GoogleFonts.robotoTextTheme(); break;
+      case "Crimson Pro": base = GoogleFonts.crimsonProTextTheme(); break;
+      case "Hind Siliguri (Bangla)": base = GoogleFonts.hindSiliguriTextTheme(); break;
+      default: base = GoogleFonts.poppinsTextTheme();
+    }
+
+    return base.copyWith(
+      headlineMedium: base.headlineMedium?.copyWith(fontSize: 26, fontWeight: FontWeight.w900, color: onSurface),
+      titleLarge: base.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold, color: onSurface),
+      titleMedium: base.titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.bold, color: onSurface),
+      titleSmall: base.titleSmall?.copyWith(fontSize: 14, fontWeight: FontWeight.bold, color: onSurface),
+      bodyLarge: base.bodyLarge?.copyWith(fontSize: 15, color: onSurface),
+      bodyMedium: base.bodyMedium?.copyWith(fontSize: 13, color: onSurface),
+      bodySmall: base.bodySmall?.copyWith(fontSize: 12, color: onSurface.withOpacity(0.7)),
+      labelSmall: base.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.bold, color: onSurface.withOpacity(0.7)),
+    );
+  }
+}
+
+/// Custom Color Categories via ThemeExtension
+class AppColors extends ThemeExtension<AppColors> {
+  final Color? success;
+  final Color? onSuccess;
+  final Color? warning;
+  final Color? onWarning;
+  final Color? info;
+  final Color? onInfo;
+  final Color? active;
+  final Color? inactive;
+  final Color? pending;
+  final Color? gold;
+  final Color? silver;
+  final Color? bronze;
+  final Color? premium;
+  final Color? verified;
+
+  AppColors({
+    this.success,
+    this.onSuccess,
+    this.warning,
+    this.onWarning,
+    this.info,
+    this.onInfo,
+    this.active,
+    this.inactive,
+    this.pending,
+    this.gold,
+    this.silver,
+    this.bronze,
+    this.premium,
+    this.verified,
+  });
+
+  @override
+  AppColors copyWith({
+    Color? success,
+    Color? onSuccess,
+    Color? warning,
+    Color? onWarning,
+    Color? info,
+    Color? onInfo,
+    Color? active,
+    Color? inactive,
+    Color? pending,
+    Color? gold,
+    Color? silver,
+    Color? bronze,
+    Color? premium,
+    Color? verified,
+  }) {
+    return AppColors(
+      success: success ?? this.success,
+      onSuccess: onSuccess ?? this.onSuccess,
+      warning: warning ?? this.warning,
+      onWarning: onWarning ?? this.onWarning,
+      info: info ?? this.info,
+      onInfo: onInfo ?? this.onInfo,
+      active: active ?? this.active,
+      inactive: inactive ?? this.inactive,
+      pending: pending ?? this.pending,
+      gold: gold ?? this.gold,
+      silver: silver ?? this.silver,
+      bronze: bronze ?? this.bronze,
+      premium: premium ?? this.premium,
+      verified: verified ?? this.verified,
+    );
+  }
+
+  @override
+  AppColors lerp(ThemeExtension<AppColors>? other, double t) {
+    if (other is! AppColors) return this;
+    return AppColors(
+      success: Color.lerp(success, other.success, t),
+      onSuccess: Color.lerp(onSuccess, other.onSuccess, t),
+      warning: Color.lerp(warning, other.warning, t),
+      onWarning: Color.lerp(onWarning, other.onWarning, t),
+      info: Color.lerp(info, other.info, t),
+      onInfo: Color.lerp(onInfo, other.onInfo, t),
+      active: Color.lerp(active, other.active, t),
+      inactive: Color.lerp(inactive, other.inactive, t),
+      pending: Color.lerp(pending, other.pending, t),
+      gold: Color.lerp(gold, other.gold, t),
+      silver: Color.lerp(silver, other.silver, t),
+      bronze: Color.lerp(bronze, other.bronze, t),
+      premium: Color.lerp(premium, other.premium, t),
+      verified: Color.lerp(verified, other.verified, t),
+    );
+  }
+}
+
+/// Shortcut extensions for easy access
+extension AppThemeExtension on BuildContext {
+  ThemeData get theme => Theme.of(this);
+  ColorScheme get colorScheme => theme.colorScheme;
+  AppColors get appColors => theme.extension<AppColors>()!;
+
+  // Basic shortcuts
+  Color get primary => colorScheme.primary;
+  Color get onPrimary => colorScheme.onPrimary;
+  Color get secondary => colorScheme.secondary;
+  Color get onSecondary => colorScheme.onSecondary;
+  Color get tertiary => colorScheme.tertiary;
+  Color get onTertiary => colorScheme.onTertiary;
+  Color get error => colorScheme.error;
+  Color get surface => colorScheme.surface;
+  Color get onSurface => colorScheme.onSurface;
+  Color get outline => colorScheme.outline;
+
+  // Custom shortcuts
+  Color get success => appColors.success!;
+  Color get warning => appColors.warning!;
+  Color get info => appColors.info!;
+  Color get active => appColors.active!;
+  Color get inactive => appColors.inactive!;
+  Color get pending => appColors.pending!;
+  Color get gold => appColors.gold!;
+  Color get premium => appColors.premium!;
 }

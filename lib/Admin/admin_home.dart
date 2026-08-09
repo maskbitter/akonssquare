@@ -505,7 +505,8 @@ class _AdminHomeState extends State<AdminHome> {
                 stream: _dbService.getCategoriesStream(),
                 builder: (context, catSnap) {
                   if (!catSnap.hasData) return const SizedBox.shrink();
-                  var allCategories = catSnap.data!.docs;
+                  var allCategories = catSnap.data!.docs.toList();
+                  allCategories.sort((a, b) => ((a.data() as Map)['categoryName'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['categoryName'] ?? '').toString().toLowerCase()));
                   
                   // Filter based on individual category visibility settings
                   var visibleCategories = allCategories.where((catDoc) {
@@ -682,7 +683,8 @@ class _AdminHomeState extends State<AdminHome> {
       stream: _dbService.getMainMetersStream(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return _buildShimmerList(); 
-        var mainMeters = snapshot.data!.docs;
+        var mainMeters = snapshot.data!.docs.toList();
+        mainMeters.sort((a, b) => ((a.data() as Map)['meterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['meterNo'] ?? '').toString().toLowerCase()));
 
         if (mainMeters.isEmpty) {
           return Padding(

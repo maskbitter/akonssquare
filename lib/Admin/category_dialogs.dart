@@ -200,7 +200,9 @@ class CategoryDialogs {
                       stream: _dbService.getServicesStream(),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) return const LinearProgressIndicator();
-                        var docs = snapshot.data!.docs;
+                        var docs = snapshot.data!.docs.toList();
+                        docs.sort((a, b) => ((a.data() as Map)['serviceName'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['serviceName'] ?? '').toString().toLowerCase()));
+                        
                         if (docs.isEmpty) return Text("No services found.", style: Theme.of(context).textTheme.bodySmall);
                         
                         return Column(
@@ -667,7 +669,9 @@ class CategoryDialogs {
                 stream: _dbService.getMainMetersStream(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return const LinearProgressIndicator();
-                  var meters = snapshot.data!.docs;
+                  var meters = snapshot.data!.docs.toList();
+                  meters.sort((a, b) => ((a.data() as Map)['meterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['meterNo'] ?? '').toString().toLowerCase()));
+                  
                   return DropdownButtonFormField<String>(
                     value: selectedMainMeter,
                     decoration: const InputDecoration(labelText: "Select Main Meter", border: OutlineInputBorder()),
@@ -775,7 +779,9 @@ class CategoryDialogs {
                   stream: _dbService.getSubMetersStream(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox.shrink();
-                    var allSubMeters = snapshot.data!.docs;
+                    var allSubMeters = snapshot.data!.docs.toList();
+                    allSubMeters.sort((a, b) => ((a.data() as Map)['subMeterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['subMeterNo'] ?? '').toString().toLowerCase()));
+                    
                     var available = allSubMeters.where((doc) {
                       bool isAssigned = doc['isAssigned'] ?? false;
                       bool isCurrent = doc['subMeterNo'] == selectedSubMeter;

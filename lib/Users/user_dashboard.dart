@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:akonssquare/Common/database_service.dart';
 import 'package:akonssquare/Common/update_guard.dart';
+import 'package:akonssquare/Common/automation_guide.dart';
 import 'package:akonssquare/Users/user_report_page.dart';
 import 'package:akonssquare/main.dart';
 
@@ -143,7 +144,12 @@ class _UserDashboardState extends State<UserDashboard> {
       child: Scaffold(
         appBar: AppBar(
           toolbarHeight: 70,
-          title: Text(_appName.isEmpty ? "Loading..." : _appName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          title: GestureDetector(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
+            },
+            child: Text(_appName.isEmpty ? "Loading..." : _appName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))
+          ),
           centerTitle: true,
           actions: [
             InkWell(
@@ -477,6 +483,8 @@ class _UserDashboardState extends State<UserDashboard> {
                         child: ExpansionTile(
                           shape: const Border(),
                           collapsedShape: const Border(),
+                          iconColor: Colors.amber,
+                          collapsedIconColor: Colors.amber,
                           leading: CircleAvatar(
                             backgroundColor: Colors.amber.withOpacity(0.1),
                             child: const Icon(Icons.electric_bolt, color: Colors.amber, size: 20),

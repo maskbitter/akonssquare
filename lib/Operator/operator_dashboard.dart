@@ -5,6 +5,7 @@ import 'package:akonssquare/Admin/category_page.dart';
 import 'package:akonssquare/Admin/admin_home.dart';
 import 'package:akonssquare/Common/database_service.dart';
 import 'package:akonssquare/Common/update_guard.dart';
+import 'package:akonssquare/Common/automation_guide.dart';
 import 'package:akonssquare/main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -143,28 +144,33 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 70,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "Operator Panel",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            Row(
-              children: [
-                Text(
-                  titles[_currentIndex],
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
-                ),
-                Text(" | ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline)),
-                Text(
-                  widget.username.toUpperCase(),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ],
+        title: GestureDetector(
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Operator Panel",
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Row(
+                children: [
+                  Text(
+                    titles[_currentIndex],
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                  ),
+                  Text(" | ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline)),
+                  Text(
+                    widget.username.toUpperCase(),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
           actions: [
             InkWell(
