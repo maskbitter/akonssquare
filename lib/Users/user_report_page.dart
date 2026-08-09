@@ -38,7 +38,7 @@ class UserReportPage extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Center(child: Text("Details for ${data['monthYear']}", textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+        title: Center(child: Text("Details for ${data['monthYear']}", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
         content: SizedBox(
           width: double.maxFinite,
           child: SingleChildScrollView(
@@ -49,21 +49,21 @@ class UserReportPage extends StatelessWidget {
                 if (data['TenantName'] != null && data['TenantName'].toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2),
-                    child: Text("Tenant: ${data['TenantName']}", style: TextStyle(color: Colors.indigo.shade800, fontWeight: FontWeight.bold)),
+                    child: Text("Tenant: ${data['TenantName']}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
                   ),
                 if (data['nidNumber'] != null && data['nidNumber'].toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: Text("NID: ${data['nidNumber']}", style: const TextStyle(fontSize: 14)),
+                    child: Text("NID: ${data['nidNumber']}", style: Theme.of(context).textTheme.bodySmall),
                   ),
                 if (data['paymentNotes'] != null && data['paymentNotes'].toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: Text("Note: ${data['paymentNotes']}", style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey), textAlign: TextAlign.center),
+                    child: Text("Note: ${data['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
                   ),
-                const Padding(
-                  padding: EdgeInsets.only(top: 12, bottom: 8),
-                  child: Text("Rent & Services", style: TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.bold)),
+                Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 8),
+                  child: Text("Rent & Services", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
                 ),
                 ...services.map((s) {
                   String name = s['name'] ?? 'Service';
@@ -94,9 +94,9 @@ class UserReportPage extends StatelessWidget {
                 ),
                 const Divider(),
                 if (ed != null) ...[
-                  const Padding(
-                    padding: EdgeInsets.only(top: 12, bottom: 8),
-                    child: Text("Electricity Details", style: TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.bold)),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12, bottom: 8),
+                    child: Text("Electricity Details", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
                   ),
                   _buildDetailRow(context, "Meter No:", ed['mainSubMeterNo'] ?? 'N/A'),
                   _buildDetailRow(context, "Reading:", "${ed['lastReading']} -> ${ed['presentReading']}"),
@@ -107,7 +107,7 @@ class UserReportPage extends StatelessWidget {
                     context,
                     "Electricity Total",
                     "৳${data['electricityBill']}",
-                    valueColor: Colors.cyan.shade800,
+                    valueColor: Theme.of(context).colorScheme.secondary,
                     isBold: true,
                   ),
                 ],
@@ -115,15 +115,15 @@ class UserReportPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.indigo.shade50,
+                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.indigo.withOpacity(0.2)),
+                    border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Grand Total", style: TextStyle(color: Colors.indigo, fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text("৳${data['totalAmount']}", style: TextStyle(color: Colors.indigo.shade900, fontSize: 22, fontWeight: FontWeight.w900)),
+                      Text("Grand Total", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+                      Text("৳${data['totalAmount']}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900)),
                     ],
                   ),
                 ),
@@ -136,8 +136,8 @@ class UserReportPage extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.tertiary,
+                foregroundColor: Theme.of(context).colorScheme.onTertiary,
               ),
               onPressed: () => Navigator.pop(ctx), 
               child: const Text("OK")
@@ -160,16 +160,15 @@ class UserReportPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 if (subtitle != null)
-                  Text(subtitle, style: const TextStyle(fontSize: 10, color: Colors.indigo, fontStyle: FontStyle.italic)),
+                  Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic)),
               ],
             ),
           ),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 12,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
               color: valueColor,
             ),
@@ -200,7 +199,10 @@ class UserReportPage extends StatelessWidget {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.indigo.shade800, Colors.indigo.shade600],
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -209,16 +211,16 @@ class UserReportPage extends StatelessWidget {
                   children: [
                     Text(
                       subName,
-                      style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900),
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 4),
-                    const Text("PAYMENT HISTORY", style: TextStyle(color: Colors.white70, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+                    Text("PAYMENT HISTORY", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        _buildHeaderSummary("Joined", createdAt != null ? "${createdAt.day}-${createdAt.month}-${createdAt.year}" : 'N/A'),
-                        Container(width: 1, height: 30, color: Colors.white24),
-                        _buildHeaderSummary("Total Duration", _formatDuration(createdAt)),
+                        _buildHeaderSummary(context, "Joined", createdAt != null ? "${createdAt.day}-${createdAt.month}-${createdAt.year}" : 'N/A'),
+                        Container(width: 1, height: 30, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)),
+                        _buildHeaderSummary(context, "Total Duration", _formatDuration(createdAt)),
                       ],
                     ),
                   ],
@@ -241,7 +243,7 @@ class UserReportPage extends StatelessWidget {
                     });
 
                     if (docs.isEmpty) {
-                      return const Center(child: Text("No record of paid rent found.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)));
+                      return Center(child: Text("No record of paid rent found.", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic)));
                     }
 
                     return ListView.builder(
@@ -252,12 +254,12 @@ class UserReportPage extends StatelessWidget {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+                              BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
                             ],
-                            border: Border.all(color: Colors.grey.shade100),
+                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                           ),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(20),
@@ -271,10 +273,10 @@ class UserReportPage extends StatelessWidget {
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
-                                          color: Colors.indigo.withOpacity(0.05),
+                                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
                                           borderRadius: BorderRadius.circular(12),
                                         ),
-                                        child: const Icon(Icons.calendar_month_outlined, color: Colors.indigo, size: 20),
+                                        child: Icon(Icons.calendar_month_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -283,19 +285,19 @@ class UserReportPage extends StatelessWidget {
                                           children: [
                                             Text(
                                               data['monthYear'] ?? 'N/A',
-                                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                                             ),
-                                            const Text("Payment received", style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                            Text("Payment received", style: Theme.of(context).textTheme.bodySmall),
                                           ],
                                         ),
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                         decoration: BoxDecoration(
-                                          color: Colors.green.withOpacity(0.1),
+                                          color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(30),
                                         ),
-                                        child: const Text("PAID", style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w900)),
+                                        child: Text("PAID", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.w900)),
                                       ),
                                     ],
                                   ),
@@ -303,17 +305,17 @@ class UserReportPage extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade50,
+                                      color: Theme.of(context).colorScheme.surfaceContainerLow,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                                       children: [
-                                        _buildCompactSummary("Rent", "৳${data['houseRentTotal']}", Colors.black87),
-                                        Container(width: 1, height: 20, color: Colors.grey.shade200),
-                                        _buildCompactSummary("Electric", "৳${data['electricityBill']}", Colors.cyan.shade800),
-                                        Container(width: 1, height: 20, color: Colors.grey.shade200),
-                                        _buildCompactSummary("Total", "৳${data['totalAmount']}", Colors.indigo, isBold: true),
+                                        _buildCompactSummary(context, "Rent", "৳${data['houseRentTotal']}", Theme.of(context).colorScheme.onSurface),
+                                        Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
+                                        _buildCompactSummary(context, "Electric", "৳${data['electricityBill']}", Theme.of(context).colorScheme.secondary),
+                                        Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
+                                        _buildCompactSummary(context, "Total", "৳${data['totalAmount']}", Theme.of(context).colorScheme.primary, isBold: true),
                                       ],
                                     ),
                                   ),
@@ -334,27 +336,26 @@ class UserReportPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderSummary(String label, String value) {
+  Widget _buildHeaderSummary(BuildContext context, String label, String value) {
     return Expanded(
       child: Column(
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900)),
+          Text(value, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900)),
         ],
       ),
     );
   }
 
-  Widget _buildCompactSummary(String label, String value, Color color, {bool isBold = false}) {
+  Widget _buildCompactSummary(BuildContext context, String label, String value, Color color, {bool isBold = false}) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.grey)),
+        Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w500)),
         const SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 13,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
             fontWeight: isBold ? FontWeight.w900 : FontWeight.bold,
             color: color,
           ),

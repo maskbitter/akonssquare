@@ -164,24 +164,22 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 children: [
                   Text(
                     "AKONS SQUARE",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.95),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.95),
                       letterSpacing: 5.0,
                       shadows: [
-                        Shadow(color: const Color(0xFF00FFC2).withOpacity(0.5), blurRadius: 10),
+                        Shadow(color: const Color(0xFF00FFC2).withValues(alpha: 0.5), blurRadius: 10),
                       ],
                     ),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     "SECURE PROPERTY MANAGEMENT",
-                    style: TextStyle(
-                      color: const Color(0xFF00FFC2).withOpacity(0.8),
-                      fontSize: 8,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: const Color(0xFF00FFC2).withValues(alpha: 0.8),
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2.5,
+                      fontSize: 8,
                     ),
                   ),
                 ],

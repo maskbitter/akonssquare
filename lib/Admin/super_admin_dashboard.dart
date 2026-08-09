@@ -50,16 +50,16 @@ class SuperAdminDashboard extends StatelessWidget {
                           dbVersion = (dbInfoSnap.data!['dbVersion'] ?? 26.0).toStringAsFixed(1);
                         }
                         
-                        return Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontSize: 9, fontWeight: FontWeight.bold)),
-                            if (remote != null && remote != local)
-                              Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.yellow, fontSize: 8)),
-                            Icon(Icons.power_settings_new, color: Theme.of(context).colorScheme.error, size: 18),
-                            Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontSize: 9, fontWeight: FontWeight.bold)),
-                          ],
-                        );
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 9)),
+                              if (remote != null && remote != local)
+                                Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 8)),
+                              Icon(Icons.power_settings_new, color: Theme.of(context).colorScheme.error, size: 18),
+                              Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 9)),
+                            ],
+                          );
                       }
                     );
                   }

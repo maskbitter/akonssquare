@@ -369,10 +369,8 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           Text(
                             "AkonsSquare",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold, 
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               color: Theme.of(context).colorScheme.primary, 
-                              fontSize: 19,
                               letterSpacing: 0.5
                             ),
                           ),
@@ -380,10 +378,10 @@ class _LoginPageState extends State<LoginPage> {
                           RichText(
                             text: TextSpan(
                               children: [
-                                TextSpan(text: "V: $_currentVersion", style: TextStyle(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold, fontSize: 11)),
+                                TextSpan(text: "V: $_currentVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold)),
                                 if (isOutdated) ...[
-                                  const TextSpan(text: " | ", style: TextStyle(color: Colors.grey, fontSize: 11)),
-                                  TextSpan(text: "Latest V: $latestV", style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 11)),
+                                  TextSpan(text: " | ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline)),
+                                  TextSpan(text: "Latest V: $latestV", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
                                 ]
                               ]
                             ),
@@ -391,12 +389,11 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 2),
                           Text(
                             _temporaryMessage ?? "DB V-$dbVersion",
-                            style: TextStyle(
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: (_temporaryMessage != null && (_temporaryMessage!.contains("Delet") || _temporaryMessage!.contains("Backup"))) 
                                 ? Theme.of(context).colorScheme.error 
                                 : Theme.of(context).colorScheme.secondary, 
                               fontWeight: FontWeight.bold, 
-                              fontSize: 11
                             ),
                           ),
                         ],
@@ -424,10 +421,9 @@ class _LoginPageState extends State<LoginPage> {
                                   children: [
                                     Text(
                                       "Welcome",
-                                      style: TextStyle(
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                         color: Theme.of(context).colorScheme.primary, 
                                         fontWeight: FontWeight.bold, 
-                                        fontSize: 16
                                       ),
                                     ),
                                     const SizedBox(height: 48),
@@ -483,7 +479,7 @@ class _LoginPageState extends State<LoginPage> {
                                         onLongPress: () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
                                         onPressed: () { HapticFeedback.mediumImpact(); _loginBasicUser(); },
                                         icon: const Icon(Icons.dashboard_outlined),
-                                        label: const Text("Login to dashboard", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18), maxLines: 1),
+                                        label: Text("Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary), maxLines: 1),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Theme.of(context).colorScheme.tertiary,
                                           foregroundColor: Theme.of(context).colorScheme.onTertiary,
@@ -508,12 +504,11 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 4),
                           Text(
                             "AkonsAutomation by AkonS",
-                            style: TextStyle(
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               fontWeight: FontWeight.bold, 
                               color: Theme.of(context).colorScheme.primary, 
                               letterSpacing: 0.5, 
                               fontStyle: FontStyle.italic,
-                              fontSize: 12,
                             ),
                           ),
                         ],
