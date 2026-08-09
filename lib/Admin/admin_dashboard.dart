@@ -169,7 +169,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> titles = ["Home", "Category Manager", "Settings"];
+    final List<String> titles = ["Home", "Manage", "Settings"];
     
     return PopScope(
       canPop: false,
@@ -225,21 +225,31 @@ class _AdminDashboardState extends State<AdminDashboard> {
               onTap: _showLogoutConfirmationDialog,
               child: StreamBuilder<DocumentSnapshot>(
                 stream: _dbService.getAppConfigStream(),
-                builder: (context, snapshot) {
-                  return FutureBuilder<PackageInfo>(
-                    future: PackageInfo.fromPlatform(),
-                    builder: (context, pSnap) {
-                      String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
-                      String? remote = snapshot.data?.exists == true ? snapshot.data!['requiredVersion'] : null;
-                      
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 20),
-                          Text(local, style: Theme.of(context).textTheme.labelSmall),
-                          if (remote != null && remote != local)
-                            Text(remote, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
-                        ],
+                builder: (context, configSnap) {
+                  return StreamBuilder<DocumentSnapshot>(
+                    stream: _dbService.getDatabaseInfoStream(),
+                    builder: (context, dbInfoSnap) {
+                      return FutureBuilder<PackageInfo>(
+                        future: PackageInfo.fromPlatform(),
+                        builder: (context, pSnap) {
+                          String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
+                          String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
+                          String dbVersion = "...";
+                          if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                            dbVersion = (dbInfoSnap.data!['dbVersion'] ?? 26.0).toStringAsFixed(1);
+                          }
+                          
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, fontWeight: FontWeight.bold)),
+                              if (remote != null && remote != local)
+                                Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontSize: 8)),
+                              Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 18),
+                              Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),
+                            ],
+                          );
+                        }
                       );
                     }
                   );
@@ -295,7 +305,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           },
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: "Home"),
-            BottomNavigationBarItem(icon: Icon(Icons.category_outlined), activeIcon: Icon(Icons.category), label: "Category"),
+            BottomNavigationBarItem(icon: Icon(Icons.manage_accounts_outlined), activeIcon: Icon(Icons.manage_accounts), label: "Manage"),
             BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: "Settings"),
           ],
         ),

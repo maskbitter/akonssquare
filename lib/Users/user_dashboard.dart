@@ -156,21 +156,31 @@ class _UserDashboardState extends State<UserDashboard> {
               onTap: _showLogoutConfirmationDialog,
               child: StreamBuilder<DocumentSnapshot>(
                 stream: _dbService.getAppConfigStream(),
-                builder: (context, snapshot) {
-                  return FutureBuilder<PackageInfo>(
-                    future: PackageInfo.fromPlatform(),
-                    builder: (context, pSnap) {
-                      String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
-                      String? remote = snapshot.data?.exists == true ? snapshot.data!['requiredVersion'] : null;
-                      
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.logout, color: Colors.red, size: 20),
-                          Text(local, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                          if (remote != null && remote != local)
-                            Text(remote, style: const TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold)),
-                        ],
+                builder: (context, configSnap) {
+                  return StreamBuilder<DocumentSnapshot>(
+                    stream: _dbService.getDatabaseInfoStream(),
+                    builder: (context, dbInfoSnap) {
+                      return FutureBuilder<PackageInfo>(
+                        future: PackageInfo.fromPlatform(),
+                        builder: (context, pSnap) {
+                          String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
+                          String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
+                          String dbVersion = "...";
+                          if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                            dbVersion = (dbInfoSnap.data!['dbVersion'] ?? 26.0).toStringAsFixed(1);
+                          }
+                          
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(local, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+                              if (remote != null && remote != local)
+                                Text("Latest: $remote", style: const TextStyle(fontSize: 8, color: Colors.red, fontWeight: FontWeight.bold)),
+                              const Icon(Icons.logout, color: Colors.red, size: 18),
+                              Text("DB V-$dbVersion", style: const TextStyle(fontSize: 9, color: Colors.blue, fontWeight: FontWeight.bold)),
+                            ],
+                          );
+                        }
                       );
                     }
                   );
@@ -187,7 +197,7 @@ class _UserDashboardState extends State<UserDashboard> {
           unselectedItemColor: Colors.grey,
           onTap: (index) => setState(() => _currentIndex = index),
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: "Dashboard"),
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: "Home"),
             BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), activeIcon: Icon(Icons.analytics), label: "History"),
           ],
         ),

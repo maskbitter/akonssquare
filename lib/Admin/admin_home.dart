@@ -75,7 +75,7 @@ class _AdminHomeState extends State<AdminHome> {
             }
 
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (settings['showAccounts']!) ...[
                   Padding(
@@ -136,21 +136,25 @@ class _AdminHomeState extends State<AdminHome> {
 
   Widget _buildElectricitySection(Map<String, bool> settings) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        InkWell(
-          onTap: widget.isReadOnly ? null : widget.onElectricityTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
-            child: Row(
-              children: [
-                Icon(Icons.electric_bolt_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  "Electricity",
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.8),
-                ),
-              ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: InkWell(
+            onTap: widget.isReadOnly ? null : widget.onElectricityTap,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.electric_bolt_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Electricity",
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.8),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -163,19 +167,23 @@ class _AdminHomeState extends State<AdminHome> {
 
   Widget _buildCategorySection(Map<String, bool> settings) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
-          child: Row(
-            children: [
-              Icon(Icons.category_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                "Category",
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.8),
-              ),
-            ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.category_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  "Category",
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.8),
+                ),
+              ],
+            ),
           ),
         ),
         _buildCategoryOverviewCard(settings),
@@ -607,11 +615,12 @@ class _AdminHomeState extends State<AdminHome> {
     final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(titleIcon, size: 18, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),

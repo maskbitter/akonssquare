@@ -102,21 +102,31 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
             },
             child: StreamBuilder<DocumentSnapshot>(
               stream: DatabaseService().getAppConfigStream(),
-              builder: (context, snapshot) {
-                return FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (context, pSnap) {
-                    String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
-                    String? remote = snapshot.data?.exists == true ? snapshot.data!['requiredVersion'] : null;
-                    
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 20),
-                        Text(local, style: Theme.of(context).textTheme.labelSmall),
-                        if (remote != null && remote != local)
-                          Text(remote, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
-                      ],
+              builder: (context, configSnap) {
+                return StreamBuilder<DocumentSnapshot>(
+                  stream: DatabaseService().getDatabaseInfoStream(),
+                  builder: (context, dbInfoSnap) {
+                    return FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, pSnap) {
+                        String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
+                        String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
+                        String dbVersion = "...";
+                        if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                          dbVersion = (dbInfoSnap.data!['dbVersion'] ?? 26.0).toStringAsFixed(1);
+                        }
+                        
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, fontWeight: FontWeight.bold)),
+                            if (remote != null && remote != local)
+                              Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontSize: 8)),
+                            Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 18),
+                            Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),
+                          ],
+                        );
+                      }
                     );
                   }
                 );

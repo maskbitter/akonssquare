@@ -13,7 +13,8 @@ import 'package:flutter/services.dart';
 import 'package:akonssquare/Common/theme_manager.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  final bool showOnlyTheme;
+  const SettingsPage({super.key, this.showOnlyTheme = false});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -241,6 +242,19 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.showOnlyTheme) {
+      return Scaffold(
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: [
+              _buildThemeSection(),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -475,50 +489,54 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             // 5. Theme
-            _buildSettingsCard(
-              context,
-              icon: Icons.palette_outlined,
-              title: "Theme & Appearance",
-              subtitle: "Customize look and feel of your app",
-              color: Theme.of(context).colorScheme.surfaceContainer,
-              accentColor: Theme.of(context).colorScheme.primary,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), label: const Text("Change App Theme"))),
-                      const SizedBox(height: 16),
-                      // Font Selection Dropdown
-                      ValueListenableBuilder<String>(
-                        valueListenable: ThemeManager.appFontNotifier,
-                        builder: (context, currentFont, child) {
-                          return DropdownButtonFormField<String>(
-                            value: currentFont,
-                            decoration: InputDecoration(
-                              labelText: "App Font Family",
-                              prefixIcon: const Icon(Icons.font_download_outlined),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                            items: ThemeManager.supportedFonts.map((f) => DropdownMenuItem(value: f, child: Text(f, style: const TextStyle(fontWeight: FontWeight.bold)))).toList(),
-                            onChanged: (val) {
-                              if (val != null) {
-                                ThemeManager.setFont(val);
-                                DatabaseService.showToast(context, "Font changed to $val");
-                              }
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            _buildThemeSection(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildThemeSection() {
+    return _buildSettingsCard(
+      context,
+      icon: Icons.palette_outlined,
+      title: "Theme & Appearance",
+      subtitle: "Customize look and feel of your app",
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      accentColor: Theme.of(context).colorScheme.primary,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), label: const Text("Change App Theme"))),
+              const SizedBox(height: 16),
+              // Font Selection Dropdown
+              ValueListenableBuilder<String>(
+                valueListenable: ThemeManager.appFontNotifier,
+                builder: (context, currentFont, child) {
+                  return DropdownButtonFormField<String>(
+                    value: currentFont,
+                    decoration: InputDecoration(
+                      labelText: "App Font Family",
+                      prefixIcon: const Icon(Icons.font_download_outlined),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: ThemeManager.supportedFonts.map((f) => DropdownMenuItem(value: f, child: Text(f, style: const TextStyle(fontWeight: FontWeight.bold)))).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        ThemeManager.setFont(val);
+                        DatabaseService.showToast(context, "Font changed to $val");
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
