@@ -17,17 +17,20 @@ class ViewerDashboard extends StatefulWidget {
 
 class _ViewerDashboardState extends State<ViewerDashboard> {
   String _appName = "";
+  String _username = "Viewer";
 
   @override
   void initState() {
     super.initState();
-    _fetchAppName();
+    _fetchAppData();
   }
 
-  Future<void> _fetchAppName() async {
+  Future<void> _fetchAppData() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       _appName = packageInfo.appName;
+      _username = prefs.getString('username') ?? "Viewer";
     });
   }
 
@@ -47,16 +50,44 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: GestureDetector(
-          onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(_appName, style: Theme.of(context).textTheme.titleMedium),
-              Text("Viewer Mode", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
-            ],
+        automaticallyImplyLeading: false,
+        centerTitle: false,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 1),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _appName.isEmpty ? "Loading..." : _appName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Home",
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                    ),
+                    Text(
+                      " | ", 
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
+                    ),
+                    Text(
+                      _username.toUpperCase(),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary, 
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         actions: [

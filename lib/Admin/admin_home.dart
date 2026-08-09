@@ -286,10 +286,10 @@ class _AdminHomeState extends State<AdminHome> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInteractiveStat("Received", receivedTotal, Theme.of(context).colorScheme.onPrimary, Icons.check_circle_outline,
+                                _buildInteractiveStat("Received", receivedTotal, Colors.greenAccent, Icons.check_circle_outline,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 0)),
                                 Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)),
-                                _buildInteractiveStat("Due", dueTotal, Theme.of(context).colorScheme.onPrimary, Icons.pending_actions,
+                                _buildInteractiveStat("Due", dueTotal, Colors.redAccent, Icons.pending_actions,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 1)),
                               ],
                             ),
@@ -297,10 +297,10 @@ class _AdminHomeState extends State<AdminHome> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInteractiveStat("Rent", rentTotal, Theme.of(context).colorScheme.onPrimary, Icons.home_work_outlined,
+                                _buildInteractiveStat("Rent", rentTotal, Colors.amberAccent, Icons.home_work_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: true)),
                                 Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)),
-                                _buildInteractiveStat("Utility", utilityTotal, Theme.of(context).colorScheme.onPrimary, Icons.settings_suggest_outlined,
+                                _buildInteractiveStat("Utility", utilityTotal, Colors.cyanAccent, Icons.settings_suggest_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: false)),
                               ],
                             ),
@@ -355,20 +355,20 @@ class _AdminHomeState extends State<AdminHome> {
         centerSpaceRadius: 20,
         sections: [
           PieChartSectionData(
-            color: Theme.of(context).colorScheme.tertiary,
+            color: Colors.greenAccent,
             value: received,
             title: '${((received/total)*100).toStringAsFixed(0)}%',
             radius: 35,
-            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onTertiary, fontWeight: FontWeight.bold),
-            borderSide: BorderSide(color: Theme.of(context).colorScheme.onTertiary.withOpacity(0.2), width: 1),
+            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.black87, fontWeight: FontWeight.bold),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
           ),
           PieChartSectionData(
-            color: Theme.of(context).colorScheme.error,
+            color: Colors.redAccent,
             value: due,
             title: '${((due/total)*100).toStringAsFixed(0)}%',
             radius: 30,
-            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onError, fontWeight: FontWeight.bold),
-            borderSide: BorderSide(color: Theme.of(context).colorScheme.onError.withOpacity(0.2), width: 1),
+            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
           ),
         ],
       ),
@@ -402,9 +402,9 @@ class _AdminHomeState extends State<AdminHome> {
         gridData: const FlGridData(show: false),
         borderData: FlBorderData(show: false),
         barGroups: [
-          _makeGroupData(0, v1, Theme.of(context).colorScheme.onPrimary),
-          _makeGroupData(1, v2, Theme.of(context).colorScheme.secondary),
-          _makeGroupData(2, v3, Theme.of(context).colorScheme.error),
+          _makeGroupData(0, v1, Colors.amberAccent),
+          _makeGroupData(1, v2, Colors.cyanAccent),
+          _makeGroupData(2, v3, Colors.redAccent),
         ],
       ),
     );
@@ -468,7 +468,7 @@ class _AdminHomeState extends State<AdminHome> {
             Center(
               child: Text(
                 "Total Units: $totalDocs (In System)",
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
               ),
             ),
             const SizedBox(height: 8),
@@ -709,8 +709,8 @@ class _AdminHomeState extends State<AdminHome> {
               _buildUnifiedMeterTable(
                 title: "Main Meter Vs Sub Meter",
                 titleIcon: Icons.balance,
-                containerColor: Theme.of(context).colorScheme.primaryContainer,
-                accentColor: Theme.of(context).colorScheme.primary,
+                containerColor: Theme.of(context).colorScheme.secondaryContainer,
+                accentColor: Theme.of(context).colorScheme.secondary,
                 headers: ["#", "Meter\nNumber", "Main Meter\nUsed Units", "Sub-Meter\nTotal Units", "This Month\nUnit Rate", "Balance Units"],
                 meters: mainMeters,
                 rowBuilder: (data, index) {
@@ -741,8 +741,8 @@ class _AdminHomeState extends State<AdminHome> {
               _buildUnifiedMeterTable(
                 title: "Main Meter Vs Govt. Bill",
                 titleIcon: Icons.receipt_long,
-                containerColor: Theme.of(context).colorScheme.secondaryContainer,
-                accentColor: Theme.of(context).colorScheme.secondary,
+                containerColor: Theme.of(context).colorScheme.primaryContainer,
+                accentColor: Theme.of(context).colorScheme.primary,
                 headers: ["#", "Meter\nNumber", "Main Meter\nReadings", "Govt. Bill\nReadings", "Balance Units"],
                 meters: mainMeters,
                 rowBuilder: (data, index) {

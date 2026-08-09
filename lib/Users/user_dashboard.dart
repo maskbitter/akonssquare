@@ -24,6 +24,7 @@ class _UserDashboardState extends State<UserDashboard> {
   int _currentIndex = 0;
   String _appName = "";
   String _categoryName = "";
+  String _username = "User";
 
   @override
   void initState() {
@@ -35,14 +36,20 @@ class _UserDashboardState extends State<UserDashboard> {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     
     String catName = "Unknown";
+    String uName = "User";
     if (widget.categoryId.isNotEmpty) {
       try {
         DocumentSnapshot catDoc = await _dbService.getCategoryById(widget.categoryId);
         if (catDoc.exists) {
           catName = (catDoc.data() as Map?)?['categoryName'] ?? 'Unknown';
         }
+        
+        DocumentSnapshot subDoc = await FirebaseFirestore.instance.collection('sub_items').doc(widget.subItemId).get();
+        if (subDoc.exists) {
+          uName = (subDoc.data() as Map?)?['subItemName'] ?? 'User';
+        }
       } catch (e) {
-        debugPrint("Error loading category name: $e");
+        debugPrint("Error loading data: $e");
       }
     }
     
@@ -50,6 +57,7 @@ class _UserDashboardState extends State<UserDashboard> {
       setState(() {
         _appName = packageInfo.appName;
         _categoryName = catName;
+        _username = uName;
       });
     }
   }
@@ -143,14 +151,46 @@ class _UserDashboardState extends State<UserDashboard> {
       data: ThemeManager.getThemeByName("Default Theme"),
       child: Scaffold(
         appBar: AppBar(
-          toolbarHeight: 70,
-          title: GestureDetector(
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
-            },
-            child: Text(_appName.isEmpty ? "Loading..." : _appName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold))
+          automaticallyImplyLeading: false,
+          centerTitle: false,
+          title: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 1),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _appName.isEmpty ? "Loading..." : _appName,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _currentIndex == 0 ? "Home" : "History",
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                      ),
+                      Text(
+                        " | ", 
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
+                      ),
+                      Text(
+                        _username.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.secondary, 
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-          centerTitle: true,
           actions: [
             InkWell(
               onTap: _showLogoutConfirmationDialog,

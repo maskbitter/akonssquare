@@ -119,15 +119,30 @@ class ThemeManager {
         onPrimaryContainer: Colors.indigo.shade900,
         secondary: Colors.cyan.shade800,
         onSecondary: Colors.white,
-        secondaryContainer: const Color(0xFFE0F7FA),
+        secondaryContainer: const Color(0xFFE0F7FA), // Soft Cyan
         onSecondaryContainer: Colors.cyan.shade900,
-        tertiary: const Color(0xFF2E7D32),
+        tertiary: const Color(0xFF2E7D32), // Success Green
         onTertiary: Colors.white,
-        tertiaryContainer: const Color(0xFFE8F5E9),
+        tertiaryContainer: const Color(0xFFE8F5E9), 
         onTertiaryContainer: const Color(0xFF1B5E20),
+        error: const Color(0xFFD32F2F), // Standard Red
+        onError: Colors.white,
+        errorContainer: const Color(0xFFFFEBEE), 
+        onErrorContainer: const Color(0xFFB71C1C),
         surface: Colors.white,
         onSurface: Colors.indigo.shade900,
+        surfaceContainerLowest: Colors.white,
         surfaceContainerLow: const Color(0xFFF8F9FF),
+        surfaceContainer: const Color(0xFFF0F2FF),
+        surfaceContainerHigh: const Color(0xFFE8EAFC),
+        surfaceContainerHighest: const Color(0xFFE0E2F9),
+        outline: const Color(0xFFD0D3F0),
+        outlineVariant: const Color(0xFFE8EAFC),
+        inverseSurface: Colors.indigo.shade900,
+        onInverseSurface: Colors.indigo.shade50,
+        inversePrimary: Colors.indigo.shade200,
+        scrim: Colors.black,
+        shadow: Colors.black,
       );
     } else {
       colorScheme = ColorScheme.fromSeed(

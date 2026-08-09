@@ -25,6 +25,7 @@ class OperatorDashboard extends StatefulWidget {
 class _OperatorDashboardState extends State<OperatorDashboard> {
   int _currentIndex = 0;
   int _categoryInitialSubTab = 0;
+  String _appName = "";
   StreamSubscription? _userSessionSubscription;
   StreamSubscription? _dbVersionSubscription;
   final PageController _pageController = PageController();
@@ -33,8 +34,18 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
   @override
   void initState() {
     super.initState();
+    _loadAppName();
     _startSessionListener();
     _startDBVersionListener();
+  }
+
+  Future<void> _loadAppName() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _appName = packageInfo.appName;
+      });
+    }
   }
 
   @override
@@ -144,33 +155,44 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 70,
-        title: GestureDetector(
-          onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Operator Panel",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              Row(
-                children: [
-                  Text(
-                    titles[_currentIndex],
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
-                  ),
-                  Text(" | ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline)),
-                  Text(
-                    widget.username.toUpperCase(),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ],
+        automaticallyImplyLeading: false,
+        centerTitle: false,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 1),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _appName.isEmpty ? "Loading..." : _appName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      titles[_currentIndex],
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                    ),
+                    Text(
+                      " | ", 
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
+                    ),
+                    Text(
+                      widget.username.toUpperCase(),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary, 
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
           actions: [
