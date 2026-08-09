@@ -141,21 +141,18 @@ class _AdminHomeState extends State<AdminHome> {
       children: [
         Align(
           alignment: Alignment.centerLeft,
-          child: InkWell(
-            onTap: widget.isReadOnly ? null : widget.onElectricityTap,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.electric_bolt_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Electricity",
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.8),
-                  ),
-                ],
-              ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.electric_bolt_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  "Electricity",
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.8),
+                ),
+              ],
             ),
           ),
         ),
@@ -632,53 +629,60 @@ class _AdminHomeState extends State<AdminHome> {
             ],
           ),
         ),
-        Card(
-          elevation: 2,
-          color: containerColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: accentColor, width: 1)
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Container(
-                alignment: Alignment.center,
-                constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 48),
-                child: Table(
-                  defaultColumnWidth: const IntrinsicColumnWidth(),
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  border: TableBorder(
-                    verticalInside: BorderSide(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1), width: 1),
-                  ),
-                  children: [
-                    TableRow(
-                      decoration: BoxDecoration(
-                        color: accentColor,
-                        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1), width: 0.5))
-                      ),
-                      children: headers.map((h) => Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle)),
-                      )).toList(),
+        InkWell(
+          onTap: widget.isReadOnly ? null : () {
+            DatabaseService.vibrate();
+            widget.onElectricityTap?.call();
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Card(
+            elevation: 2,
+            color: containerColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: accentColor, width: 1)
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Container(
+                  alignment: Alignment.center,
+                  constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 48),
+                  child: Table(
+                    defaultColumnWidth: const IntrinsicColumnWidth(),
+                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                    border: TableBorder(
+                      verticalInside: BorderSide(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1), width: 1),
                     ),
-                    ...List.generate(meters.length, (index) {
-                      var doc = meters[index];
-                      var data = doc.data() as Map<String, dynamic>;
-                      var rows = rowBuilder(data, index);
-                      
-                      return TableRow(
+                    children: [
+                      TableRow(
                         decoration: BoxDecoration(
-                          color: index % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent,
+                          color: accentColor,
+                          border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1), width: 0.5))
                         ),
-                        children: rows.map((cell) => Padding(
+                        children: headers.map((h) => Padding(
                           padding: const EdgeInsets.all(12),
-                          child: Center(child: cell),
+                          child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle)),
                         )).toList(),
-                      );
-                    }),
-                  ],
+                      ),
+                      ...List.generate(meters.length, (index) {
+                        var doc = meters[index];
+                        var data = doc.data() as Map<String, dynamic>;
+                        var rows = rowBuilder(data, index);
+                        
+                        return TableRow(
+                          decoration: BoxDecoration(
+                            color: index % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent,
+                          ),
+                          children: rows.map((cell) => Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Center(child: cell),
+                          )).toList(),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
               ),
             ),
