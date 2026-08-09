@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:akonssquare/Admin/category_dialogs.dart';
 import 'package:akonssquare/Common/database_service.dart';
+import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 
@@ -299,19 +300,9 @@ class _CategoryPageState extends State<CategoryPage> {
 
                       bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
                       
-                      final List<Color> bgColors = [
-                        Theme.of(context).colorScheme.primaryContainer, 
-                        Theme.of(context).colorScheme.secondaryContainer, 
-                        Theme.of(context).colorScheme.tertiaryContainer,
-                      ];
-                      final List<Color> accentColors = [
-                        Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.secondary,
-                        Theme.of(context).colorScheme.tertiary,
-                      ];
-                      int colorIdx = i % bgColors.length;
-                      final Color bgColor = bgColors[colorIdx];
-                      final Color accentColor = accentColors[colorIdx];
+                      final Color accentColor = ThemeManager.getCardColor(i);
+                      final Color bgColor = ThemeManager.getCardContainerColor(i);
+                      final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
 
                       return Card(
                         elevation: 2,
@@ -343,7 +334,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                       catName.toUpperCase(),
                                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.w900, 
-                                        color: accentColor, 
+                                        color: onBgColor, 
                                         letterSpacing: 0.5
                                       ),
                                     ),
@@ -388,7 +379,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                     child: Text(
                                       "${subDocs.length} units | Assigned services",
                                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: accentColor.withOpacity(0.7),
+                                        color: onBgColor.withValues(alpha: 0.7),
                                         fontWeight: FontWeight.bold
                                       ),
                                     ),
@@ -401,7 +392,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                         "৳${catTotal.toStringAsFixed(2)}",
                                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                           fontWeight: FontWeight.w900, 
-                                          color: accentColor
+                                          color: onBgColor
                                         ),
                                       ),
                                     ],
@@ -425,25 +416,31 @@ class _CategoryPageState extends State<CategoryPage> {
                               if (ed != null && ed['isStopped'] != true) eBillAmount = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
                               double total = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillAmount;
 
+                              // Use nested index for sub-item coloring to make them different from category
+                              int itemIndex = i + entry.key + 1;
+                              final Color itemAccentColor = ThemeManager.getCardColor(itemIndex);
+                              final Color itemBgColor = ThemeManager.getCardContainerColor(itemIndex);
+                              final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex);
+
                               if (status == 'Vacant') {
                                 return Card(
                                   margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  color: Theme.of(context).colorScheme.errorContainer,
+                                  color: itemBgColor,
                                   elevation: 2,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12), 
-                                    side: BorderSide(color: Theme.of(context).colorScheme.error.withOpacity(0.2), width: 1)
+                                    side: BorderSide(color: itemAccentColor.withValues(alpha: 0.2), width: 1)
                                   ),
                                   child: ExpansionTile(
                                     tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                                    iconColor: Theme.of(context).colorScheme.error,
-                                    collapsedIconColor: Theme.of(context).colorScheme.error,
+                                    iconColor: itemAccentColor,
+                                    collapsedIconColor: itemAccentColor,
                                     title: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Padding(
                                           padding: const EdgeInsets.only(top: 4),
-                                          child: Icon(Icons.meeting_room_outlined, color: Theme.of(context).colorScheme.error, size: 24),
+                                          child: Icon(Icons.meeting_room_outlined, color: itemAccentColor, size: 24),
                                         ),
                                         const SizedBox(width: 10),
                                         Expanded(
@@ -455,13 +452,13 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(4)),
-                                                    child: Text(subName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.error)),
+                                                    child: Text(subName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: itemAccentColor)),
                                                   ),
                                                   const Spacer(),
                                                   IconButton(
                                                     padding: EdgeInsets.zero,
                                                     constraints: const BoxConstraints(),
-                                                    icon: Icon(Icons.edit_outlined, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                                    icon: Icon(Icons.edit_outlined, size: 18, color: itemOnBgColor.withValues(alpha: 0.7)),
                                                     onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
                                                       context: context, 
                                                       subItemId: subId, 
@@ -475,7 +472,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   PopupMenuButton<String>(
                                                     padding: EdgeInsets.zero,
                                                     constraints: const BoxConstraints(),
-                                                    icon: Icon(Icons.more_vert, size: 24, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                                    icon: Icon(Icons.more_vert, size: 24, color: itemOnBgColor.withValues(alpha: 0.7)),
                                                     onSelected: (val) async {
                                                       if (val == 'remove') CategoryDialogs.showConfirmDialog(
                                                         context: context, 
@@ -495,12 +492,12 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 ],
                                               ),
                                               const SizedBox(height: 4),
-                                              Text("Status: Vacant", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
+                                              Text("Status: Vacant", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: itemOnBgColor.withValues(alpha: 0.8))),
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.end,
                                                 children: [
                                                   if (ed != null) Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 20),
-                                                  Text("৳${total.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.error)),
+                                                  Text("৳${total.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: itemOnBgColor)),
                                                 ],
                                               ),
                                             ],
@@ -567,14 +564,14 @@ class _CategoryPageState extends State<CategoryPage> {
 
                                   return Card(
                                     margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    color: isPaid ? Theme.of(context).colorScheme.tertiaryContainer : Theme.of(context).colorScheme.secondaryContainer,
+                                    color: isPaid ? Theme.of(context).colorScheme.tertiaryContainer : itemBgColor,
                                     elevation: 2,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       side: BorderSide(
                                         color: isOccupied 
-                                          ? (isPaid ? Theme.of(context).colorScheme.tertiary.withOpacity(0.2) : Theme.of(context).colorScheme.secondary.withOpacity(0.2)) 
-                                          : Theme.of(context).colorScheme.error.withOpacity(0.2), 
+                                          ? (isPaid ? Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.2) : itemAccentColor.withValues(alpha: 0.2)) 
+                                          : Theme.of(context).colorScheme.error.withValues(alpha: 0.2), 
                                         width: 1
                                       )
                                     ),
@@ -582,8 +579,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                       shape: const Border(),
                                       collapsedShape: const Border(),
                                       tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                                      iconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.secondary) : Theme.of(context).colorScheme.error,
-                                      collapsedIconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.secondary) : Theme.of(context).colorScheme.error,
+                                      iconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error,
+                                      collapsedIconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error,
                                       title: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
@@ -591,7 +588,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                             children: [
                                               Icon(
                                                 isOccupied ? (isPaid ? Icons.check_circle : Icons.door_front_door_outlined) : Icons.meeting_room_outlined,
-                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.secondary) : Theme.of(context).colorScheme.error,
+                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error,
                                                 size: 22,
                                               ),
                                               const SizedBox(width: 8),
@@ -605,7 +602,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   subName,
                                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                                     fontWeight: FontWeight.w900, 
-                                                    color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary) : Theme.of(context).colorScheme.error, 
+                                                    color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error, 
                                                   ),
                                                 ),
                                               ),
@@ -613,7 +610,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               IconButton(
                                                 padding: EdgeInsets.zero,
                                                 constraints: const BoxConstraints(),
-                                                icon: Icon(Icons.edit_note, size: 22, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                                icon: Icon(Icons.edit_note, size: 22, color: itemOnBgColor.withValues(alpha: 0.7)),
                                                 onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
                                                   context: context, 
                                                   subItemId: subId, 
@@ -636,7 +633,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   child: IconButton(
                                                     padding: EdgeInsets.zero,
                                                     constraints: const BoxConstraints(),
-                                                    icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.secondary, size: 24), 
+                                                    icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, size: 24), 
                                                     onPressed: () => CategoryDialogs.showMarkAsPaidDialog(context: context, subItemId: subId, subItemName: subName, TenantName: tenant, nidNumber: d['nidNumber'] ?? '', houseRentTotal: total - eBillAmount, electricityBill: eBillAmount, services: active.cast<Map<String, dynamic>>(), electricityDetails: ed, mainCategoryName: catName)
                                                   ),
                                                 ),
@@ -644,7 +641,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               PopupMenuButton<String>(
                                                 padding: EdgeInsets.zero,
                                                 constraints: const BoxConstraints(),
-                                                icon: Icon(Icons.more_vert, size: 22, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                                icon: Icon(Icons.more_vert, size: 22, color: itemOnBgColor.withValues(alpha: 0.7)),
                                                 onSelected: (val) async {
                                                   if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator);
                                                   if (val == 'stop') {
@@ -719,7 +716,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 "৳${displayTotal.toStringAsFixed(2)}",
                                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                                   fontWeight: FontWeight.w900, 
-                                                  color: isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary, 
+                                                  color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, 
                                                 ),
                                               ),
                                             ],
@@ -731,7 +728,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 ? (isPaid ? "Payment Clear • $_selectedMonthStr" : "${active.length} Services | Due") 
                                                 : "Ready for new tenant",
                                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.error) : Theme.of(context).colorScheme.error, 
+                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
                                               ),
                                             ),
                                           ),
