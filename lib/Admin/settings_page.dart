@@ -81,14 +81,18 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
       if (result == null || result.files.single.path == null) return;
+      
       setState(() { _isProcessing = true; _progress = 0.0; });
       File file = File(result.files.single.path!);
       String content = await file.readAsString();
       Map<String, dynamic> importData = await compute(_parseJson, content);
       num backupVersion = importData['dbVersion'] ?? 1.0;
       double serverVersion = await _dbService.getDBVersion();
+      
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String role = prefs.getString('userRole') ?? 'admin';
+      String actor = prefs.getString('username') ?? "Unknown";
+      
       bool proceed = false;
       if (role == 'superadmin') {
         if (backupVersion > serverVersion) proceed = await _showConfirmDialog(context, "Restore New Data?", "This will overwrite all data with v$backupVersion.");
@@ -107,10 +111,14 @@ class _SettingsPageState extends State<SettingsPage> {
           setState(() => _isProcessing = false); return;
         }
       }
+      
       if (proceed && context.mounted) {
-        String actor = prefs.getString('username') ?? "Unknown";
-        await _dbService.setServerStatus('uploading');
+        // Create rollback snapshot before starting destructive operation
+        await _dbService.createRollbackSnapshot(actor);
+        await _dbService.setServerStatus('uploading', progress: 0.0);
         await _dbService.importDatabase(importData, actor, onProgress: (p) => setState(() => _progress = p));
+        // Clear snapshot on success
+        await _dbService.clearRollbackSnapshot();
         await _dbService.setServerStatus('completed');
         if (context.mounted) DatabaseService.showToast(context, "Database Restored Successfully!", backgroundColor: Colors.green);
       }
@@ -123,6 +131,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _handleWipe(BuildContext context) async {
     if (_isProcessing) return;
+    HapticFeedback.mediumImpact();
     try {
       DocumentSnapshot backupInfo = await FirebaseFirestore.instance.collection('app_config').doc('database_info').get();
       bool hasBackup = backupInfo.exists && (backupInfo.data() as Map).containsKey('lastBackupAt');
@@ -148,12 +157,18 @@ class _SettingsPageState extends State<SettingsPage> {
       }
       bool confirm1 = await _showConfirmDialog(context, "Initial Confirmation", "Delete ALL data?");
       if (confirm1) proceed = await _showConfirmDialog(context, "FINAL WARNING", "Erase all records. PROCEED?");
+      
       if (proceed && context.mounted) {
         setState(() { _isProcessing = true; _progress = 1.0; });
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String actor = prefs.getString('username') ?? "Unknown";
-        await _dbService.setServerStatus('wiping');
+        
+        // Create rollback snapshot
+        await _dbService.createRollbackSnapshot(actor);
+        await _dbService.setServerStatus('wiping', progress: 1.0);
         await _dbService.wipeDatabase(actor, onProgress: (p) => setState(() => _progress = p));
+        // Clear snapshot on success
+        await _dbService.clearRollbackSnapshot();
         await _dbService.setServerStatus('wipe_completed');
         if (context.mounted) DatabaseService.showToast(context, "Server Wiped Successfully!", backgroundColor: Theme.of(context).colorScheme.error);
       }
@@ -480,7 +495,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(children: [
-                    SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _showUserDialog(context), icon: const Icon(Icons.person_add_alt_1_outlined), label: const Text("Add New Account"))),
+                    SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _showUserDialog(context), icon: const Icon(Icons.person_add_alt_1_outlined), label: const Text("Add New Account"))),
                     const SizedBox(height: 12),
                     _buildUsersListRow(),
                   ]),
@@ -509,7 +524,7 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), label: const Text("Change App Theme"))),
+              SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), label: const Text("Change App Theme"))),
               const SizedBox(height: 16),
               // Font Selection Dropdown
               ValueListenableBuilder<String>(

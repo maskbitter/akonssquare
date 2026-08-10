@@ -6,13 +6,67 @@ import 'package:akonssquare/Common/database_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-class SuperAdminDashboard extends StatelessWidget {
+class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
+
+  @override
+  State<SuperAdminDashboard> createState() => _SuperAdminDashboardState();
+}
+
+class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
+  final DatabaseService _dbService = DatabaseService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkRollback());
+  }
+
+  Future<void> _checkRollback() async {
+    bool hasSnapshot = await _dbService.hasRollbackSnapshot();
+    if (!hasSnapshot) return;
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 10),
+            Text("Interrupted Job"),
+          ],
+        ),
+        content: const Text("A previous database operation was interrupted. Rollback to safe state?"),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _dbService.clearRollbackSnapshot();
+            },
+            child: const Text("Ignore", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _dbService.restoreFromRollback("SuperAdmin").then((_) {
+                DatabaseService.showToast(context, "Rollback Successful!");
+              });
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            child: const Text("Rollback Now"),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _handleLogout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-    if (context.mounted) {
+    if (mounted) {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
     }
   }

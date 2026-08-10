@@ -67,6 +67,8 @@ class _LoginPageState extends State<LoginPage> {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _isOffline = false;
 
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -340,11 +342,13 @@ class _LoginPageState extends State<LoginPage> {
                   if (mounted) _showTemporaryMessage("Delete Completed");
                 });
               } else if (serverStatus == 'uploading') {
-                _temporaryMessage = "Updating Database (${(progressValue * 100).toStringAsFixed(1)}%)";
+                _temporaryMessage = "Updating Database...";
               } else if (serverStatus == 'wiping') {
-                _temporaryMessage = "Deleting Database (${(progressValue * 100).toStringAsFixed(1)}%)";
+                _temporaryMessage = "Deleting Database...";
               } else if (serverStatus == 'exporting') {
-                _temporaryMessage = "Backup Processing (${(progressValue * 100).toStringAsFixed(1)}%)";
+                _temporaryMessage = "Backup Processing...";
+              } else if (serverStatus == 'failed') {
+                _temporaryMessage = "Operation Failed!";
               }
             }
 
@@ -476,10 +480,18 @@ class _LoginPageState extends State<LoginPage> {
                                     SizedBox(
                                       width: double.infinity, height: 65, 
                                       child: ElevatedButton.icon(
-                                        onLongPress: () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
-                                        onPressed: () { HapticFeedback.mediumImpact(); _loginBasicUser(); },
-                                        icon: const Icon(Icons.dashboard_outlined),
-                                        label: Text("Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary), maxLines: 1),
+                                        onLongPress: _isLoading ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
+                                        onPressed: _isLoading ? null : () { 
+                                          HapticFeedback.mediumImpact(); 
+                                          setState(() => _isLoading = true);
+                                          _loginBasicUser().then((_) {
+                                            if (mounted) setState(() => _isLoading = false);
+                                          }).catchError((_) {
+                                            if (mounted) setState(() => _isLoading = false);
+                                          });
+                                        },
+                                        icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.dashboard_outlined),
+                                        label: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary), maxLines: 1),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Theme.of(context).colorScheme.tertiary,
                                           foregroundColor: Theme.of(context).colorScheme.onTertiary,

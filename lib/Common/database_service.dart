@@ -451,12 +451,48 @@ class DatabaseService {
     return _db.collection('app_config').doc('visibility_$role').snapshots();
   }
 
-  Future<void> setServerStatus(String status) async {
+  Future<void> setServerStatus(String status, {double progress = 0.0}) async {
     await _db.collection('app_config').doc('database_info').set({
       'serverStatus': status,
+      'progress': progress,
       'statusUpdatedAt': FieldValue.serverTimestamp(),
       'clientTimestamp': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
+  }
+
+  // --- ROLLBACK SYSTEM ---
+
+  Future<void> createRollbackSnapshot(String actor) async {
+    // 1. Export current data
+    Map<String, dynamic> currentData = await exportDatabase(actor);
+    // 2. Store in a dedicated doc
+    await _db.collection('app_config').doc('rollback_snapshot').set({
+      'snapshot': currentData,
+      'createdAt': FieldValue.serverTimestamp(),
+      'actor': actor,
+    });
+  }
+
+  Future<void> restoreFromRollback(String actor, {Function(double)? onProgress}) async {
+    DocumentSnapshot snap = await _db.collection('app_config').doc('rollback_snapshot').get();
+    if (!snap.exists) return;
+
+    Map<String, dynamic> data = snap.data() as Map<String, dynamic>;
+    Map<String, dynamic> snapshot = data['snapshot'];
+
+    await setServerStatus('uploading', progress: 0.0);
+    await importDatabase(snapshot, actor, onProgress: onProgress);
+    await clearRollbackSnapshot();
+    await setServerStatus('completed');
+  }
+
+  Future<void> clearRollbackSnapshot() async {
+    await _db.collection('app_config').doc('rollback_snapshot').delete();
+  }
+
+  Future<bool> hasRollbackSnapshot() async {
+    DocumentSnapshot snap = await _db.collection('app_config').doc('rollback_snapshot').get();
+    return snap.exists;
   }
 
   // ==========================================
@@ -690,61 +726,71 @@ class DatabaseService {
 
   // Import data from Map (Restore)
   Future<void> importDatabase(Map<String, dynamic> importData, String actor, {Function(double)? onProgress}) async {
-    // 1. Wipe first (Stage 1: 10%)
-    await wipeDatabase(actor);
-    if (onProgress != null) onProgress(0.1);
+    try {
+      // 1. Wipe first (Stage 1: 10%)
+      await wipeDatabase(actor);
+      if (onProgress != null) onProgress(0.1);
 
-    // 2. Restore collections (Stage 2: 90%)
-    Map<String, dynamic> collectionsData = importData['data'];
-    
-    // Calculate total documents for granular progress
-    int totalDocs = 0;
-    for (var colList in collectionsData.values) {
-      if (colList is List) totalDocs += colList.length;
-    }
+      // 2. Restore collections (Stage 2: 90%)
+      Map<String, dynamic> collectionsData = importData['data'];
+      
+      // Calculate total documents for granular progress
+      int totalDocs = 0;
+      for (var colList in collectionsData.values) {
+        if (colList is List) totalDocs += colList.length;
+      }
 
-    if (totalDocs == 0) totalDocs = 1;
+      if (totalDocs == 0) totalDocs = 1;
 
-    int processedCount = 0;
-    for (String col in collectionsData.keys) {
-      List docs = collectionsData[col];
-      for (var docData in docs) {
-        Map<String, dynamic> data = Map<String, dynamic>.from(docData);
-        String? docId = data['_docId'];
-        data.remove('_docId');
+      int processedCount = 0;
+      for (String col in collectionsData.keys) {
+        List docs = collectionsData[col];
+        for (var docData in docs) {
+          Map<String, dynamic> data = Map<String, dynamic>.from(docData);
+          String? docId = data['_docId'];
+          data.remove('_docId');
 
-        // Clean up Timestamps
-        Map<String, dynamic> cleanedData = Map<String, dynamic>.from(_fromJsonDecodable(data));
+          // Clean up Timestamps
+          Map<String, dynamic> cleanedData = Map<String, dynamic>.from(_fromJsonDecodable(data));
 
-        if (docId != null) {
-          await _db.collection(col).doc(docId).set(cleanedData);
-        } else {
-          await _db.collection(col).add(cleanedData);
-        }
+          if (docId != null) {
+            await _db.collection(col).doc(docId).set(cleanedData);
+          } else {
+            await _db.collection(col).add(cleanedData);
+          }
 
-        processedCount++;
-        if (onProgress != null) {
-          // Range 0.1 to 1.0 based on doc count
-          onProgress(0.1 + (0.9 * (processedCount / totalDocs)));
+          processedCount++;
+          if (onProgress != null) {
+            // Range 0.1 to 1.0 based on doc count
+            double p = 0.1 + (0.9 * (processedCount / totalDocs));
+            onProgress(p);
+            // Update firestore progress so login page sees it
+            await setServerStatus('uploading', progress: p);
+          }
         }
       }
+
+      // 3. Update server version
+      num restoredVersion = importData['dbVersion'] ?? 1.0;
+      await _db.collection('app_config').doc('database_info').set({
+        'dbVersion': restoredVersion,
+        'lastRestoreAt': FieldValue.serverTimestamp(),
+        'clientTimestamp': DateTime.now().toIso8601String(),
+        'lastRestoreBy': actor,
+        'serverStatus': 'completed',
+        'progress': 1.0,
+      }, SetOptions(merge: true));
+
+      await logActivity(
+        actor: actor,
+        action: "Database Restore",
+        details: "Database restored to version $restoredVersion",
+        category: "System",
+      );
+    } catch (e) {
+      await setServerStatus('failed');
+      rethrow;
     }
-
-    // 3. Update server version
-    num restoredVersion = importData['dbVersion'] ?? 1.0;
-    await _db.collection('app_config').doc('database_info').set({
-      'dbVersion': restoredVersion,
-      'lastRestoreAt': FieldValue.serverTimestamp(),
-      'clientTimestamp': DateTime.now().toIso8601String(),
-      'lastRestoreBy': actor,
-    }, SetOptions(merge: true));
-
-    await logActivity(
-      actor: actor,
-      action: "Database Restore",
-      details: "Database restored to version $restoredVersion",
-      category: "System",
-    );
   }
 
   // Static Helpers

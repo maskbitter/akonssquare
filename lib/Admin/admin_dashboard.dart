@@ -37,6 +37,82 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _loadUserDataAndAppName();
     _startSessionListener();
     _startDBVersionListener();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkRollback());
+  }
+
+  Future<void> _checkRollback() async {
+    bool hasSnapshot = await _dbService.hasRollbackSnapshot();
+    if (!hasSnapshot) return;
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 10),
+            Text("Interrupted Job"),
+          ],
+        ),
+        content: const Text("A previous database operation (Restore/Delete) was interrupted or failed. Would you like to rollback to the safe state or ignore?"),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _dbService.clearRollbackSnapshot();
+              DatabaseService.showToast(context, "Snapshot cleared.");
+            },
+            child: const Text("Ignore", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              _showRollbackProgressDialog();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            child: const Text("Rollback Now"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRollbackProgressDialog() {
+    double progress = 0.0;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setST) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text("Rolling Back..."),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LinearProgressIndicator(value: progress),
+                const SizedBox(height: 10),
+                Text("${(progress * 100).toStringAsFixed(1)}%"),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    _dbService.restoreFromRollback(_username, onProgress: (p) {
+      // Since this dialog is generic, we just update internal state if we can find it
+      // Actually, it's better to just use a persistent progress in DatabaseService or handle it here
+    }).then((_) {
+      if (mounted) Navigator.pop(context);
+      DatabaseService.showToast(context, "Rollback Successful!");
+    }).catchError((e) {
+      if (mounted) Navigator.pop(context);
+      DatabaseService.showToast(context, "Rollback Failed: $e", backgroundColor: Colors.red);
+    });
   }
 
   @override
