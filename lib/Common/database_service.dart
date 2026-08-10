@@ -463,9 +463,11 @@ class DatabaseService {
   // --- ROLLBACK SYSTEM ---
 
   Future<void> createRollbackSnapshot(String actor) async {
-    // 1. Export current data
-    Map<String, dynamic> currentData = await exportDatabase(actor);
-    // 2. Store in a dedicated doc
+    // 1. Get current server version to keep it in snapshot
+    double currentVer = await getDBVersion();
+    // 2. Export current data with current version
+    Map<String, dynamic> currentData = await exportDatabase(actor, forcedVersion: currentVer);
+    // 3. Store in a dedicated doc
     await _db.collection('app_config').doc('rollback_snapshot').set({
       'snapshot': currentData,
       'createdAt': FieldValue.serverTimestamp(),
@@ -626,9 +628,9 @@ class DatabaseService {
   }
 
   // Export all data to Map for JSON
-  Future<Map<String, dynamic>> exportDatabase(String actor, {Function(double)? onProgress}) async {
+  Future<Map<String, dynamic>> exportDatabase(String actor, {Function(double)? onProgress, double? forcedVersion}) async {
     double currentVersion = await getDBVersion();
-    double nextVersion = currentVersion + 1.0;
+    double nextVersion = forcedVersion ?? (currentVersion + 1.0);
 
     List<String> collections = [
       'categories', 'services', 'sub_items', 'main_meters', 

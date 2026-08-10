@@ -184,7 +184,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
                     ),
                     Text(
-                      widget.username.toUpperCase(),
+                      "Operator",
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: Theme.of(context).colorScheme.secondary, 
                       ),

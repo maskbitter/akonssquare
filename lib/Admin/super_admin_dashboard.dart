@@ -15,11 +15,22 @@ class SuperAdminDashboard extends StatefulWidget {
 
 class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   final DatabaseService _dbService = DatabaseService();
+  String _appName = "";
 
   @override
   void initState() {
     super.initState();
+    _loadAppName();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkRollback());
+  }
+
+  Future<void> _loadAppName() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _appName = packageInfo.appName;
+      });
+    }
   }
 
   Future<void> _checkRollback() async {
@@ -115,8 +126,29 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("System Recovery", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
-            Text("Master Access Mode", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
+            Text(
+              _appName.isEmpty ? "Loading..." : _appName,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "System",
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
+                ),
+                Text(
+                  " | ", 
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7)),
+                ),
+                Text(
+                  "Super Admin(Master Access Mode)",
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary, 
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         actions: [

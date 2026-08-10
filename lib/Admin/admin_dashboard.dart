@@ -286,7 +286,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
                       ),
                       Text(
-                        _username.toUpperCase(),
+                        "Admin",
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Theme.of(context).colorScheme.secondary, 
                         ),

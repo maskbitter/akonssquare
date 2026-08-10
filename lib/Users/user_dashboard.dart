@@ -25,6 +25,7 @@ class _UserDashboardState extends State<UserDashboard> {
   String _appName = "";
   String _categoryName = "";
   String _username = "User";
+  String _tenantName = "";
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _UserDashboardState extends State<UserDashboard> {
     
     String catName = "Unknown";
     String uName = "User";
+    String tName = "";
     if (widget.categoryId.isNotEmpty) {
       try {
         DocumentSnapshot catDoc = await _dbService.getCategoryById(widget.categoryId);
@@ -46,7 +48,9 @@ class _UserDashboardState extends State<UserDashboard> {
         
         DocumentSnapshot subDoc = await FirebaseFirestore.instance.collection('sub_items').doc(widget.subItemId).get();
         if (subDoc.exists) {
-          uName = (subDoc.data() as Map?)?['subItemName'] ?? 'User';
+          var data = subDoc.data() as Map?;
+          uName = data?['subItemName'] ?? 'User';
+          tName = data?['TenantName'] ?? '';
         }
       } catch (e) {
         debugPrint("Error loading data: $e");
@@ -58,6 +62,7 @@ class _UserDashboardState extends State<UserDashboard> {
         _appName = packageInfo.appName;
         _categoryName = catName;
         _username = uName;
+        _tenantName = tName;
       });
     }
   }
@@ -180,7 +185,7 @@ class _UserDashboardState extends State<UserDashboard> {
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
                       ),
                       Text(
-                        _username.toUpperCase(),
+                        _tenantName.isEmpty ? _username.toUpperCase() : "${_username.toUpperCase()}($_tenantName)",
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Theme.of(context).colorScheme.secondary, 
                         ),

@@ -79,7 +79,7 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
                     ),
                     Text(
-                      _username.toUpperCase(),
+                      "Viewer",
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: Theme.of(context).colorScheme.secondary, 
                       ),
