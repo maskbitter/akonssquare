@@ -418,9 +418,9 @@ class _CategoryPageState extends State<CategoryPage> {
 
                               // Use nested index for sub-item coloring to make them different from category
                               int itemIndex = i + entry.key + 1;
-                              final Color itemAccentColor = ThemeManager.getCardColor(itemIndex);
-                              final Color itemBgColor = ThemeManager.getCardContainerColor(itemIndex);
-                              final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex);
+                              final Color itemAccentColor = ThemeManager.getCardColor(itemIndex, isSubCard: true);
+                              final Color itemBgColor = ThemeManager.getCardContainerColor(itemIndex, isSubCard: true);
+                              final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex, isSubCard: true);
 
                               if (status == 'Vacant') {
                                 return Card(

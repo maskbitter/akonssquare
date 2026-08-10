@@ -148,7 +148,7 @@ class _UserDashboardState extends State<UserDashboard> {
     ];
 
     return Theme(
-      data: ThemeManager.getThemeByName("Default Theme"),
+      data: ThemeManager.getThemeByName("Normal Theme"),
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,

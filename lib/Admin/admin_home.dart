@@ -281,24 +281,54 @@ class _AdminHomeState extends State<AdminHome> {
 
                             const SizedBox(height: 12),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInteractiveStat("Received", receivedTotal, Colors.greenAccent, Icons.check_circle_outline,
-                                    () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 0)),
-                                Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)),
-                                _buildInteractiveStat("Due", dueTotal, Colors.redAccent, Icons.pending_actions,
-                                    () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 1)),
+                                Expanded(
+                                  child: _buildInteractiveStat(
+                                    "Received", 
+                                    receivedTotal, 
+                                    const Color(0xFF1B5E20), // Dark Green
+                                    const Color(0xFFE8F5E9), // Light Green
+                                    Icons.check_circle_outline,
+                                    () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 0)
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _buildInteractiveStat(
+                                    "Due", 
+                                    dueTotal, 
+                                    const Color(0xFFB71C1C), // Dark Red
+                                    const Color(0xFFFFEBEE), // Light Red
+                                    Icons.pending_actions,
+                                    () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 1)
+                                  ),
+                                ),
                               ],
                             ),
-                            Divider(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2), height: 16),
+                            const SizedBox(height: 8),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInteractiveStat("Rent", rentTotal, Colors.amberAccent, Icons.home_work_outlined,
-                                    () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: true)),
-                                Container(width: 1, height: 24, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)),
-                                _buildInteractiveStat("Utility", utilityTotal, Colors.cyanAccent, Icons.settings_suggest_outlined,
-                                    () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: false)),
+                                Expanded(
+                                  child: _buildInteractiveStat(
+                                    "Rent", 
+                                    rentTotal, 
+                                    const Color(0xFFE65100), // Dark Orange
+                                    const Color(0xFFFFF3E0), // Light Orange
+                                    Icons.home_work_outlined,
+                                    () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: true)
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _buildInteractiveStat(
+                                    "Utility", 
+                                    utilityTotal, 
+                                    const Color(0xFF006064), // Dark Cyan
+                                    const Color(0xFFE0F7FA), // Light Cyan
+                                    Icons.settings_suggest_outlined,
+                                    () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: false)
+                                  ),
+                                ),
                               ],
                             ),
                           ],
@@ -576,27 +606,38 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _buildInteractiveStat(String label, double amount, Color color, IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: () {
-        DatabaseService.vibrate();
-        onTap();
-      },
-      child: Column(
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
+  Widget _buildInteractiveStat(String label, double amount, Color color, Color bgColor, IconData icon, VoidCallback onTap) {
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      color: bgColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: () {
+          DatabaseService.vibrate();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          child: Column(
             children: [
-              Icon(icon, size: 12, color: Theme.of(context).colorScheme.onPrimary),
-              const SizedBox(width: 4),
-              Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 14, color: color),
+                  const SizedBox(width: 4),
+                  Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color.withValues(alpha: 0.8))),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                "৳${amount.toStringAsFixed(0)}",
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: color, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
-          Text(
-            "৳${amount.toStringAsFixed(0)}",
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: color, fontWeight: FontWeight.bold),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1162,8 +1203,8 @@ class _AdminHomeState extends State<AdminHome> {
     Timestamp? paidAt,
     String? notes,
   }) {
-    Color itemColor = ThemeManager.getCardContainerColor(index + 5, alpha: 0.7);
-    Color effectiveColor = ThemeManager.getCardColor(index + 5);
+    Color itemColor = ThemeManager.getCardContainerColor(index + 5, alpha: 0.7, isSubCard: true);
+    Color effectiveColor = ThemeManager.getCardColor(index + 5, isSubCard: true);
 
     return Card(
       elevation: 1,

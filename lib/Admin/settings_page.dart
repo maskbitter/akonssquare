@@ -267,8 +267,8 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: Icons.security_outlined,
               title: "Dashboard Visibility Control",
               subtitle: "Control what sections are visible to different roles",
-              color: Theme.of(context).colorScheme.secondaryContainer,
-              accentColor: Theme.of(context).colorScheme.secondary,
+              color: ThemeManager.getCardContainerColor(1),
+              accentColor: ThemeManager.getCardColor(1),
               children: [
                 // Nested System Config at the top
                 StreamBuilder<DocumentSnapshot>(
@@ -278,14 +278,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     return Card(
                       elevation: 3,
                       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      color: Theme.of(context).colorScheme.surface,
+                      color: ThemeManager.getCardContainerColor(1, isSubCard: true),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: ExpansionTile(
-                        leading: Icon(Icons.settings_suggest_outlined, color: Theme.of(context).colorScheme.primary),
-                        iconColor: Theme.of(context).colorScheme.primary,
-                        collapsedIconColor: Theme.of(context).colorScheme.primary,
-                        title: Text("System Configuration", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
-                        subtitle: Text("System behavior & Experience", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9)),
+                        leading: Icon(Icons.settings_suggest_outlined, color: ThemeManager.getCardColor(1, isSubCard: true)),
+                        iconColor: ThemeManager.getCardColor(1, isSubCard: true),
+                        collapsedIconColor: ThemeManager.getCardColor(1, isSubCard: true),
+                        title: Text("System Configuration", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.getCardOnContainerColor(1, isSubCard: true))),
+                        subtitle: Text("System behavior & Experience", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, color: ThemeManager.getCardOnContainerColor(1, isSubCard: true).withValues(alpha: 0.7))),
                         children: [
                           _buildVisibilitySwitch("Enable Update Notifications", isEnabled, (val) => _dbService.updatePopupStatus(val)),
                           FutureBuilder<SharedPreferences>(
@@ -336,7 +336,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       Card(
                         elevation: 2,
                         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        color: Theme.of(context).colorScheme.primaryContainer,
+                        color: ThemeManager.getCardContainerColor(0, isSubCard: true),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: _buildVisibilitySwitch("Show Accounts Section", s['showAccounts']!, (val) { s['showAccounts'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.account_balance_wallet_outlined),
                       ),
@@ -345,7 +345,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       Card(
                         elevation: 2,
                         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        color: ThemeManager.getCardContainerColor(1, isSubCard: true),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Column(
                           children: [
@@ -363,7 +363,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       Card(
                         elevation: 2,
                         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        color: Theme.of(context).colorScheme.tertiaryContainer,
+                        color: ThemeManager.getCardContainerColor(2, isSubCard: true),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Column(
                           children: [
@@ -570,33 +570,37 @@ class _SettingsPageState extends State<SettingsPage> {
           String role = (data['role'] ?? 'viewer').toString().toLowerCase();
           
           Color roleColor = Theme.of(context).colorScheme.surface;
-          if (role == 'admin') roleColor = Theme.of(context).colorScheme.errorContainer;
-          else if (role == 'operator') roleColor = Theme.of(context).colorScheme.secondaryContainer;
-          else roleColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+          int colorIdx = 0;
+          if (role == 'admin') colorIdx = 3; // Index 3 for admin (Error/Red)
+          else if (role == 'operator') colorIdx = 1; // Index 1 for operator (Secondary/Cyan)
+          else colorIdx = 4; // Index 4 for viewer (Surface/Neutral)
+
+          roleColor = ThemeManager.getCardContainerColor(colorIdx, isSubCard: true);
+          final accent = ThemeManager.getCardColor(colorIdx, isSubCard: true);
 
           return Card(
             elevation: 2,
             margin: const EdgeInsets.only(bottom: 8),
             color: roleColor,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: accent.withValues(alpha: 0.1))),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
-                  Icon(role == 'admin' ? Icons.security : role == 'operator' ? Icons.build_circle : Icons.visibility, size: 20, color: Theme.of(context).colorScheme.primary),
+                  Icon(role == 'admin' ? Icons.security : role == 'operator' ? Icons.build_circle : Icons.visibility, size: 20, color: accent),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(data['username'] ?? '', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                        Text(role.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600)),
+                        Text(data['username'] ?? '', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.getCardOnContainerColor(colorIdx, isSubCard: true))),
+                        Text(role.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: accent, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
-                  Text(data['password'] ?? '', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+                  Text(data['password'] ?? '', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: ThemeManager.getCardOnContainerColor(colorIdx, isSubCard: true).withValues(alpha: 0.7))),
                   const SizedBox(width: 8),
-                  IconButton(icon: Icon(Icons.edit_outlined, size: 18, color: Theme.of(context).colorScheme.primary), onPressed: () => _showUserDialog(context, docId: doc.id, currentData: data)),
+                  IconButton(icon: Icon(Icons.edit_outlined, size: 18, color: accent), onPressed: () => _showUserDialog(context, docId: doc.id, currentData: data)),
                   IconButton(icon: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error), onPressed: () => _confirmRemove(doc.id, data['username'])),
                 ],
               ),
@@ -614,7 +618,7 @@ class _SettingsPageState extends State<SettingsPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text("Select Theme", style: Theme.of(context).textTheme.titleLarge)),
         content: DropdownButton<String>(
-          value: local, isExpanded: true, items: ["Default Theme", "Random Color Theme"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+          value: local, isExpanded: true, items: ["Normal Theme", "Random Color Theme"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
           onChanged: (val) { if (val != null) setST(() => local = val); },
         ),
         actions: [

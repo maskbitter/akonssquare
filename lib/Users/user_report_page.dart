@@ -181,7 +181,7 @@ class UserReportPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: ThemeManager.getThemeByName("Default Theme"),
+      data: ThemeManager.getThemeByName("Normal Theme"),
       child: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('sub_items').doc(subItemId).snapshots(),
         builder: (context, subSnapshot) {
@@ -254,12 +254,12 @@ class UserReportPage extends StatelessWidget {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: ThemeManager.getCardContainerColor(index + 2, alpha: 0.5),
+                            color: ThemeManager.getCardContainerColor(index + 2, alpha: 0.5, isSubCard: true),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
                             ],
-                            border: Border.all(color: ThemeManager.getCardColor(index + 2).withValues(alpha: 0.1)),
+                            border: Border.all(color: ThemeManager.getCardColor(index + 2, isSubCard: true).withValues(alpha: 0.1)),
                           ),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(20),
@@ -273,10 +273,10 @@ class UserReportPage extends StatelessWidget {
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
-                                          color: ThemeManager.getCardColor(index + 2).withValues(alpha: 0.1),
+                                          color: ThemeManager.getCardColor(index + 2, isSubCard: true).withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(12),
                                         ),
-                                        child: Icon(Icons.calendar_month_outlined, color: ThemeManager.getCardColor(index + 2), size: 20),
+                                        child: Icon(Icons.calendar_month_outlined, color: ThemeManager.getCardColor(index + 2, isSubCard: true), size: 20),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -315,7 +315,7 @@ class UserReportPage extends StatelessWidget {
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
                                         _buildCompactSummary(context, "Electric", "৳${data['electricityBill']}", context.electric),
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
-                                        _buildCompactSummary(context, "Total", "৳${data['totalAmount']}", ThemeManager.getCardColor(index + 2), isBold: true),
+                                        _buildCompactSummary(context, "Total", "৳${data['totalAmount']}", ThemeManager.getCardColor(index + 2, isSubCard: true), isBold: true),
                                       ],
                                     ),
                                   ),

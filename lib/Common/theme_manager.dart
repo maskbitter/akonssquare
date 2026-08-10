@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ThemeManager {
-  static final ValueNotifier<String> appThemeNotifier = ValueNotifier<String>("Default Theme");
+  static final ValueNotifier<String> appThemeNotifier = ValueNotifier<String>("Random Color Theme");
   static final ValueNotifier<String> appFontNotifier = ValueNotifier<String>("Poppins");
   static Color _sessionSeedColor = Colors.indigo;
   static List<Color> sessionColorPool = [];
@@ -54,7 +54,7 @@ class ThemeManager {
     _sessionSeedColor = pool.first;
     sessionColorPool = pool;
 
-    appThemeNotifier.value = savedTheme ?? "Default Theme"; 
+    appThemeNotifier.value = savedTheme ?? "Random Color Theme"; 
     appFontNotifier.value = savedFont ?? "Poppins";
   }
 
@@ -70,8 +70,18 @@ class ThemeManager {
     await prefs.setString('app_font', fontName);
   }
 
-  static Color getCardColor(int index, {double alpha = 1.0}) {
-    if (appThemeNotifier.value == "Default Theme") {
+  static Color getCardColor(int index, {double alpha = 1.0, bool isSubCard = false}) {
+    if (appThemeNotifier.value == "Normal Theme") {
+      if (isSubCard) {
+        final List<Color> colors = [
+          Colors.blueGrey.shade700, 
+          Colors.deepPurple.shade700, 
+          Colors.teal.shade700,
+          Colors.red.shade700,
+          Colors.blue.shade700,
+        ];
+        return colors[index % colors.length].withValues(alpha: alpha);
+      }
       final List<Color> colors = [Colors.indigo.shade800, Colors.cyan.shade800, const Color(0xFF2E7D32)];
       return colors[index % colors.length].withValues(alpha: alpha);
     }
@@ -79,8 +89,18 @@ class ThemeManager {
     return sessionColorPool[index % sessionColorPool.length].withValues(alpha: alpha);
   }
 
-  static Color getCardContainerColor(int index, {double alpha = 1.0}) {
-    if (appThemeNotifier.value == "Default Theme") {
+  static Color getCardContainerColor(int index, {double alpha = 1.0, bool isSubCard = false}) {
+    if (appThemeNotifier.value == "Normal Theme") {
+      if (isSubCard) {
+        final List<Color> colors = [
+          const Color(0xFFECEFF1), // BlueGrey 50
+          const Color(0xFFF3E5F5), // DeepPurple 50
+          const Color(0xFFE0F2F1), // Teal 50
+          const Color(0xFFFFEBEE), // Red 50
+          const Color(0xFFE3F2FD), // Blue 50
+        ];
+        return colors[index % colors.length].withValues(alpha: alpha);
+      }
       final List<Color> colors = [Colors.indigo.shade50, const Color(0xFFE0F7FA), const Color(0xFFE8F5E9)];
       return colors[index % colors.length].withValues(alpha: alpha);
     }
@@ -89,8 +109,18 @@ class ThemeManager {
     return ColorScheme.fromSeed(seedColor: seed).primaryContainer.withValues(alpha: alpha);
   }
 
-  static Color getCardOnContainerColor(int index) {
-    if (appThemeNotifier.value == "Default Theme") {
+  static Color getCardOnContainerColor(int index, {bool isSubCard = false}) {
+    if (appThemeNotifier.value == "Normal Theme") {
+      if (isSubCard) {
+        final List<Color> colors = [
+          Colors.blueGrey.shade900, 
+          Colors.deepPurple.shade900, 
+          Colors.teal.shade900,
+          const Color(0xFFB71C1C), // Red 900
+          const Color(0xFF0D47A1), // Blue 900
+        ];
+        return colors[index % colors.length];
+      }
       final List<Color> colors = [Colors.indigo.shade900, Colors.cyan.shade900, const Color(0xFF1B5E20)];
       return colors[index % colors.length];
     }
@@ -108,7 +138,7 @@ class ThemeManager {
     final activeFont = fontName ?? appFontNotifier.value;
     
     ColorScheme colorScheme;
-    if (themeName == "Default Theme") {
+    if (themeName == "Normal Theme") {
       colorScheme = ColorScheme.fromSeed(
         seedColor: Colors.indigo,
         brightness: Brightness.light,
@@ -174,7 +204,7 @@ class ThemeManager {
           bronze: const Color(0xFFCD7F32),
           premium: const Color(0xFF673AB7),
           verified: const Color(0xFF2196F3),
-          electric: themeName == "Default Theme" ? const Color(0xFFFFD700) : colorScheme.secondary,
+          electric: themeName == "Normal Theme" ? const Color(0xFFE65100) : colorScheme.secondary,
         ),
       ],
       cardTheme: CardThemeData(
