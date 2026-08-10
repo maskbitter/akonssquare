@@ -101,7 +101,7 @@ class _AdminHomeState extends State<AdminHome> {
                           children: [
                             if (settings['showAccounts']!) ...[
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
@@ -169,7 +169,7 @@ class _AdminHomeState extends State<AdminHome> {
         Align(
           alignment: Alignment.centerLeft,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -197,7 +197,7 @@ class _AdminHomeState extends State<AdminHome> {
         Align(
           alignment: Alignment.centerLeft,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -258,7 +258,7 @@ class _AdminHomeState extends State<AdminHome> {
                 return Column(
                   children: [
                     Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       color: Theme.of(context).colorScheme.primary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                       child: Padding(
@@ -748,6 +748,7 @@ class _AdminHomeState extends State<AdminHome> {
       elevation: 2,
       color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: color.withOpacity(0.3), width: 1.2)),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -821,7 +822,7 @@ class _AdminHomeState extends State<AdminHome> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -847,6 +848,7 @@ class _AdminHomeState extends State<AdminHome> {
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(color: accentColor, width: 1)
             ),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: SingleChildScrollView(
@@ -1007,6 +1009,7 @@ class _AdminHomeState extends State<AdminHome> {
         return Card(
           elevation: 2,
           color: bgColor,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: accentColor.withOpacity(0.1), width: 1.2),
@@ -1050,7 +1053,7 @@ class _AdminHomeState extends State<AdminHome> {
         child: Column(
           children: List.generate(3, (index) => Container(
             height: 80,
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(20)),
           )),
         ),
@@ -1371,7 +1374,7 @@ class _AdminHomeState extends State<AdminHome> {
 
     return Card(
       elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
       color: itemColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: color.withOpacity(0.15), width: 1)),
       child: ListTile(

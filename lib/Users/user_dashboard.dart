@@ -347,6 +347,7 @@ class _UserDashboardState extends State<UserDashboard> {
                     // --- MODERN HEADER CARD ---
                     Container(
                       width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -410,11 +411,10 @@ class _UserDashboardState extends State<UserDashboard> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
-
                     // --- OUTSTANDING BILL SECTION ---
                     Container(
                       width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
@@ -445,8 +445,6 @@ class _UserDashboardState extends State<UserDashboard> {
                         ],
                       ),
                     ),
-
-                    const SizedBox(height: 24),
 
                     // --- PENDING MONTHS ---
                     StreamBuilder<QuerySnapshot>(
@@ -521,16 +519,14 @@ class _UserDashboardState extends State<UserDashboard> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
                     ],
 
                     Text("BILL BREAKDOWN", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                    const SizedBox(height: 12),
 
                     if (ed != null && !isElectricStopped)
                       Card(
                         elevation: 0,
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                           side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
@@ -561,7 +557,7 @@ class _UserDashboardState extends State<UserDashboard> {
                     ...activeServices.map((s) {
                       bool isWifi = s['name'].toString().toLowerCase().contains("wifi");
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(16),
@@ -599,7 +595,7 @@ class _UserDashboardState extends State<UserDashboard> {
   Widget _buildDetailCard({required IconData icon, required Color color, required String title, required double amount, String? subtitle, VoidCallback? onTap}) {
     return Card(
       elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
       child: ListTile(
         onTap: onTap,
         dense: true,

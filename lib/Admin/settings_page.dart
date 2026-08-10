@@ -293,7 +293,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     bool isEnabled = snapshot.data?.exists == true ? snapshot.data!['isPopupEnabled'] ?? true : true;
                     return Card(
                       elevation: 3,
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       color: ThemeManager.getCardContainerColor(1, isSubCard: true),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: ExpansionTile(
@@ -351,7 +351,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     return Column(children: [
                       Card(
                         elevation: 2,
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         color: ThemeManager.getCardContainerColor(0, isSubCard: true),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: _buildVisibilitySwitch("Show Accounts Section", s['showAccounts']!, (val) { s['showAccounts'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.account_balance_wallet_outlined),
@@ -360,7 +360,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       // Electricity Nested
                       Card(
                         elevation: 2,
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         color: ThemeManager.getCardContainerColor(1, isSubCard: true),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Column(
@@ -378,7 +378,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       // Category Nested
                       Card(
                         elevation: 2,
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         color: ThemeManager.getCardContainerColor(2, isSubCard: true),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Column(
@@ -567,7 +567,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSettingsCard(BuildContext context, {required IconData icon, required String title, required String subtitle, required Color color, required Color accentColor, required List<Widget> children}) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       color: color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accentColor.withOpacity(0.1))),
       child: ExpansionTile(
@@ -604,7 +604,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           return Card(
             elevation: 2,
-            margin: const EdgeInsets.only(bottom: 8),
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             color: roleColor,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: accent.withValues(alpha: 0.1))),
             child: Padding(

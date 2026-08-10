@@ -346,6 +346,7 @@ class _CategoryPageState extends State<CategoryPage> {
                       return Card(
                         elevation: 2,
                         color: bgColor,
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16), 
                           side: BorderSide(color: accentColor.withOpacity(0.1), width: 1.2)
@@ -462,15 +463,27 @@ class _CategoryPageState extends State<CategoryPage> {
                               final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex, isSubCard: true);
 
                               if (status == 'Vacant') {
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  color: itemBgColor,
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12), 
-                                    side: BorderSide(color: itemAccentColor.withValues(alpha: 0.2), width: 1)
-                                  ),
-                                  child: ExpansionTile(
+                                return InkWell(
+                                  onLongPress: () {
+                                    HapticFeedback.heavyImpact();
+                                    CategoryDialogs.showSubItemStatusDialog(
+                                      context: context, 
+                                      subItemId: subId, 
+                                      subItemName: subName, 
+                                      currentStatus: 'Vacant', 
+                                      currentTenant: tenant, 
+                                      currentNid: d['nidNumber'] ?? 'No Number'
+                                    );
+                                  },
+                                  child: Card(
+                                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    color: itemBgColor,
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12), 
+                                      side: BorderSide(color: itemAccentColor.withValues(alpha: 0.2), width: 1)
+                                    ),
+                                    child: ExpansionTile(
                                     tilePadding: const EdgeInsets.symmetric(horizontal: 12),
                                     iconColor: itemAccentColor,
                                     collapsedIconColor: itemAccentColor,
@@ -587,8 +600,9 @@ class _CategoryPageState extends State<CategoryPage> {
                                       ),
                                     ],
                                   ),
-                                );
-                              }
+                                ),
+                              );
+                            }
 
                               return StreamBuilder<QuerySnapshot>(
                                 stream: FirebaseFirestore.instance.collection('billing_history').where('subItemId', isEqualTo: subId).where('monthYear', isEqualTo: _selectedMonthStr).snapshots(),
@@ -601,20 +615,32 @@ class _CategoryPageState extends State<CategoryPage> {
 
                                   bool isOccupied = status == 'Occupied';
 
-                                  return Card(
-                                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    color: isPaid ? Theme.of(context).colorScheme.tertiaryContainer : itemBgColor,
-                                    elevation: 2,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      side: BorderSide(
-                                        color: isOccupied 
-                                          ? (isPaid ? Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.2) : itemAccentColor.withValues(alpha: 0.2)) 
-                                          : Theme.of(context).colorScheme.error.withValues(alpha: 0.2), 
-                                        width: 1
-                                      )
-                                    ),
-                                    child: ExpansionTile(
+                                  return InkWell(
+                                    onLongPress: () {
+                                      HapticFeedback.heavyImpact();
+                                      CategoryDialogs.showSubItemStatusDialog(
+                                        context: context, 
+                                        subItemId: subId, 
+                                        subItemName: subName, 
+                                        currentStatus: 'Occupied', 
+                                        currentTenant: tenant, 
+                                        currentNid: d['nidNumber'] ?? 'No Number'
+                                      );
+                                    },
+                                    child: Card(
+                                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      color: isPaid ? Theme.of(context).colorScheme.tertiaryContainer : itemBgColor,
+                                      elevation: 2,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        side: BorderSide(
+                                          color: isOccupied 
+                                            ? (isPaid ? Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.2) : itemAccentColor.withValues(alpha: 0.2)) 
+                                            : Theme.of(context).colorScheme.error.withValues(alpha: 0.2), 
+                                          width: 1
+                                        )
+                                      ),
+                                      child: ExpansionTile(
                                       shape: const Border(),
                                       collapsedShape: const Border(),
                                       tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -816,7 +842,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                         ),
                                       ],
                                     ),
-                                  );
+                                  ),
+                                );
                                 },
                               );
                             }).toList(),
@@ -845,7 +872,7 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color? color, Widget? trailing}) {
     final effectiveColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLow, 
@@ -930,11 +957,12 @@ class _CategoryPageState extends State<CategoryPage> {
         var comMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Commercial').toList();
 
         return ListView(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 4),
           children: [
             Card(
               elevation: 2,
               color: Theme.of(context).colorScheme.primaryContainer,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16), 
                 side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 1)
@@ -958,7 +986,6 @@ class _CategoryPageState extends State<CategoryPage> {
                     bgColor: Theme.of(context).colorScheme.tertiaryContainer,
                     accentColor: Theme.of(context).colorScheme.tertiary,
                   ),
-                  const SizedBox(height: 8),
                   _buildMeterExpandableSection(
                     "Commercial Meter", 
                     comMeters, 
@@ -967,7 +994,6 @@ class _CategoryPageState extends State<CategoryPage> {
                     bgColor: Theme.of(context).colorScheme.secondaryContainer,
                     accentColor: Theme.of(context).colorScheme.secondary,
                   ),
-                  const SizedBox(height: 12),
                 ],
               ),
             ),
@@ -987,7 +1013,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
     return Card(
       elevation: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       color: effectiveBgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16), 
@@ -1115,6 +1141,7 @@ class _CategoryPageState extends State<CategoryPage> {
         return Card(
           elevation: 2,
           color: Theme.of(context).colorScheme.secondaryContainer,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16), 
             side: BorderSide(color: Theme.of(context).colorScheme.secondary.withOpacity(0.2), width: 1)

@@ -252,7 +252,7 @@ class UserReportPage extends StatelessWidget {
                       itemBuilder: (context, index) {
                         var data = docs[index].data() as Map<String, dynamic>;
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                           decoration: BoxDecoration(
                             color: ThemeManager.getCardContainerColor(index + 2, alpha: 0.5, isSubCard: true),
                             borderRadius: BorderRadius.circular(20),

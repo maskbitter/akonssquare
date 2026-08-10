@@ -213,7 +213,7 @@ class CategoryDialogs {
                             double amt = (data['amount'] ?? 0).toDouble();
 
                             return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
+                              margin: const EdgeInsets.symmetric(vertical: 4),
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surfaceContainerLow, 
@@ -765,7 +765,7 @@ class CategoryDialogs {
               children: [
                 if (existingData?['updatedAt'] != null)
                   Container(
-                    margin: const EdgeInsets.only(bottom: 16),
+                    margin: const EdgeInsets.symmetric(vertical: 4),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, borderRadius: BorderRadius.circular(8)),
                     child: Row(
