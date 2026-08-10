@@ -261,7 +261,46 @@ class _CategoryPageState extends State<CategoryPage> {
                 categoryDocs = categoryDocs.where((doc) => doc.id == _selectedFilterCategoryId).toList();
               }
 
-              if (categoryDocs.isEmpty) return Center(child: Text("No categories found.", style: Theme.of(context).textTheme.bodyMedium));
+              if (categoryDocs.isEmpty) {
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.category_outlined, size: 64, color: Theme.of(context).colorScheme.outline),
+                        const SizedBox(height: 24),
+                        Text(
+                          "No Categories Added",
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "You haven't created any groups like 'Shop' or 'Flat' yet. Add your first category to start managing units.",
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 32),
+                        ElevatedButton.icon(
+                          onPressed: () => CategoryDialogs.showCreateCategoryDialog(context),
+                          icon: const Icon(Icons.add),
+                          label: const Text("Create First Category"),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+                        Text(
+                          "Tip: Start by creating a category, then add units (shops/rooms) inside it.",
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.primary),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
 
               return ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8),

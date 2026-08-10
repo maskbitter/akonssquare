@@ -5,8 +5,6 @@ import 'package:akonssquare/Admin/category_dialogs.dart';
 import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shimmer/shimmer.dart';
-import 'dart:ui';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminHome extends StatefulWidget {
@@ -55,82 +53,111 @@ class _AdminHomeState extends State<AdminHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: StreamBuilder<DocumentSnapshot>(
-          stream: _dbService.getDashboardVisibilityStream(_userRole),
-          builder: (context, visSnap) {
-            Map<String, bool> settings = {
-              'showAccounts': true,
-              'showElectricity': true,
-              'showMainVsSub': true,
-              'showMainVsGovt': true,
-              'showCategory': true,
-              'showTotalOccupied': true,
-              'showTotalVacant': true,
-            };
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _dbService.getCategoriesStream(),
+        builder: (context, catSnap) {
+          return StreamBuilder<QuerySnapshot>(
+            stream: _dbService.getServicesStream(),
+            builder: (context, serviceSnap) {
+              return StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('sub_items').snapshots(),
+                builder: (context, subSnap) {
+                  if (!catSnap.hasData || !serviceSnap.hasData || !subSnap.hasData) return _buildShimmerHeader();
+                  
+                  bool hasCategories = catSnap.data!.docs.isNotEmpty;
+                  bool hasServices = serviceSnap.data!.docs.isNotEmpty;
+                  bool hasSubItems = subSnap.data!.docs.isNotEmpty;
 
-            if (visSnap.hasData && visSnap.data!.exists) {
-              var data = visSnap.data!.data() as Map<String, dynamic>;
-              var s = data['settings'] ?? {};
-              s.forEach((k, v) => settings[k] = v as bool);
-            }
+                  if (!hasCategories || !hasServices || !hasSubItems) {
+                    return _buildEmptyStateHome(
+                      hasCategories: hasCategories,
+                      hasServices: hasServices,
+                      hasSubItems: hasSubItems,
+                    );
+                  }
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (settings['showAccounts']!) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
+                  return SingleChildScrollView(
+                    child: StreamBuilder<DocumentSnapshot>(
+                      stream: _dbService.getDashboardVisibilityStream(_userRole),
+                      builder: (context, visSnap) {
+                        Map<String, bool> settings = {
+                          'showAccounts': true,
+                          'showElectricity': true,
+                          'showMainVsSub': true,
+                          'showMainVsGovt': true,
+                          'showCategory': true,
+                          'showTotalOccupied': true,
+                          'showTotalVacant': true,
+                        };
+
+                        if (visSnap.hasData && visSnap.data!.exists) {
+                          var data = visSnap.data!.data() as Map<String, dynamic>;
+                          var s = data['settings'] ?? {};
+                          s.forEach((k, v) => settings[k] = v as bool);
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Icon(Icons.account_balance_wallet_outlined, size: 22, color: Theme.of(context).colorScheme.primary),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Accounts",
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.8),
-                            ),
+                            if (settings['showAccounts']!) ...[
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.account_balance_wallet_outlined, size: 22, color: Theme.of(context).colorScheme.primary),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          "Accounts",
+                                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.chevron_left, size: 20),
+                                          onPressed: () => _moveMonth(-1),
+                                          visualDensity: VisualDensity.compact,
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                        Text(
+                                          _selectedMonthStr,
+                                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.chevron_right, size: 20),
+                                          onPressed: () => _moveMonth(1),
+                                          visualDensity: VisualDensity.compact,
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _buildFinancialHeader(),
+                            ],
+
+                            if (settings['showElectricity']!)
+                              _buildElectricitySection(settings),
+
+                            if (settings['showCategory']!)
+                              _buildCategorySection(settings),
+                            
+                            const SizedBox(height: 80),
                           ],
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left, size: 20),
-                              onPressed: () => _moveMonth(-1),
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                            ),
-                            Text(
-                              _selectedMonthStr,
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_right, size: 20),
-                              onPressed: () => _moveMonth(1),
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                            ),
-                          ],
-                        ),
-                      ],
+                        );
+                      }
                     ),
-                  ),
-                  _buildFinancialHeader(),
-                ],
-
-                if (settings['showElectricity']!)
-                  _buildElectricitySection(settings),
-
-                if (settings['showCategory']!)
-                  _buildCategorySection(settings),
-                
-                const SizedBox(height: 80),
-              ],
-            );
-          }
-        ),
+                  );
+                }
+              );
+            }
+          );
+        }
       ),
     );
   }
@@ -465,6 +492,143 @@ class _AdminHomeState extends State<AdminHome> {
         height: 140,
         margin: const EdgeInsets.all(16),
         decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(24)),
+      ),
+    );
+  }
+
+  Widget _buildEmptyStateHome({required bool hasCategories, required bool hasServices, required bool hasSubItems}) {
+    IconData headerIcon = Icons.dashboard_customize_outlined;
+    String headerTitle = "Ready to start managing?";
+    String headerSubtitle = "Your dashboard is empty because no categories have been added yet.";
+
+    if (hasCategories && !hasServices) {
+      headerIcon = Icons.settings_suggest_outlined;
+      headerTitle = "Almost there!";
+      headerSubtitle = "You have categories, but no global services are set up. Services are required to calculate bills.";
+    } else if (hasCategories && hasServices && !hasSubItems) {
+      headerIcon = Icons.add_home_work_outlined;
+      headerTitle = "One last step!";
+      headerSubtitle = "You have categories and services, but no units (rooms/shops) have been added yet.";
+    }
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(headerIcon, size: 80, color: Theme.of(context).colorScheme.primary),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              headerTitle,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              headerSubtitle,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+            _buildGuidanceCard(
+              title: "Step 1: Add a Category",
+              subtitle: "Create groups like 'Shop', 'Room' or 'Flat' to organize your items.",
+              icon: Icons.category_outlined,
+              color: !hasCategories ? Colors.blue : Colors.grey,
+              actionText: !hasCategories ? "Go to Manage Tab" : "Category Added",
+              isHighlighted: !hasCategories,
+              onAction: () => widget.onCategoryTap?.call(0),
+            ),
+            const SizedBox(height: 16),
+            _buildGuidanceCard(
+              title: "Step 2: Setup Services",
+              subtitle: "Define monthly charges like Rent, Wifi, or Trash in the Services menu.",
+              icon: Icons.settings_suggest_outlined,
+              color: hasCategories && !hasServices ? Colors.orange : Colors.grey,
+              actionText: hasCategories && !hasServices ? "Open Services Menu" : "Services Ready",
+              isHighlighted: hasCategories && !hasServices,
+              onAction: () => CategoryDialogs.showAddServiceDialog(context),
+            ),
+            const SizedBox(height: 16),
+            _buildGuidanceCard(
+              title: "Step 3: Add Units",
+              subtitle: "Add specific shops or rooms to your categories to start billing.",
+              icon: Icons.add_business_outlined,
+              color: hasCategories && hasServices && !hasSubItems ? Colors.teal : Colors.grey,
+              actionText: hasCategories && hasServices && !hasSubItems ? "Go to Manage Tab" : "Units Ready",
+              isHighlighted: hasCategories && hasServices && !hasSubItems,
+              onAction: () => widget.onCategoryTap?.call(0),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              "Welcome! Please complete the configuration steps above.",
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.secondary),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuidanceCard({
+    required String title, 
+    required String subtitle, 
+    required IconData icon, 
+    required Color color, 
+    required String actionText, 
+    required VoidCallback onAction,
+    bool isHighlighted = false,
+  }) {
+    return Card(
+      elevation: isHighlighted ? 4 : 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20), 
+        side: BorderSide(color: isHighlighted ? color : color.withOpacity(0.1), width: isHighlighted ? 2 : 1)
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                CircleAvatar(backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color, size: 20)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isHighlighted ? null : Colors.grey)),
+                      Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(isHighlighted ? 1.0 : 0.5))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onAction,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isHighlighted ? color : Colors.grey.shade300,
+                  foregroundColor: isHighlighted ? Colors.white : Colors.grey,
+                  elevation: isHighlighted ? 2 : 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(actionText),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1204,7 +1368,6 @@ class _AdminHomeState extends State<AdminHome> {
     String? notes,
   }) {
     Color itemColor = ThemeManager.getCardContainerColor(index + 5, alpha: 0.7, isSubCard: true);
-    Color effectiveColor = ThemeManager.getCardColor(index + 5, isSubCard: true);
 
     return Card(
       elevation: 1,
