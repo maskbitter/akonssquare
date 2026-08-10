@@ -81,36 +81,37 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   void _showRollbackProgressDialog() {
-    double progress = 0.0;
+    final progressNotifier = ValueNotifier<double>(0.0);
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setST) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text("Rolling Back..."),
-            content: Column(
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Rolling Back...", textAlign: TextAlign.center),
+        content: ValueListenableBuilder<double>(
+          valueListenable: progressNotifier,
+          builder: (context, value, child) {
+            return Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                LinearProgressIndicator(value: progress),
+                LinearProgressIndicator(value: value),
                 const SizedBox(height: 10),
-                Text("${(progress * 100).toStringAsFixed(1)}%"),
+                Text("${(value * 100).toStringAsFixed(1)}%", style: const TextStyle(fontWeight: FontWeight.bold)),
               ],
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
 
     _dbService.restoreFromRollback(_username, onProgress: (p) {
-      // Since this dialog is generic, we just update internal state if we can find it
-      // Actually, it's better to just use a persistent progress in DatabaseService or handle it here
+      progressNotifier.value = p;
     }).then((_) {
-      if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
       DatabaseService.showToast(context, "Rollback Successful!");
     }).catchError((e) {
-      if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
       DatabaseService.showToast(context, "Rollback Failed: $e", backgroundColor: Colors.red);
     });
   }

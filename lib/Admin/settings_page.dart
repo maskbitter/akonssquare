@@ -23,6 +23,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final DatabaseService _dbService = DatabaseService();
   bool _isProcessing = false;
+  String? _activeAction;
   double _progress = 0.0;
   String _selectedRoleForVisibility = 'admin';
 
@@ -41,7 +42,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _handleBackup(BuildContext context) async {
     HapticFeedback.mediumImpact();
     if (_isProcessing) return;
-    setState(() { _isProcessing = true; _progress = 0.0; });
+    setState(() { _isProcessing = true; _activeAction = 'backup'; _progress = 0.0; });
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String actor = prefs.getString('username') ?? "Unknown";
@@ -54,7 +55,7 @@ class _SettingsPageState extends State<SettingsPage> {
       await Share.shareXFiles([XFile(file.path)], text: 'Database Backup v${data['dbVersion']}');
     } catch (e) {
       if (context.mounted) DatabaseService.showToast(context, "Backup Error: $e", backgroundColor: Theme.of(context).colorScheme.error);
-    } finally { if (mounted) setState(() => _isProcessing = false); }
+    } finally { if (mounted) setState(() { _isProcessing = false; _activeAction = null; }); }
   }
 
   Future<void> _handleLocalSave(BuildContext context) async {
@@ -63,7 +64,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String actor = prefs.getString('username') ?? "Unknown";
-      setState(() { _isProcessing = true; _progress = 0.0; });
+      setState(() { _isProcessing = true; _activeAction = 'localSave'; _progress = 0.0; });
       Map<String, dynamic> data = await _dbService.exportDatabase(actor, onProgress: (p) => setState(() => _progress = p));
       String jsonStr = await compute(jsonEncode, data);
       String fileName = _getBackupFileName(data['dbVersion'] ?? 0);
@@ -72,7 +73,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (context.mounted && result != null) DatabaseService.showToast(context, "Backup saved: $fileName");
     } catch (e) {
       if (context.mounted) DatabaseService.showToast(context, "Local Save Error: $e", backgroundColor: Theme.of(context).colorScheme.error);
-    } finally { if (mounted) setState(() => _isProcessing = false); }
+    } finally { if (mounted) setState(() { _isProcessing = false; _activeAction = null; }); }
   }
 
   Future<void> _handleRestore(BuildContext context) async {
@@ -82,7 +83,7 @@ class _SettingsPageState extends State<SettingsPage> {
       final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
       if (result == null || result.files.single.path == null) return;
       
-      setState(() { _isProcessing = true; _progress = 0.0; });
+      setState(() { _isProcessing = true; _activeAction = 'restore'; _progress = 0.0; });
       File file = File(result.files.single.path!);
       String content = await file.readAsString();
       Map<String, dynamic> importData = await compute(_parseJson, content);
@@ -105,10 +106,10 @@ class _SettingsPageState extends State<SettingsPage> {
         if (backupVersion > serverVersion) proceed = await _showConfirmDialog(context, "Restore Data?", "Update server data to v$backupVersion?");
         else if (backupVersion == serverVersion) {
           if (context.mounted) _showInfoDialog(context, "Already Restored", "The database is already at version $serverVersion.");
-          setState(() => _isProcessing = false); return;
+          setState(() { _isProcessing = false; _activeAction = null; }); return;
         } else {
           if (context.mounted) _showInfoDialog(context, "Update Denied", "Higher version required.");
-          setState(() => _isProcessing = false); return;
+          setState(() { _isProcessing = false; _activeAction = null; }); return;
         }
       }
       
@@ -124,7 +125,7 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } catch (e) {
        if (context.mounted) DatabaseService.showToast(context, "Restore Error: $e", backgroundColor: Theme.of(context).colorScheme.error);
-    } finally { if (mounted) setState(() => _isProcessing = false); }
+    } finally { if (mounted) setState(() { _isProcessing = false; _activeAction = null; }); }
   }
 
   static Map<String, dynamic> _parseJson(String jsonStr) => jsonDecode(jsonStr);
@@ -159,7 +160,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (confirm1) proceed = await _showConfirmDialog(context, "FINAL WARNING", "Erase all records. PROCEED?");
       
       if (proceed && context.mounted) {
-        setState(() { _isProcessing = true; _progress = 1.0; });
+        setState(() { _isProcessing = true; _activeAction = 'wipe'; _progress = 1.0; });
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String actor = prefs.getString('username') ?? "Unknown";
         
@@ -174,7 +175,7 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } catch (e) {
       if (context.mounted) DatabaseService.showToast(context, "Wipe Error: $e", backgroundColor: Theme.of(context).colorScheme.error);
-    } finally { if (mounted) setState(() => _isProcessing = false); }
+    } finally { if (mounted) setState(() { _isProcessing = false; _activeAction = null; }); }
   }
 
   void _showInfoDialog(BuildContext context, String title, String msg) {
@@ -425,14 +426,18 @@ class _SettingsPageState extends State<SettingsPage> {
                       Expanded(child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), 
                         onPressed: _isProcessing ? null : () => _handleBackup(context), 
-                        icon: _isProcessing ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.cloud_upload_outlined), 
+                        icon: (_isProcessing && _activeAction == 'backup') 
+                          ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                          : const Icon(Icons.cloud_upload_outlined), 
                         label: const Text("Backup")
                       )),
                       const SizedBox(width: 12),
                       Expanded(child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), 
                         onPressed: _isProcessing ? null : () => _handleRestore(context), 
-                        icon: _isProcessing ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.cloud_download_outlined), 
+                        icon: (_isProcessing && _activeAction == 'restore') 
+                          ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                          : const Icon(Icons.cloud_download_outlined), 
                         label: const Text("Restore")
                       )),
                     ]),
@@ -442,7 +447,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), 
                         onPressed: _isProcessing ? null : () => _handleLocalSave(context), 
-                        icon: _isProcessing ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_alt), 
+                        icon: (_isProcessing && _activeAction == 'localSave') 
+                          ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                          : const Icon(Icons.save_alt), 
                         label: const Text("Save Locally")
                       )
                     ),
@@ -469,7 +476,9 @@ class _SettingsPageState extends State<SettingsPage> {
                               child: ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white), 
                                 onPressed: _isProcessing ? null : () => _handleWipe(context), 
-                                icon: _isProcessing ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.delete_forever), 
+                                icon: (_isProcessing && _activeAction == 'wipe') 
+                                  ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                                  : const Icon(Icons.delete_forever), 
                                 label: const Text("Wipe All Data")
                               )
                             ),

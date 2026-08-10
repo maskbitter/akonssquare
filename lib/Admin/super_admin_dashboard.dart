@@ -51,9 +51,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _dbService.restoreFromRollback("SuperAdmin").then((_) {
-                DatabaseService.showToast(context, "Rollback Successful!");
-              });
+              _showRollbackProgressDialog();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
             child: const Text("Rollback Now"),
@@ -61,6 +59,42 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         ],
       ),
     );
+  }
+
+  void _showRollbackProgressDialog() {
+    final progressNotifier = ValueNotifier<double>(0.0);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Rolling Back...", textAlign: TextAlign.center),
+        content: ValueListenableBuilder<double>(
+          valueListenable: progressNotifier,
+          builder: (context, value, child) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                LinearProgressIndicator(value: value),
+                const SizedBox(height: 10),
+                Text("${(value * 100).toStringAsFixed(1)}%", style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+
+    _dbService.restoreFromRollback("SuperAdmin", onProgress: (p) {
+      progressNotifier.value = p;
+    }).then((_) {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      DatabaseService.showToast(context, "Rollback Successful!");
+    }).catchError((e) {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      DatabaseService.showToast(context, "Rollback Failed: $e", backgroundColor: Colors.red);
+    });
   }
 
   Future<void> _handleLogout(BuildContext context) async {
