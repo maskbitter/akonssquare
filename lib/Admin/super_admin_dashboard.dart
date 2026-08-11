@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:akonssquare/Common/build_config.dart';
 import 'package:akonssquare/Common/update_guard.dart';
+import 'package:akonssquare/Common/ui_helper.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -54,30 +55,34 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         ),
         content: const Text("A previous database operation was interrupted. Rollback to safe state?"),
         actions: [
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _dbService.clearRollbackSnapshot();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
-            child: const Text("Ignore"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _showRollbackProgressDialog();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange, 
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text("Rollback Now"),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await _dbService.clearRollbackSnapshot();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: const Text("Ignore"),
+              ),
+              AppButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _showRollbackProgressDialog();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange, 
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text("Rollback Now"),
+              ),
+            ],
           ),
         ],
       ),

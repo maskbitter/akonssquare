@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:akonssquare/Common/database_service.dart';
+import 'package:akonssquare/Common/ui_helper.dart';
 
 class UserReportPage extends StatelessWidget {
   final String subItemId;
@@ -132,16 +133,17 @@ class UserReportPage extends StatelessWidget {
           ),
         ),
         actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.tertiary,
-                foregroundColor: Theme.of(context).colorScheme.onTertiary,
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.tertiary,
+                  foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                ),
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text("OK")
               ),
-              onPressed: () => Navigator.pop(ctx), 
-              child: const Text("OK")
-            ),
+            ],
           ),
         ],
       ),

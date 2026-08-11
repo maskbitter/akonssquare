@@ -20,6 +20,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:akonssquare/Common/automation_guide.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:akonssquare/Common/ui_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -111,6 +112,20 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
           content: const Text("Device is offline. Please check your internet connection to resume using the app."),
+          actions: [
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  child: const Text("Waiting for connection..."),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -150,17 +165,18 @@ class _LoginPageState extends State<LoginPage> {
         title: Center(child: Text("Login Failed!", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
         content: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
         actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error, 
-                foregroundColor: Theme.of(context).colorScheme.onError,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error, 
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text("OK"),
               ),
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text("OK"),
-            ),
+            ],
           ),
         ],
       ),
@@ -208,45 +224,48 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ]),
             actions: [
-              Row(children: [
-                Expanded(child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.onError,
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ), 
-                  onPressed: isAuthenticating ? null : () => Navigator.pop(ctx), 
-                  child: const Text("Cancel")
-                )),
-                const SizedBox(width: 12),
-                Expanded(child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.tertiary, 
-                    foregroundColor: Theme.of(context).colorScheme.onTertiary, 
-                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ), 
-                  onPressed: (isAuthenticating || passController.text.length != 4) ? null : () async {
-                  String input = passController.text.trim(); String storedNid = (subData['nidNumber'] ?? '').toString();
-                  if (input.isEmpty || input.length != 4) { DatabaseService.showToast(context, "Enter 4 digits!", backgroundColor: Theme.of(context).colorScheme.secondary); return; }
-                  setST(() => isAuthenticating = true);
-                  String last4 = storedNid.length >= 4 ? storedNid.substring(storedNid.length - 4) : storedNid;
-                  if (input == last4 && storedNid.isNotEmpty && storedNid != "No Number") {
-                    String subId = snap.id; String catId = subData['categoryId'] ?? '';
-                    String sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-                    await DatabaseService().updateUserSession('sub_items', subId, sessionId);
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                    await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'user');
-                    await prefs.setString('subItemId', subId); await prefs.setString('categoryId', catId);
-                    await prefs.setString('sessionId', sessionId);
-                    if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboard(subItemId: subId, categoryId: catId))); }
-                  } else {
-                    if (context.mounted) DatabaseService.showToast(context, "Incorrect password!", backgroundColor: Theme.of(context).colorScheme.error);
-                    setST(() => isAuthenticating = false);
-                  }
-                }, child: isAuthenticating ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary)) : const Text("Verify"))),
-              ]),
+              AppDialogActions(
+                actions: [
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ), 
+                    onPressed: isAuthenticating ? null : () => Navigator.pop(ctx), 
+                    child: const Text("Cancel")
+                  ),
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                      foregroundColor: Theme.of(context).colorScheme.onTertiary, 
+                      textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ), 
+                    onPressed: (isAuthenticating || passController.text.length != 4) ? null : () async {
+                      String input = passController.text.trim(); String storedNid = (subData['nidNumber'] ?? '').toString();
+                      if (input.isEmpty || input.length != 4) { DatabaseService.showToast(context, "Enter 4 digits!", backgroundColor: Theme.of(context).colorScheme.secondary); return; }
+                      setST(() => isAuthenticating = true);
+                      String last4 = storedNid.length >= 4 ? storedNid.substring(storedNid.length - 4) : storedNid;
+                      if (input == last4 && storedNid.isNotEmpty && storedNid != "No Number") {
+                        String subId = snap.id; String catId = subData['categoryId'] ?? '';
+                        String sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+                        await DatabaseService().updateUserSession('sub_items', subId, sessionId);
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'user');
+                        await prefs.setString('subItemId', subId); await prefs.setString('categoryId', catId);
+                        await prefs.setString('sessionId', sessionId);
+                        if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboard(subItemId: subId, categoryId: catId))); }
+                      } else {
+                        if (context.mounted) DatabaseService.showToast(context, "Incorrect password!", backgroundColor: Theme.of(context).colorScheme.error);
+                        setST(() => isAuthenticating = false);
+                      }
+                    }, 
+                    child: isAuthenticating ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary)) : const Text("Verify")
+                  ),
+                ],
+              ),
             ],
           );
         },
@@ -286,60 +305,63 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ]),
           actions: [
-            Row(children: [
-              Expanded(child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.onError,
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ), 
-                onPressed: isVerifying ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.tertiary, 
-                  foregroundColor: Theme.of(context).colorScheme.onTertiary, 
-                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ), 
-                onPressed: (isVerifying || uC.text.trim().isEmpty || pC.text.trim().isEmpty) ? null : () async {
-                String u = uC.text.trim(); String p = pC.text.trim(); if (u.isEmpty || p.isEmpty) return;
-                setST(() => isVerifying = true);
-                try {
-                  if (u == 'admin' && p == 'admin') {
-                     var adminCheck = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'admin').get();
-                     if (adminCheck.docs.isEmpty) {
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ), 
+                  onPressed: isVerifying ? null : () => Navigator.pop(ctx), child: const Text("Cancel")),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                    foregroundColor: Theme.of(context).colorScheme.onTertiary, 
+                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ), 
+                  onPressed: (isVerifying || uC.text.trim().isEmpty || pC.text.trim().isEmpty) ? null : () async {
+                    String u = uC.text.trim(); String p = pC.text.trim(); if (u.isEmpty || p.isEmpty) return;
+                    setST(() => isVerifying = true);
+                    try {
+                      if (u == 'admin' && p == 'admin') {
+                         var adminCheck = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'admin').get();
+                         if (adminCheck.docs.isEmpty) {
+                            SharedPreferences prefs = await SharedPreferences.getInstance();
+                            await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'admin');
+                            await prefs.setString('username', u); await prefs.setString('savedPassword', p);
+                            if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard())); }
+                            return;
+                         }
+                      }
+                      QuerySnapshot userQuery = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: u).where('password', isEqualTo: p).limit(1).get();
+                      if (userQuery.docs.isNotEmpty) {
+                        var userDoc = userQuery.docs.first;
+                        var userData = userDoc.data() as Map<String, dynamic>; String role = (userData['role'] ?? 'viewer').toString();
+                        String sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+                        await DatabaseService().updateUserSession('users', userDoc.id, sessionId);
                         SharedPreferences prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'admin');
+                        await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', role);
                         await prefs.setString('username', u); await prefs.setString('savedPassword', p);
-                        if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard())); }
+                        await prefs.setString('userDocId', userDoc.id);
+                        await prefs.setString('sessionId', sessionId);
+                        if (mounted) {
+                          Navigator.pop(ctx);
+                          if (role == 'admin') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
+                          else if (role == 'operator') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OperatorDashboard(username: u)));
+                          else Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ViewerDashboard()));
+                        }
                         return;
-                     }
-                  }
-                  QuerySnapshot userQuery = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: u).where('password', isEqualTo: p).limit(1).get();
-                  if (userQuery.docs.isNotEmpty) {
-                    var userDoc = userQuery.docs.first;
-                    var userData = userDoc.data() as Map<String, dynamic>; String role = (userData['role'] ?? 'viewer').toString();
-                    String sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-                    await DatabaseService().updateUserSession('users', userDoc.id, sessionId);
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                    await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', role);
-                    await prefs.setString('username', u); await prefs.setString('savedPassword', p);
-                    await prefs.setString('userDocId', userDoc.id);
-                    await prefs.setString('sessionId', sessionId);
-                    if (mounted) {
-                      Navigator.pop(ctx);
-                      if (role == 'admin') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
-                      else if (role == 'operator') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OperatorDashboard(username: u)));
-                      else Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ViewerDashboard()));
-                    }
-                    return;
-                  }
-                  if (context.mounted) DatabaseService.showToast(context, "Incorrect details!", backgroundColor: Theme.of(context).colorScheme.error);
-                } catch (e) { /* ignore */ } finally { if (ctx.mounted) setST(() => isVerifying = false); }
-              }, child: isVerifying ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Login"))),
-            ]),
+                      }
+                      if (context.mounted) DatabaseService.showToast(context, "Incorrect details!", backgroundColor: Theme.of(context).colorScheme.error);
+                    } catch (e) { /* ignore */ } finally { if (ctx.mounted) setST(() => isVerifying = false); }
+                  }, 
+                  child: isVerifying ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Login")
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -370,33 +392,36 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ]),
           actions: [
-            Row(children: [
-              Expanded(child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.onError,
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ), 
-                onPressed: () => Navigator.pop(ctx), 
-                child: const Text("Cancel")
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.tertiary, 
-                  foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ), 
-                onPressed: (isLoading || keyController.text.trim().isEmpty) ? null : () async {
-                if (keyController.text.trim() == 'superadmin') {
-                  setST(() => isLoading = true);
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'superadmin');
-                  if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard())); }
-                } else { if (context.mounted) DatabaseService.showToast(context, "Invalid!", backgroundColor: Theme.of(context).colorScheme.error); }
-              }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Authorize"))),
-            ]),
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ), 
+                  onPressed: () => Navigator.pop(ctx), 
+                  child: const Text("Cancel")
+                ),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                    foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ), 
+                  onPressed: (isLoading || keyController.text.trim().isEmpty) ? null : () async {
+                    if (keyController.text.trim() == 'superadmin') {
+                      setST(() => isLoading = true);
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'superadmin');
+                      if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard())); }
+                    } else { if (context.mounted) DatabaseService.showToast(context, "Invalid!", backgroundColor: Theme.of(context).colorScheme.error); }
+                  }, 
+                  child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Authorize")
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -566,7 +591,7 @@ class _LoginPageState extends State<LoginPage> {
                                     const SizedBox(height: 32),
                                     SizedBox(
                                       width: double.infinity, height: 65, 
-                                      child: ElevatedButton.icon(
+                                      child: AppButton.icon(
                                         onLongPress: _isLoading ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
                                         onPressed: _isLoading ? null : () { 
                                           HapticFeedback.mediumImpact(); 
@@ -578,7 +603,7 @@ class _LoginPageState extends State<LoginPage> {
                                           });
                                         },
                                         icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.dashboard_outlined),
-                                        label: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary), maxLines: 1),
+                                        child: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary), maxLines: 1),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Theme.of(context).colorScheme.tertiary,
                                           foregroundColor: Theme.of(context).colorScheme.onTertiary,

@@ -5,6 +5,7 @@ import 'package:akonssquare/Common/database_service.dart';
 import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'package:akonssquare/Common/ui_helper.dart';
 
 class CategoryPage extends StatefulWidget {
   final int initialSubTabIndex;
@@ -280,14 +281,18 @@ class _CategoryPageState extends State<CategoryPage> {
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 32),
-                        ElevatedButton.icon(
-                          onPressed: () => CategoryDialogs.showCreateCategoryDialog(context),
-                          icon: const Icon(Icons.add),
-                          label: const Text("Create First Category"),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
+                        AppDialogActions(
+                          actions: [
+                            AppButton.icon(
+                              onPressed: () => CategoryDialogs.showCreateCategoryDialog(context),
+                              icon: const Icon(Icons.add),
+                              child: const Text("Create First Category"),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 48),
                         Text(
@@ -845,7 +850,12 @@ class _CategoryPageState extends State<CategoryPage> {
                             }).toList(),
                             const SizedBox(height: 12),
                             Center(
-                              child: TextButton(
+                              child: AppButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: Theme.of(context).colorScheme.primary,
+                                  elevation: 0,
+                                ),
                                 onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
                                 child: Text("Add New $catName", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
                               ),

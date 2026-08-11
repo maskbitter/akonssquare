@@ -6,6 +6,7 @@ import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:akonssquare/Common/ui_helper.dart';
 
 class AdminHome extends StatefulWidget {
   final Function(int)? onCategoryTap;
@@ -614,18 +615,19 @@ class _AdminHomeState extends State<AdminHome> {
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onAction,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isHighlighted ? color : Colors.grey.shade300,
-                  foregroundColor: isHighlighted ? Colors.white : Colors.grey,
-                  elevation: isHighlighted ? 2 : 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  onPressed: onAction,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isHighlighted ? color : Colors.grey.shade300,
+                    foregroundColor: isHighlighted ? Colors.white : Colors.grey,
+                    elevation: isHighlighted ? 2 : 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(actionText),
                 ),
-                child: Text(actionText),
-              ),
+              ],
             ),
           ],
         ),
@@ -689,6 +691,7 @@ class _AdminHomeState extends State<AdminHome> {
                         title: "Total Vacant",
                         count: vacantCount,
                         color: ThemeManager.getCardColor(1),
+                        countColor: ThemeManager.appThemeNotifier.value == "Normal Theme" ? Colors.red : null,
                         icon: Icons.meeting_room_outlined,
                         onTap: () {
                           DatabaseService.vibrate();
@@ -743,7 +746,7 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _buildSubOverviewCard({required String title, required int count, required Color color, required IconData icon, required VoidCallback onTap}) {
+  Widget _buildSubOverviewCard({required String title, required int count, required Color color, required IconData icon, required VoidCallback onTap, Color? countColor}) {
     return Card(
       elevation: 2,
       color: Theme.of(context).colorScheme.surface,
@@ -762,7 +765,7 @@ class _AdminHomeState extends State<AdminHome> {
               const SizedBox(height: 4),
               Text(
                 count.toString(),
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: color),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: countColor ?? color),
               ),
             ],
           ),
@@ -1531,18 +1534,19 @@ class _AdminHomeState extends State<AdminHome> {
           ),
         ),
         actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-                foregroundColor: Theme.of(context).colorScheme.onError,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () => Navigator.pop(context), 
+                child: const Text("OK")
               ),
-              onPressed: () => Navigator.pop(context), 
-              child: const Text("OK")
-            ),
+            ],
           ),
         ],
       ),

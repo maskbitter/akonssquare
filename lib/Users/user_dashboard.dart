@@ -7,6 +7,7 @@ import 'package:akonssquare/Common/database_service.dart';
 import 'package:akonssquare/Common/update_guard.dart';
 import 'package:akonssquare/Common/automation_guide.dart';
 import 'package:akonssquare/Common/build_config.dart';
+import 'package:akonssquare/Common/ui_helper.dart';
 import 'package:akonssquare/Users/user_report_page.dart';
 import 'package:akonssquare/main.dart';
 
@@ -78,30 +79,27 @@ class _UserDashboardState extends State<UserDashboard> {
           content: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
           actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blueGrey, 
-                    ),
-                    onPressed: () => Navigator.pop(context), 
-                    child: const Text("Cancel")
-                  )
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.error, 
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _handleLogout();
-                    },
-                    child: const Text("Logout"),
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    elevation: 0,
                   ),
+                  onPressed: () => Navigator.pop(context), 
+                  child: const Text("Cancel")
+                ),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error, 
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _handleLogout();
+                  },
+                  child: const Text("Logout"),
                 ),
               ],
             ),

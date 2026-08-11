@@ -5,6 +5,7 @@ import 'package:akonssquare/Common/database_service.dart';
 import 'package:flutter/services.dart';
 import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:flutter/foundation.dart';
+import 'package:akonssquare/Common/ui_helper.dart';
 
 class CategoryDialogs {
   static final DatabaseService _dbService = DatabaseService();
@@ -26,17 +27,19 @@ class CategoryDialogs {
         ),
         content: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
         actions: [
-          Center(
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-                foregroundColor: Theme.of(context).colorScheme.onError,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text("OK")
               ),
-              onPressed: () => Navigator.pop(ctx), 
-              child: const Text("OK")
-            )
-          )
+            ],
+          ),
         ],
       ),
     );
@@ -65,9 +68,9 @@ class CategoryDialogs {
         content: Text(content, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          Row(children: [
-            Expanded(
-              child: ElevatedButton(
+          AppDialogActions(
+            actions: [
+              AppButton(
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
                   backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -78,10 +81,7 @@ class CategoryDialogs {
                 onPressed: () => Navigator.pop(ctx), 
                 child: const Text("Cancel")
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton(
+              AppButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: effectiveConfirmColor, 
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -92,8 +92,8 @@ class CategoryDialogs {
                 onPressed: () { Navigator.pop(ctx); onConfirm(); }, 
                 child: Text(confirmText, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary))
               ),
-            ),
-          ]),
+            ],
+          ),
         ],
       ),
     );
@@ -120,32 +120,33 @@ class CategoryDialogs {
             )
           ),
           actions: [
-            Row(children: [
-              Expanded(child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Theme.of(context).colorScheme.onError,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: (isLoading || controller.text.trim().isEmpty) ? null : () async {
+                    String name = controller.text.trim(); if (name.isEmpty) return;
+                    setDialogState(() => isLoading = true);
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    await _dbService.addCategory(name, prefs.getString('username') ?? "Admin");
+                    if (context.mounted) Navigator.pop(ctx);
+                  }, 
+                  child: isLoading ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary)) : const Text("Save")
                 ),
-                onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: (isLoading || controller.text.trim().isEmpty) ? null : () async {
-                  String name = controller.text.trim(); if (name.isEmpty) return;
-                  setDialogState(() => isLoading = true);
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                  await _dbService.addCategory(name, prefs.getString('username') ?? "Admin");
-                  if (context.mounted) Navigator.pop(ctx);
-                }, 
-                child: isLoading ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary)) : const Text("Save")
-              )),
-            ]),
+              ],
+            ),
           ],
         );
       }),
@@ -196,7 +197,7 @@ class CategoryDialogs {
                       )
                     ),
                     const SizedBox(height: 16),
-                    ElevatedButton(
+                    AppButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.tertiary, 
                         foregroundColor: Theme.of(context).colorScheme.onTertiary,
@@ -277,19 +278,20 @@ class CategoryDialogs {
             ),
             actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             actions: [
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                    foregroundColor: Theme.of(context).colorScheme.onError,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
+              AppDialogActions(
+                actions: [
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                    ),
+                    onPressed: () => Navigator.pop(ctx), 
+                    child: const Text("Close")
                   ),
-                  onPressed: () => Navigator.pop(ctx), 
-                  child: const Text("Close")
-                ),
+                ],
               ),
             ],
           );
@@ -320,32 +322,33 @@ class CategoryDialogs {
             ),
           ])),
           actions: [
-            Row(children: [
-              Expanded(child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Theme.of(context).colorScheme.onError,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.tertiary,
+                    foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: (isLoading || subItemController.text.trim().isEmpty) ? null : () async {
+                    String name = subItemController.text.trim(); if (name.isEmpty) return;
+                    setDialogState(() => isLoading = true);
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    await _dbService.addSubItem(categoryId, name, prefs.getString('username') ?? "Admin");
+                    if (context.mounted) Navigator.pop(ctx);
+                  }, 
+                  child: isLoading ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary)) : const Text("Add")
                 ),
-                onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.tertiary,
-                  foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: (isLoading || subItemController.text.trim().isEmpty) ? null : () async {
-                  String name = subItemController.text.trim(); if (name.isEmpty) return;
-                  setDialogState(() => isLoading = true);
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                  await _dbService.addSubItem(categoryId, name, prefs.getString('username') ?? "Admin");
-                  if (context.mounted) Navigator.pop(ctx);
-                }, 
-                child: isLoading ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary)) : const Text("Add")
-              )),
-            ]),
+              ],
+            ),
           ],
         );
       }),
@@ -394,9 +397,9 @@ class CategoryDialogs {
               ],
             ),
             actions: [
-              Row(children: [
-                Expanded(
-                  child: ElevatedButton(
+              AppDialogActions(
+                actions: [
+                  AppButton(
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.onError,
                       backgroundColor: Theme.of(context).colorScheme.error,
@@ -407,10 +410,7 @@ class CategoryDialogs {
                     onPressed: () => Navigator.pop(ctx),
                     child: const Text("Cancel"),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
+                  AppButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.tertiary,
                       foregroundColor: Theme.of(context).colorScheme.onTertiary,
@@ -439,8 +439,8 @@ class CategoryDialogs {
                       ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
                       : const Text("Add"),
                   ),
-                ),
-              ]),
+                ],
+              ),
             ],
           );
         }
@@ -574,9 +574,9 @@ class CategoryDialogs {
               ),
             ),
             actions: [
-              Row(children: [
-                Expanded(
-                  child: ElevatedButton(
+              AppDialogActions(
+                actions: [
+                  AppButton(
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.onError,
                       backgroundColor: Theme.of(context).colorScheme.error,
@@ -587,10 +587,7 @@ class CategoryDialogs {
                     onPressed: () => Navigator.pop(ctx),
                     child: const Text("Cancel"),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
+                  AppButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.tertiary,
                       foregroundColor: Theme.of(context).colorScheme.onTertiary,
@@ -620,13 +617,19 @@ class CategoryDialogs {
                             title: Text("Sync Main Meter?", style: Theme.of(context).textTheme.titleLarge),
                             content: Text("Previous reading was $prevSavedMain. Should this be set as the 'Last Reading' for this month?", style: Theme.of(context).textTheme.bodyMedium),
                             actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(c, false), 
-                                child: Text("No", style: TextStyle(color: Theme.of(context).colorScheme.error))
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(c, true), 
-                                child: Text("Yes", style: TextStyle(color: Theme.of(context).colorScheme.tertiary))
+                              AppDialogActions(
+                                actions: [
+                                  AppButton(
+                                    onPressed: () => Navigator.pop(c, false), 
+                                    style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+                                    child: const Text("No")
+                                  ),
+                                  AppButton(
+                                    onPressed: () => Navigator.pop(c, true), 
+                                    style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary),
+                                    child: const Text("Yes")
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -641,13 +644,19 @@ class CategoryDialogs {
                             title: Text("Sync Govt. Reading?", style: Theme.of(context).textTheme.titleLarge),
                             content: Text("Previous Govt. reading was $prevSavedGovt. Should this be set as the 'Last Govt. Reading' for this month?", style: Theme.of(context).textTheme.bodyMedium),
                             actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(c, false), 
-                                child: Text("No", style: TextStyle(color: Theme.of(context).colorScheme.error))
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(c, true), 
-                                child: Text("Yes", style: TextStyle(color: Theme.of(context).colorScheme.tertiary))
+                              AppDialogActions(
+                                actions: [
+                                  AppButton(
+                                    onPressed: () => Navigator.pop(c, false), 
+                                    style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+                                    child: const Text("No")
+                                  ),
+                                  AppButton(
+                                    onPressed: () => Navigator.pop(c, true), 
+                                    style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary),
+                                    child: const Text("Yes")
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -680,8 +689,8 @@ class CategoryDialogs {
                       ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
                       : const Text("Update"),
                   ),
-                ),
-              ]),
+                ],
+              ),
             ],
           );
         }
@@ -750,9 +759,9 @@ class CategoryDialogs {
             ],
           ),
           actions: [
-            Row(children: [
-              Expanded(
-                child: ElevatedButton(
+            AppDialogActions(
+              actions: [
+                AppButton(
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.onError,
                     backgroundColor: Theme.of(context).colorScheme.error,
@@ -762,10 +771,7 @@ class CategoryDialogs {
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text("Cancel"),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
+                AppButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.tertiary,
                     foregroundColor: Theme.of(context).colorScheme.onTertiary,
@@ -786,8 +792,8 @@ class CategoryDialogs {
                     ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Text("Add"),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ],
         );
         }
@@ -898,64 +904,59 @@ class CategoryDialogs {
             ),
           ),
           actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.onError,
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      elevation: 0,
-                    ),
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text("Cancel"),
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
                   ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("Cancel"),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.tertiary,
-                      foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: (isLoading || 
-                                (presentReadingController.text.trim().isEmpty && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString()) ||
-                                (presentReadingController.text == (existingData?['presentReading'] ?? 0).toString() && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString()) ||
-                                (selectedSubMeter == existingData?['subMeterNo'] && presentReadingController.text.trim().isEmpty && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString())
-                                ) ? null : () async {
-                      double last = double.tryParse(lastReadingController.text) ?? 0; 
-                      double pres = double.tryParse(presentReadingController.text) ?? last;
-                      if (pres < last) { _showValidationWarning(context, "Reading cannot be lower than previous."); return; }
-                      if (selectedMainMeter == null || selectedSubMeter == null) { _showValidationWarning(context, "Please select both Main and Sub meters."); return; }
-                      
-                      setDialogState(() => isLoading = true);
-                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                      String actor = prefs.getString('username') ?? "Admin";
-
-                      if (existingData?['subMeterNo'] != null && existingData?['subMeterNo'] != selectedSubMeter) {
-                        await _dbService.setSubMeterAssignment(existingData?['subMeterNo'], false);
-                      }
-                      await _dbService.setSubMeterAssignment(selectedSubMeter!, true);
-
-                      // Only update presentReading, lastReading remains same until payment
-                      await _dbService.updateSubItemElectricity(subItemId, {
-                        'mainMeterNo': selectedMainMeter,
-                        'subMeterNo': selectedSubMeter,
-                        'lastReading': (existingData?['lastReading'] ?? last).toDouble(),
-                        'presentReading': pres,
-                        'pricePerUnit': double.tryParse(priceController.text) ?? 10,
-                        'updatedAt': FieldValue.serverTimestamp(),
-                        'isStopped': false,
-                      }, actor);
-
-                      if (context.mounted) Navigator.pop(ctx);
-                    }, 
-                    child: Text(isLoading ? "Updating..." : "Update", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.tertiary,
+                    foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
+                  onPressed: (isLoading || 
+                              (presentReadingController.text.trim().isEmpty && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString()) ||
+                              (presentReadingController.text == (existingData?['presentReading'] ?? 0).toString() && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString()) ||
+                              (selectedSubMeter == existingData?['subMeterNo'] && presentReadingController.text.trim().isEmpty && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString())
+                              ) ? null : () async {
+                    double last = double.tryParse(lastReadingController.text) ?? 0; 
+                    double pres = double.tryParse(presentReadingController.text) ?? last;
+                    if (pres < last) { _showValidationWarning(context, "Reading cannot be lower than previous."); return; }
+                    if (selectedMainMeter == null || selectedSubMeter == null) { _showValidationWarning(context, "Please select both Main and Sub meters."); return; }
+                    
+                    setDialogState(() => isLoading = true);
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    String actor = prefs.getString('username') ?? "Admin";
+
+                    if (existingData?['subMeterNo'] != null && existingData?['subMeterNo'] != selectedSubMeter) {
+                      await _dbService.setSubMeterAssignment(existingData?['subMeterNo'], false);
+                    }
+                    await _dbService.setSubMeterAssignment(selectedSubMeter!, true);
+
+                    // Only update presentReading, lastReading remains same until payment
+                    await _dbService.updateSubItemElectricity(subItemId, {
+                      'mainMeterNo': selectedMainMeter,
+                      'subMeterNo': selectedSubMeter,
+                      'lastReading': (existingData?['lastReading'] ?? last).toDouble(),
+                      'presentReading': pres,
+                      'pricePerUnit': double.tryParse(priceController.text) ?? 10,
+                      'updatedAt': FieldValue.serverTimestamp(),
+                      'isStopped': false,
+                    }, actor);
+
+                    if (context.mounted) Navigator.pop(ctx);
+                  }, 
+                  child: Text(isLoading ? "Updating..." : "Update", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
                 ),
               ],
             ),
@@ -1078,96 +1079,86 @@ class CategoryDialogs {
             ),
           ), 
           actions: [
-            if (isFuture) 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.onError, 
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    onPressed: () => Navigator.pop(ctx), 
-                    child: const Text("Cancel")
-                ),
-              )
-            else
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
+            AppDialogActions(
+              actions: [
+                if (isFuture) 
+                  AppButton(
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.onError,
+                        foregroundColor: Theme.of(context).colorScheme.onError, 
                         backgroundColor: Theme.of(context).colorScheme.error,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
                       onPressed: () => Navigator.pop(ctx), 
                       child: const Text("Cancel")
+                  )
+                else ...[
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
                     ),
+                    onPressed: () => Navigator.pop(ctx), 
+                    child: const Text("Cancel")
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.tertiary,
-                        foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: (isLoading || wordCount > 100) ? null : () async {
-                        setDialogState(() => isLoading = true);
-                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                        String actor = prefs.getString('username') ?? "Unknown";
-                        String note = noteController.text.trim().isEmpty ? "In cash" : noteController.text.trim();
-                        
-                        await _dbService.addBillingRecord({
-                          'subItemId': subItemId, 
-                          'subItemName': subItemName, 
-                          'TenantName': TenantName, 
-                          'monthYear': monthYear, 
-                          'totalAmount': houseRentTotal + electricityBill, 
-                          'services': services, // Added for chart breakdown
-                          'paymentNotes': note, 
-                          'paidAt': FieldValue.serverTimestamp()
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.tertiary,
+                      foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: (isLoading || wordCount > 100) ? null : () async {
+                      setDialogState(() => isLoading = true);
+                      SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                      String actor = prefs.getString('username') ?? "Unknown";
+                      String note = noteController.text.trim().isEmpty ? "In cash" : noteController.text.trim();
+                      
+                      await _dbService.addBillingRecord({
+                        'subItemId': subItemId, 
+                        'subItemName': subItemName, 
+                        'TenantName': TenantName, 
+                        'monthYear': monthYear, 
+                        'totalAmount': houseRentTotal + electricityBill, 
+                        'services': services, 
+                        'paymentNotes': note, 
+                        'paidAt': FieldValue.serverTimestamp()
+                      }, actor);
+                      
+                      if (electricityDetails != null) {
+                        double last = (electricityDetails['lastReading'] ?? 0).toDouble();
+                        double pres = (electricityDetails['presentReading'] ?? 0).toDouble();
+                        double used = pres - last;
+                        String? meterNo = electricityDetails['mainMeterNo'];
+                        String? subMeterNo = electricityDetails['subMeterNo'];
+
+                        await _dbService.updateSubItemElectricity(subItemId, {
+                          ...electricityDetails, 
+                          'lastReading': pres, 
+                          'updatedAt': FieldValue.serverTimestamp()
                         }, actor);
-                        
-                        if (electricityDetails != null) {
-                          double last = (electricityDetails['lastReading'] ?? 0).toDouble();
-                          double pres = (electricityDetails['presentReading'] ?? 0).toDouble();
-                          double used = pres - last;
-                          String? meterNo = electricityDetails['mainMeterNo'];
-                          String? subMeterNo = electricityDetails['subMeterNo'];
 
-                          // Update sub-item reading
-                          await _dbService.updateSubItemElectricity(subItemId, {
-                            ...electricityDetails, 
-                            'lastReading': pres, 
-                            'updatedAt': FieldValue.serverTimestamp()
-                          }, actor);
-
-                          // Sync global sub-meter
-                          if (subMeterNo != null) {
-                            await _dbService.syncSubMeterReading(subMeterNo, pres, actor);
-                          }
-
-                          // Update main meter paid units
-                          if (meterNo != null && used > 0) {
-                            await _dbService.incrementMainMeterPaidUnits(meterNo, used);
-                          }
+                        if (subMeterNo != null) {
+                          await _dbService.syncSubMeterReading(subMeterNo, pres, actor);
                         }
-                        if (context.mounted) {
-                          Navigator.pop(ctx);
-                          DatabaseService.showToast(context, "Payment Recorded!");
+
+                        if (meterNo != null && used > 0) {
+                          await _dbService.incrementMainMeterPaidUnits(meterNo, used);
                         }
-                      }, 
+                      }
+                      if (context.mounted) {
+                        Navigator.pop(ctx);
+                        DatabaseService.showToast(context, "Payment Recorded!");
+                      }
+                    }, 
                     child: isLoading 
                       ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
                       : const Text("Confirm")
-                    ),
                   ),
-                ]
-              ),
+                ],
+              ],
+            ),
           ],
         );
       }),
@@ -1229,29 +1220,30 @@ class CategoryDialogs {
              ),
            ),
            actions: [
-             Row(children: [
-               Expanded(child: ElevatedButton(
-                 style: ElevatedButton.styleFrom(
-                   foregroundColor: Theme.of(context).colorScheme.onError,
-                   backgroundColor: Theme.of(context).colorScheme.error,
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                   elevation: 0,
-                 ),
-                 onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-               const SizedBox(width: 12),
-               Expanded(child: ElevatedButton(
-                 style: ElevatedButton.styleFrom(
-                   backgroundColor: Theme.of(context).colorScheme.tertiary,
-                   foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                 ),
-                 onPressed: (isLoading || setEquals(currentAssigned.map((e) => e['name']).toSet(), dynamicAssignedServices.map((e) => (e is Map) ? e['name'] : e.toString()).toSet())) ? null : () async {
-                 setDialogState(() => isLoading = true);
-                 SharedPreferences prefs = await SharedPreferences.getInstance();
-                 await _dbService.updateCategoryServices(categoryId, currentAssigned, prefs.getString('username') ?? "Admin");
-                 if (context.mounted) Navigator.pop(ctx);
-               }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Apply"))),
-             ]),
+             AppDialogActions(
+               actions: [
+                 AppButton(
+                   style: ElevatedButton.styleFrom(
+                     foregroundColor: Theme.of(context).colorScheme.onError,
+                     backgroundColor: Theme.of(context).colorScheme.error,
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                     elevation: 0,
+                   ),
+                   onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                 AppButton(
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: Theme.of(context).colorScheme.tertiary,
+                     foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                   ),
+                   onPressed: (isLoading || setEquals(currentAssigned.map((e) => e['name']).toSet(), dynamicAssignedServices.map((e) => (e is Map) ? e['name'] : e.toString()).toSet())) ? null : () async {
+                   setDialogState(() => isLoading = true);
+                   SharedPreferences prefs = await SharedPreferences.getInstance();
+                   await _dbService.updateCategoryServices(categoryId, currentAssigned, prefs.getString('username') ?? "Admin");
+                   if (context.mounted) Navigator.pop(ctx);
+                 }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Apply")),
+               ],
+             ),
            ],
          );
        },
@@ -1313,58 +1305,53 @@ class CategoryDialogs {
             ), 
             actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             actions: [
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.onError,
-                        backgroundColor: Theme.of(context).colorScheme.error,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                      onPressed: () => Navigator.pop(ctx), 
-                      child: const Text("Cancel")
+              AppDialogActions(
+                actions: [
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
                     ),
+                    onPressed: () => Navigator.pop(ctx), 
+                    child: const Text("Cancel")
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.tertiary,
-                        foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: (isLoading || wordCount > 100 || 
-                                  (subItemController.text == currentName &&
-                                   tenantController.text == (currentTenantName == "No Name" ? "" : currentTenantName) &&
-                                   nidController.text == (currentNidNumber == "No Number" ? "" : currentNidNumber) &&
-                                   notesController.text == currentNotes)) ? null : () async {
-                        setDialogState(() => isLoading = true);
-                        try {
-                          SharedPreferences prefs = await SharedPreferences.getInstance();
-                          String actor = prefs.getString('username') ?? "Admin";
-                          await _dbService.updateSubItemDetails(subItemId, {
-                            'subItemName': subItemController.text.trim(), 
-                            'TenantName': tenantController.text.trim(), 
-                            'nidNumber': nidController.text.trim(), 
-                            'notes': notesController.text.trim()
-                          }, actor);
-                          if (context.mounted) {
-                            Navigator.pop(ctx);
-                            DatabaseService.showToast(context, "Details Updated!");
-                          }
-                        } catch (e) {
-                           setDialogState(() => isLoading = false);
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.tertiary,
+                      foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: (isLoading || wordCount > 100 || 
+                                (subItemController.text == currentName &&
+                                 tenantController.text == (currentTenantName == "No Name" ? "" : currentTenantName) &&
+                                 nidController.text == (currentNidNumber == "No Number" ? "" : currentNidNumber) &&
+                                 notesController.text == currentNotes)) ? null : () async {
+                      setDialogState(() => isLoading = true);
+                      try {
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        String actor = prefs.getString('username') ?? "Admin";
+                        await _dbService.updateSubItemDetails(subItemId, {
+                          'subItemName': subItemController.text.trim(), 
+                          'TenantName': tenantController.text.trim(), 
+                          'nidNumber': nidController.text.trim(), 
+                          'notes': notesController.text.trim()
+                        }, actor);
+                        if (context.mounted) {
+                          Navigator.pop(ctx);
+                          DatabaseService.showToast(context, "Details Updated!");
                         }
-                      }, 
-                      child: isLoading 
-                        ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text("Update")
-                    ),
+                      } catch (e) {
+                         setDialogState(() => isLoading = false);
+                      }
+                    }, 
+                    child: isLoading 
+                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text("Update")
                   ),
-                ]
-              )
+                ],
+              ),
             ]
           );
         },
@@ -1449,50 +1436,45 @@ class CategoryDialogs {
               ],
             ),
             actions: [
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.onError,
-                        backgroundColor: Theme.of(context).colorScheme.error,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text("Cancel"),
+              AppDialogActions(
+                actions: [
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
                     ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text("Cancel"),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.tertiary,
-                        foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: (isLoading || tenantController.text.trim().isEmpty || nidController.text.trim().isEmpty) ? null : () async {
-                        String name = tenantController.text.trim();
-                        String nid = nidController.text.trim();
-                        if (name.isEmpty || nid.isEmpty) {
-                          _showValidationWarning(context, "Please provide both Tenant Name and NID Number.");
-                          return;
-                        }
-                        setDialogState(() => isLoading = true);
-                        SharedPreferences prefs = await SharedPreferences.getInstance();
-                        await _dbService.updateSubItemStatus(
-                          subItemId, 
-                          'Occupied', 
-                          prefs.getString('username') ?? "Admin",
-                          TenantName: name,
-                          nidNumber: nid,
-                        );
-                        if (context.mounted) Navigator.pop(ctx);
-                      },
-                      child: isLoading 
-                        ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text("Proceed"),
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.tertiary,
+                      foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
+                    onPressed: (isLoading || tenantController.text.trim().isEmpty || nidController.text.trim().isEmpty) ? null : () async {
+                      String name = tenantController.text.trim();
+                      String nid = nidController.text.trim();
+                      if (name.isEmpty || nid.isEmpty) {
+                        _showValidationWarning(context, "Please provide both Tenant Name and NID Number.");
+                        return;
+                      }
+                      setDialogState(() => isLoading = true);
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await _dbService.updateSubItemStatus(
+                        subItemId, 
+                        'Occupied', 
+                        prefs.getString('username') ?? "Admin",
+                        TenantName: name,
+                        nidNumber: nid,
+                      );
+                      if (context.mounted) Navigator.pop(ctx);
+                    },
+                    child: isLoading 
+                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text("Proceed"),
                   ),
                 ],
               ),
@@ -1542,9 +1524,9 @@ class CategoryDialogs {
             ),
             actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             actions: [
-              Row(children: [
-                Expanded(
-                  child: ElevatedButton(
+              AppDialogActions(
+                actions: [
+                  AppButton(
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
                       backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -1554,10 +1536,7 @@ class CategoryDialogs {
                     onPressed: () => Navigator.pop(ctx), 
                     child: const Text("Cancel")
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
+                  AppButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.error,
                       foregroundColor: Theme.of(context).colorScheme.onError,
@@ -1570,8 +1549,8 @@ class CategoryDialogs {
                     },
                     child: const Text("Proceed"),
                   ),
-                ),
-              ]),
+                ],
+              ),
             ],
           ),
         );
@@ -1634,9 +1613,9 @@ class CategoryDialogs {
           ),
           actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           actions: [
-            Row(children: [
-              Expanded(
-                child: ElevatedButton(
+            AppDialogActions(
+              actions: [
+                AppButton(
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.onError, 
                     backgroundColor: Theme.of(context).colorScheme.error,
@@ -1646,10 +1625,7 @@ class CategoryDialogs {
                   onPressed: () => Navigator.pop(ctx), 
                   child: const Text("Cancel")
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
+                AppButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.tertiary,
                     foregroundColor: Theme.of(context).colorScheme.onTertiary,
@@ -1668,8 +1644,8 @@ class CategoryDialogs {
                     ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Text("Update")
                 ),
-              ),
-            ]),
+              ],
+            ),
           ],
         );
         }
@@ -1741,51 +1717,46 @@ class CategoryDialogs {
             ],
           ),
             actions: [
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.onError,
-                        backgroundColor: Theme.of(context).colorScheme.error,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        elevation: 0,
-                      ),
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text("Cancel"),
+              AppDialogActions(
+                actions: [
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
                     ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text("Cancel"),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.tertiary,
-                        foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: (isLoading || 
-                                  (quantity == (serviceMap['deviceQuantity'] ?? 1).toInt() && 
-                                   unitPrice == (serviceMap['wifiCost'] ?? serviceMap['amount'] ?? 0).toDouble())) ? null : () async {
-                        setDialogState(() => isLoading = true);
-                        List updated = overriddenServices.map((s) => Map<String, dynamic>.from(s)).toList();
-                        updated.removeWhere((s) => s['originalName'] == serviceMap['originalName']);
-                        updated.add({
-                          'originalName': serviceMap['originalName'], 
-                          'name': serviceMap['name'], 
-                          'amount': quantity * unitPrice,
-                          'deviceQuantity': quantity,
-                          'wifiCost': unitPrice,
-                        });
-                        SharedPreferences prefs = await SharedPreferences.getInstance();
-                        await _dbService.updateSubItemOverriddenServices(subItemId, updated, prefs.getString('username') ?? "Admin");
-                        if (context.mounted) Navigator.pop(ctx);
-                      },
-                      child: isLoading 
-                        ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
-                        : const Text("Update"),
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.tertiary,
+                      foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
+                    onPressed: (isLoading || 
+                                (quantity == (serviceMap['deviceQuantity'] ?? 1).toInt() && 
+                                 unitPrice == (serviceMap['wifiCost'] ?? serviceMap['amount'] ?? 0).toDouble())) ? null : () async {
+                      setDialogState(() => isLoading = true);
+                      List updated = overriddenServices.map((s) => Map<String, dynamic>.from(s)).toList();
+                      updated.removeWhere((s) => s['originalName'] == serviceMap['originalName']);
+                      updated.add({
+                        'originalName': serviceMap['originalName'], 
+                        'name': serviceMap['name'], 
+                        'amount': quantity * unitPrice,
+                        'deviceQuantity': quantity,
+                        'wifiCost': unitPrice,
+                      });
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await _dbService.updateSubItemOverriddenServices(subItemId, updated, prefs.getString('username') ?? "Admin");
+                      if (context.mounted) Navigator.pop(ctx);
+                    },
+                    child: isLoading 
+                      ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
+                      : const Text("Update"),
                   ),
                 ],
               ),
@@ -1829,35 +1800,36 @@ class CategoryDialogs {
           ]
         ), 
         actions: [
-          Row(children: [
-            Expanded(child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-                foregroundColor: Theme.of(context).colorScheme.onError,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text("Cancel")
               ),
-              onPressed: () => Navigator.pop(ctx), 
-              child: const Text("Cancel")
-            )),
-            const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary, 
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary, 
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: (nameController.text == serviceMap['name'] && amountController.text == serviceMap['amount'].toString()) ? null : () async {
+                  List updated = overriddenServices.map((s) => Map<String, dynamic>.from(s)).toList();
+                  updated.removeWhere((s) => s['originalName'] == serviceMap['originalName']);
+                  updated.add({'originalName': serviceMap['originalName'], 'name': nameController.text.trim(), 'amount': double.tryParse(amountController.text) ?? 0});
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  await _dbService.updateSubItemOverriddenServices(subItemId, updated, prefs.getString('username') ?? "Admin");
+                  if (context.mounted) Navigator.pop(ctx);
+                }, 
+                child: const Text("Save")
               ),
-              onPressed: (nameController.text == serviceMap['name'] && amountController.text == serviceMap['amount'].toString()) ? null : () async {
-                List updated = overriddenServices.map((s) => Map<String, dynamic>.from(s)).toList();
-                updated.removeWhere((s) => s['originalName'] == serviceMap['originalName']);
-                updated.add({'originalName': serviceMap['originalName'], 'name': nameController.text.trim(), 'amount': double.tryParse(amountController.text) ?? 0});
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                await _dbService.updateSubItemOverriddenServices(subItemId, updated, prefs.getString('username') ?? "Admin");
-                if (context.mounted) Navigator.pop(ctx);
-              }, 
-              child: const Text("Save")
-            )),
-          ]),
+            ],
+          ),
         ]
       );
     }));

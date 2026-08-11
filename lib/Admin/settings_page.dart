@@ -11,6 +11,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:akonssquare/Common/theme_manager.dart';
+import 'package:akonssquare/Common/ui_helper.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool showOnlyTheme;
@@ -145,28 +146,29 @@ class _SettingsPageState extends State<SettingsPage> {
             title: const Center(child: Text("Backup Required!", style: TextStyle(fontWeight: FontWeight.bold))),
             content: const Text("It is recommended to backup before wiping.", textAlign: TextAlign.center),
             actions: [
-              Row(children: [
-                Expanded(child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
+              AppDialogActions(
+                actions: [
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    onPressed: () => Navigator.pop(ctx, false), 
+                    child: const Text("Cancel")
                   ),
-                  onPressed: () => Navigator.pop(ctx, false), 
-                  child: const Text("Cancel")
-                )),
-                const SizedBox(width: 12),
-                Expanded(child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, true), 
+                    child: const Text("Backup Now")
                   ),
-                  onPressed: () => Navigator.pop(ctx, true), 
-                  child: const Text("Backup Now")
-                )),
-              ]),
+                ],
+              ),
             ],
           ),
         ) ?? false;
@@ -203,13 +205,19 @@ class _SettingsPageState extends State<SettingsPage> {
         title: Center(child: Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold))),
         content: Text(msg, textAlign: TextAlign.center),
         actions: [
-          SizedBox(width: double.infinity, child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error, 
-              foregroundColor: Theme.of(context).colorScheme.onError,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () => Navigator.pop(ctx), child: const Text("OK"))),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error, 
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text("OK")
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -223,24 +231,29 @@ class _SettingsPageState extends State<SettingsPage> {
         title: Center(child: Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold))),
         content: Text(msg, textAlign: TextAlign.center),
         actions: [
-          Row(children: [
-            Expanded(child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.onError,
-                backgroundColor: Theme.of(context).colorScheme.error,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ), 
-              onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel"))),
-            const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.tertiary, 
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ), 
-              onPressed: () => Navigator.pop(ctx, true), child: const Text("Proceed"))),
-          ]),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ), 
+                onPressed: () => Navigator.pop(ctx, false), 
+                child: const Text("Cancel")
+              ),
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ), 
+                onPressed: () => Navigator.pop(ctx, true), 
+                child: const Text("Proceed")
+              ),
+            ],
+          ),
         ],
       ),
     ) ?? false;
@@ -456,36 +469,38 @@ class _SettingsPageState extends State<SettingsPage> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(children: [
-                    Row(children: [
-                      Expanded(child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), 
-                        onPressed: _isProcessing ? null : () => _handleBackup(context), 
-                        icon: (_isProcessing && _activeAction == 'backup') 
-                          ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                          : const Icon(Icons.cloud_upload_outlined), 
-                        label: const Text("Backup")
-                      )),
-                      const SizedBox(width: 12),
-                      Expanded(child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), 
-                        onPressed: _isProcessing ? null : () => _handleRestore(context), 
-                        icon: (_isProcessing && _activeAction == 'restore') 
-                          ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                          : const Icon(Icons.cloud_download_outlined), 
-                        label: const Text("Restore")
-                      )),
-                    ]),
+                    AppDialogActions(
+                      actions: [
+                        AppButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), 
+                          onPressed: _isProcessing ? null : () => _handleBackup(context), 
+                          icon: (_isProcessing && _activeAction == 'backup') 
+                            ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                            : const Icon(Icons.cloud_upload_outlined), 
+                          child: const Text("Backup")
+                        ),
+                        AppButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), 
+                          onPressed: _isProcessing ? null : () => _handleRestore(context), 
+                          icon: (_isProcessing && _activeAction == 'restore') 
+                            ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                            : const Icon(Icons.cloud_download_outlined), 
+                          child: const Text("Restore")
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity, 
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), 
-                        onPressed: _isProcessing ? null : () => _handleLocalSave(context), 
-                        icon: (_isProcessing && _activeAction == 'localSave') 
-                          ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                          : const Icon(Icons.save_alt), 
-                        label: const Text("Save Locally")
-                      )
+                    AppDialogActions(
+                      actions: [
+                        AppButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), 
+                          onPressed: _isProcessing ? null : () => _handleLocalSave(context), 
+                          icon: (_isProcessing && _activeAction == 'localSave') 
+                            ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                            : const Icon(Icons.save_alt), 
+                          child: const Text("Save Locally")
+                        ),
+                      ],
                     ),
                     if (_isProcessing) ...[
                       const SizedBox(height: 16),
@@ -505,16 +520,17 @@ class _SettingsPageState extends State<SettingsPage> {
                         if (snapshot.data?.getString('userRole') == 'superadmin') {
                           return Padding(padding: const EdgeInsets.only(top: 16), child: Column(children: [
                             const Divider(),
-                            SizedBox(
-                              width: double.infinity, 
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white), 
-                                onPressed: _isProcessing ? null : () => _handleWipe(context), 
-                                icon: (_isProcessing && _activeAction == 'wipe') 
-                                  ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                                  : const Icon(Icons.delete_forever), 
-                                label: const Text("Wipe All Data")
-                              )
+                            AppDialogActions(
+                              actions: [
+                                AppButton.icon(
+                                  style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white), 
+                                  onPressed: _isProcessing ? null : () => _handleWipe(context), 
+                                  icon: (_isProcessing && _activeAction == 'wipe') 
+                                    ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                                    : const Icon(Icons.delete_forever), 
+                                  child: const Text("Wipe All Data")
+                                ),
+                              ],
                             ),
                           ]));
                         }
@@ -538,7 +554,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(children: [
-                    SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _showUserDialog(context), icon: const Icon(Icons.person_add_alt_1_outlined), label: const Text("Add New Account"))),
+                    AppDialogActions(
+                      actions: [
+                        AppButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _showUserDialog(context), icon: const Icon(Icons.person_add_alt_1_outlined), child: const Text("Add New Account")),
+                      ],
+                    ),
                     const SizedBox(height: 12),
                     _buildUsersListRow(),
                   ]),
@@ -567,7 +587,11 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              SizedBox(width: double.infinity, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), label: const Text("Change App Theme"))),
+              AppDialogActions(
+                actions: [
+                  AppButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), child: const Text("Change App Theme")),
+                ],
+              ),
               const SizedBox(height: 16),
               // Font Selection Dropdown
               ValueListenableBuilder<String>(
@@ -679,27 +703,32 @@ class _SettingsPageState extends State<SettingsPage> {
           onChanged: (val) { if (val != null) setST(() => local = val); },
         ),
         actions: [
-          Row(children: [
-            Expanded(child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.onError,
-                backgroundColor: Theme.of(context).colorScheme.error,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ), 
-              onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-            const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.tertiary, 
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ), 
-              onPressed: () async {
-              await ThemeManager.setTheme(local);
-              if (ctx.mounted) Navigator.pop(ctx);
-            }, child: const Text("Apply"))),
-          ]),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ), 
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text("Cancel")
+              ),
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ), 
+                onPressed: () async {
+                  await ThemeManager.setTheme(local);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                }, 
+                child: const Text("Apply")
+              ),
+            ],
+          ),
         ],
       );
     }));
@@ -745,28 +774,33 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ]),
         actions: [
-          Row(children: [
-            Expanded(child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.onError,
-                backgroundColor: Theme.of(context).colorScheme.error,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ), 
-              onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-            const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary, 
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ), 
-              onPressed: (uC.text == (currentData?['username'] ?? '') && pC.text == (currentData?['password'] ?? '') && role == (currentData?['role'] ?? 'operator')) ? null : () async {
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await _dbService.saveUser(uC.text, pC.text, role, prefs.getString('username') ?? '', docId: docId);
-              if (ctx.mounted) Navigator.pop(ctx);
-            }, child: const Text("Save"))),
-          ]),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ), 
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text("Cancel")
+              ),
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary, 
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ), 
+                onPressed: (uC.text == (currentData?['username'] ?? '') && pC.text == (currentData?['password'] ?? '') && role == (currentData?['role'] ?? 'operator')) ? null : () async {
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  await _dbService.saveUser(uC.text, pC.text, role, prefs.getString('username') ?? '', docId: docId);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                }, 
+                child: const Text("Save")
+              ),
+            ],
+          ),
         ],
       );
     }));
@@ -777,9 +811,9 @@ class _SettingsPageState extends State<SettingsPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text("Remove Account?"), content: Text("Are you sure you want to remove user '$username'?"),
       actions: [
-        Row(children: [
-          Expanded(
-            child: ElevatedButton(
+        AppDialogActions(
+          actions: [
+            AppButton(
               style: ElevatedButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                 backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -789,10 +823,7 @@ class _SettingsPageState extends State<SettingsPage> {
               onPressed: () => Navigator.pop(ctx), 
               child: const Text("Cancel")
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
+            AppButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.error,
                 foregroundColor: Theme.of(context).colorScheme.onError,
@@ -805,8 +836,8 @@ class _SettingsPageState extends State<SettingsPage> {
               }, 
               child: const Text("Remove")
             ),
-          ),
-        ]),
+          ],
+        ),
       ],
     ));
   }
