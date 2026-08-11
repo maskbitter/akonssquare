@@ -259,11 +259,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildSubVisibilityRadio(String title, bool isVisible, Function(bool) onChanged, {IconData? icon}) {
     return Padding(
-      padding: const EdgeInsets.only(left: 48, right: 16),
+      padding: const EdgeInsets.only(left: 24, right: 16),
       child: InkWell(
         onTap: () => onChanged(!isVisible),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 2),
           child: Row(
             children: [
               if (icon != null) Icon(icon, size: 16, color: Theme.of(context).colorScheme.secondary),
@@ -335,7 +335,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         iconColor: ThemeManager.getCardColor(1, isSubCard: true),
                         collapsedIconColor: ThemeManager.getCardColor(1, isSubCard: true),
                         title: Text("System Configuration", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.getCardOnContainerColor(1, isSubCard: true))),
-                        subtitle: Text("System behavior & Experience", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, color: ThemeManager.getCardOnContainerColor(1, isSubCard: true).withValues(alpha: 0.7))),
+                        subtitle: Text("System behavior & Experience", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ThemeManager.getCardOnContainerColor(1, isSubCard: true).withValues(alpha: 0.7))),
                         children: [
                           _buildVisibilitySwitch("Enable Update Notifications", isEnabled, (val) => _dbService.updatePopupStatus(val)),
                           FutureBuilder<SharedPreferences>(
@@ -385,7 +385,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     return Column(children: [
                       Card(
                         elevation: 2,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                         color: ThemeManager.getCardContainerColor(0, isSubCard: true),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: _buildVisibilitySwitch("Show Accounts Section", s['showAccounts']!, (val) { s['showAccounts'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.account_balance_wallet_outlined),
@@ -394,7 +394,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       // Electricity Nested
                       Card(
                         elevation: 2,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                         color: ThemeManager.getCardContainerColor(1, isSubCard: true),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Column(
@@ -403,7 +403,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             if (s['showElectricity']!) ...[
                               _buildSubVisibilityRadio("Main vs Sub-Meter", s['showMainVsSub']!, (val) { s['showMainVsSub'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.compare_arrows),
                               _buildSubVisibilityRadio("Main vs Govt. Bill", s['showMainVsGovt']!, (val) { s['showMainVsGovt'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.receipt_long),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
                             ],
                           ],
                         ),
@@ -412,7 +412,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       // Category Nested
                       Card(
                         elevation: 2,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                         color: ThemeManager.getCardContainerColor(2, isSubCard: true),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Column(
@@ -433,7 +433,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   }).toList());
                                 },
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
                             ],
                           ],
                         ),
@@ -600,7 +600,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSettingsCard(BuildContext context, {required IconData icon, required String title, required String subtitle, required Color color, required Color accentColor, required List<Widget> children}) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       color: color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),
       child: ExpansionTile(
