@@ -472,7 +472,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                       subItemName: subName, 
                                       currentStatus: 'Vacant', 
                                       currentTenant: tenant, 
-                                      currentNid: d['nidNumber'] ?? 'No Number'
+                                      currentNid: d['nidNumber'] ?? 'No Number',
+                                      electricityDetails: ed
                                     );
                                   },
                                   child: Card(
@@ -624,7 +625,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                         subItemName: subName, 
                                         currentStatus: 'Occupied', 
                                         currentTenant: tenant, 
-                                        currentNid: d['nidNumber'] ?? 'No Number'
+                                        currentNid: d['nidNumber'] ?? 'No Number',
+                                        electricityDetails: ed
                                       );
                                     },
                                     child: Card(

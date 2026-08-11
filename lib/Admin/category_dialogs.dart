@@ -1292,7 +1292,7 @@ class CategoryDialogs {
     );
   }
 
-  static void showSubItemStatusDialog({required BuildContext context, required String subItemId, required String subItemName, required String currentStatus, required String currentTenant, required String currentNid}) {
+  static void showSubItemStatusDialog({required BuildContext context, required String subItemId, required String subItemName, required String currentStatus, required String currentTenant, required String currentNid, Map<String, dynamic>? electricityDetails}) {
     if (currentStatus == 'Vacant') {
       final tenantController = TextEditingController();
       final nidController = TextEditingController();
@@ -1385,17 +1385,91 @@ class CategoryDialogs {
         ),
       );
     } else {
-      showConfirmDialog(
-        context: context, 
-        title: "Set to Vacant?", 
-        content: "Are you sure you want to set $subItemName to Vacant? Renter info will be cleared.", 
-        confirmText: "Proceed",
-        confirmColor: Theme.of(context).colorScheme.error,
-        onConfirm: () async {
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await _dbService.updateSubItemStatus(subItemId, 'Vacant', prefs.getString('username') ?? "Admin");
-        }
-      );
+      double eBillAmount = 0;
+      double units = 0;
+      if (electricityDetails != null && electricityDetails['isStopped'] != true) {
+        double last = ((electricityDetails['lastReading'] ?? 0) as num).toDouble();
+        double pres = ((electricityDetails['presentReading'] ?? 0) as num).toDouble();
+        double rate = ((electricityDetails['pricePerUnit'] ?? 0) as num).toDouble();
+        units = pres - last;
+        if (units > 0) eBillAmount = units * rate;
+      }
+
+      if (eBillAmount > 0) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Column(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.error, size: 48),
+                const SizedBox(height: 12),
+                Text("Pending Bill Alert!", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.error)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "This unit has a pending electricity bill of ৳${eBillAmount.toStringAsFixed(1)} (${units.toStringAsFixed(1)} units).",
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Are you sure you want to set $subItemName to Vacant? Renter info will be cleared.",
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            actions: [
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error, 
+                      side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () => Navigator.pop(ctx), 
+                    child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error))
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await _dbService.updateSubItemStatus(subItemId, 'Vacant', prefs.getString('username') ?? "Admin");
+                    },
+                    child: const Text("Proceed anyway"),
+                  ),
+                ),
+              ]),
+            ],
+          ),
+        );
+      } else {
+        showConfirmDialog(
+          context: context, 
+          title: "Set to Vacant?", 
+          content: "Are you sure you want to set $subItemName to Vacant? Renter info will be cleared.", 
+          confirmText: "Proceed",
+          confirmColor: Theme.of(context).colorScheme.error,
+          onConfirm: () async {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            await _dbService.updateSubItemStatus(subItemId, 'Vacant', prefs.getString('username') ?? "Admin");
+          }
+        );
+      }
     }
   }
 
