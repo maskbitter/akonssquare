@@ -156,7 +156,6 @@ class _LoginPageState extends State<LoginPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.surface, 
                 foregroundColor: Theme.of(context).colorScheme.onSurface, 
-                side: BorderSide(color: Theme.of(context).colorScheme.outline)
               ),
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text("OK"),
@@ -192,11 +191,11 @@ class _LoginPageState extends State<LoginPage> {
             content: Column(mainAxisSize: MainAxisSize.min, children: [
               Text("Enter last 4 digits of your NID:", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall),
               const SizedBox(height: 12),
-              TextField(controller: passController, obscureText: true, keyboardType: TextInputType.number, maxLength: 4, style: Theme.of(context).textTheme.bodyLarge, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock_outline), border: OutlineInputBorder(), counterText: "")),
+              TextField(controller: passController, obscureText: true, keyboardType: TextInputType.number, maxLength: 4, style: Theme.of(context).textTheme.bodyLarge, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock_outline), counterText: "")),
             ]),
             actions: [
               Row(children: [
-                Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: isAuthenticating ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
+                Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: isAuthenticating ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
                 const SizedBox(width: 12),
                 Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Theme.of(context).colorScheme.onTertiary, textStyle: const TextStyle(fontWeight: FontWeight.bold)), onPressed: isAuthenticating ? null : () async {
                   String input = passController.text.trim(); String storedNid = (subData['nidNumber'] ?? '').toString();
@@ -241,7 +240,7 @@ class _LoginPageState extends State<LoginPage> {
           ]),
           actions: [
             Row(children: [
-              Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: isVerifying ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
+              Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: isVerifying ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
               const SizedBox(width: 12),
               Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Theme.of(context).colorScheme.onTertiary, textStyle: const TextStyle(fontWeight: FontWeight.bold)), onPressed: isVerifying ? null : () async {
                 String u = uC.text.trim(); String p = pC.text.trim(); if (u.isEmpty || p.isEmpty) return;
@@ -298,11 +297,11 @@ class _LoginPageState extends State<LoginPage> {
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             Text("Enter secret key:", style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 12),
-            TextField(controller: keyController, obscureText: true, decoration: const InputDecoration(labelText: "Secret Key", border: OutlineInputBorder(), prefixIcon: Icon(Icons.vpn_key_outlined))),
+            TextField(controller: keyController, obscureText: true, decoration: const InputDecoration(labelText: "Secret Key", prefixIcon: Icon(Icons.vpn_key_outlined))),
           ]),
           actions: [
             Row(children: [
-              Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+              Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
               const SizedBox(width: 12),
               Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Theme.of(context).colorScheme.onTertiary), onPressed: isLoading ? null : () async {
                 if (keyController.text.trim() == 'superadmin') {
@@ -465,11 +464,6 @@ class _LoginPageState extends State<LoginPage> {
                                             labelText: "Select User Name",
                                             labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                             prefixIcon: Icon(Icons.meeting_room_outlined, color: Theme.of(context).colorScheme.onSurface),
-                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(16),
-                                              borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 1.5),
-                                            ),
                                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                                           ),
                                           icon: const Icon(Icons.arrow_drop_down),

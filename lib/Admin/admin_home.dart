@@ -414,7 +414,7 @@ class _AdminHomeState extends State<AdminHome> {
             title: '${((received/total)*100).toStringAsFixed(0)}%',
             radius: 35,
             titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.black87, fontWeight: FontWeight.bold),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+            borderSide: BorderSide.none,
           ),
           PieChartSectionData(
             color: Colors.redAccent,
@@ -422,7 +422,7 @@ class _AdminHomeState extends State<AdminHome> {
             title: '${((due/total)*100).toStringAsFixed(0)}%',
             radius: 30,
             titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+            borderSide: BorderSide.none,
           ),
         ],
       ),
@@ -473,7 +473,7 @@ class _AdminHomeState extends State<AdminHome> {
           color: color,
           width: 14,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-          borderSide: BorderSide(color: color.withValues(alpha: 0.8), width: 1),
+          borderSide: BorderSide.none,
           backDrawRodData: BackgroundBarChartRodData(
             show: true,
             toY: y,
@@ -592,7 +592,7 @@ class _AdminHomeState extends State<AdminHome> {
       elevation: isHighlighted ? 4 : 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20), 
-        side: BorderSide(color: isHighlighted ? color : color.withOpacity(0.1), width: isHighlighted ? 2 : 1)
+        side: BorderSide.none,
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -747,7 +747,7 @@ class _AdminHomeState extends State<AdminHome> {
     return Card(
       elevation: 2,
       color: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: color.withOpacity(0.3), width: 1.2)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: InkWell(
         onTap: onTap,
@@ -846,7 +846,7 @@ class _AdminHomeState extends State<AdminHome> {
             color: containerColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: accentColor, width: 1)
+              side: BorderSide.none,
             ),
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Padding(
@@ -859,14 +859,13 @@ class _AdminHomeState extends State<AdminHome> {
                   child: Table(
                     defaultColumnWidth: const IntrinsicColumnWidth(),
                     defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                    border: TableBorder(
-                      verticalInside: BorderSide(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1), width: 1),
+                    border: const TableBorder(
+                      verticalInside: BorderSide.none,
                     ),
                     children: [
                       TableRow(
                         decoration: BoxDecoration(
                           color: accentColor,
-                          border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1), width: 0.5))
                         ),
                         children: headers.map((h) => Padding(
                           padding: const EdgeInsets.all(12),
@@ -1012,7 +1011,7 @@ class _AdminHomeState extends State<AdminHome> {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: accentColor.withOpacity(0.1), width: 1.2),
+            side: BorderSide.none,
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1376,7 +1375,7 @@ class _AdminHomeState extends State<AdminHome> {
       elevation: 1,
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
       color: itemColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: color.withOpacity(0.15), width: 1)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide.none),
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1489,7 +1488,6 @@ class _AdminHomeState extends State<AdminHome> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primaryContainer, 
                     borderRadius: BorderRadius.circular(12), 
-                    border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2))
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1520,7 +1518,6 @@ class _AdminHomeState extends State<AdminHome> {
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: Text(
                           "Note: ${data['paymentNotes']}", 

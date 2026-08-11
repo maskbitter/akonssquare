@@ -83,8 +83,7 @@ class _UserDashboardState extends State<UserDashboard> {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error, 
-                      side: BorderSide(color: Theme.of(context).colorScheme.error)
+                      foregroundColor: Colors.blueGrey, 
                     ),
                     onPressed: () => Navigator.pop(context), 
                     child: const Text("Cancel")
@@ -214,8 +213,9 @@ class _UserDashboardState extends State<UserDashboard> {
                           String dbVersion = "...";
                           String bnText = "BN$buildNumber";
                           if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
-                            dbVersion = (dbInfoSnap.data!['dbVersion'] ?? 26.0).toStringAsFixed(1);
-                            int firestoreBN = dbInfoSnap.data!['buildNumber']?.toInt() ?? 0;
+                            var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                            dbVersion = (data?['dbVersion'] ?? 26.0).toDouble().toStringAsFixed(1);
+                            int firestoreBN = data?['buildNumber']?.toInt() ?? 0;
                             if (firestoreBN > buildNumber) bnText = "BN$firestoreBN";
                           }
                           
@@ -423,7 +423,6 @@ class _UserDashboardState extends State<UserDashboard> {
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         boxShadow: [
                           BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
                         ],
@@ -490,7 +489,6 @@ class _UserDashboardState extends State<UserDashboard> {
                                   decoration: BoxDecoration(
                                     color: Theme.of(context).colorScheme.error.withValues(alpha: 0.05),
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1)),
                                   ),
                                   child: Text(
                                     m, 
@@ -513,7 +511,6 @@ class _UserDashboardState extends State<UserDashboard> {
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
                         ),
                         child: Row(
                           children: [
@@ -533,7 +530,7 @@ class _UserDashboardState extends State<UserDashboard> {
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                          side: BorderSide.none,
                         ),
                         child: ExpansionTile(
                           shape: const Border(),
@@ -565,7 +562,6 @@ class _UserDashboardState extends State<UserDashboard> {
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: ListTile(
                           leading: CircleAvatar(

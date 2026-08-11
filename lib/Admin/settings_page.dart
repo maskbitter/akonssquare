@@ -203,7 +203,7 @@ class _SettingsPageState extends State<SettingsPage> {
         content: Text(msg, textAlign: TextAlign.center),
         actions: [
           Row(children: [
-            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel"))),
+            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel"))),
             const SizedBox(width: 12),
             Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => Navigator.pop(ctx, true), child: const Text("Proceed"))),
           ]),
@@ -541,11 +541,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 builder: (context, currentFont, child) {
                   return DropdownButtonFormField<String>(
                     value: currentFont,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: "App Font Family",
-                      prefixIcon: const Icon(Icons.font_download_outlined),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      prefixIcon: Icon(Icons.font_download_outlined),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                     items: ThemeManager.supportedFonts.map((f) => DropdownMenuItem(value: f, child: Text(f, style: const TextStyle(fontWeight: FontWeight.bold)))).toList(),
                     onChanged: (val) {
@@ -569,7 +568,7 @@ class _SettingsPageState extends State<SettingsPage> {
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accentColor.withOpacity(0.1))),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),
       child: ExpansionTile(
         leading: Icon(icon, color: accentColor),
         iconColor: accentColor,
@@ -606,7 +605,7 @@ class _SettingsPageState extends State<SettingsPage> {
             elevation: 2,
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             color: roleColor,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: accent.withValues(alpha: 0.1))),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide.none),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
@@ -647,7 +646,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         actions: [
           Row(children: [
-            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
             const SizedBox(width: 12),
             Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () async {
               await ThemeManager.setTheme(local);
@@ -668,15 +667,15 @@ class _SettingsPageState extends State<SettingsPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text(docId == null ? "Add Account" : "Edit Account", style: Theme.of(context).textTheme.titleLarge)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: uC, decoration: const InputDecoration(labelText: "Username", border: OutlineInputBorder())),
+          TextField(controller: uC, decoration: const InputDecoration(labelText: "Username")),
           const SizedBox(height: 12),
-          TextField(controller: pC, decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder())),
+          TextField(controller: pC, decoration: const InputDecoration(labelText: "Password")),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(value: role, decoration: const InputDecoration(border: OutlineInputBorder(), labelText: "Role"), items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))], onChanged: (v) => setST(() => role = v!)),
+          DropdownButtonFormField<String>(value: role, decoration: const InputDecoration(labelText: "Role"), items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))], onChanged: (v) => setST(() => role = v!)),
         ]),
         actions: [
           Row(children: [
-            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error, side: BorderSide(color: Theme.of(context).colorScheme.error)), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
             const SizedBox(width: 12),
             Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), onPressed: () async {
               SharedPreferences prefs = await SharedPreferences.getInstance();

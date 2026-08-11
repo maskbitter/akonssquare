@@ -106,8 +106,7 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
                       children: [
                         Expanded(child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Theme.of(context).colorScheme.error, 
-                            side: BorderSide(color: Theme.of(context).colorScheme.error)
+                            foregroundColor: Colors.blueGrey, 
                           ),
                           onPressed: () => Navigator.pop(ctx), 
                           child: const Text("Cancel")
@@ -146,8 +145,9 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
                         String dbVersion = "...";
                         String bnText = "BN$buildNumber";
                         if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
-                          dbVersion = (dbInfoSnap.data!['dbVersion'] ?? 26.0).toStringAsFixed(1);
-                          int firestoreBN = dbInfoSnap.data!['buildNumber']?.toInt() ?? 0;
+                          var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                          dbVersion = (data?['dbVersion'] ?? 26.0).toDouble().toStringAsFixed(1);
+                          int firestoreBN = data?['buildNumber']?.toInt() ?? 0;
                           if (firestoreBN > buildNumber) bnText = "BN$firestoreBN";
                         }
                         

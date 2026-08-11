@@ -93,7 +93,7 @@ class _CategoryPageState extends State<CategoryPage> {
       elevation: 4,
       margin: EdgeInsets.zero,
       color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accentColor.withOpacity(0.1))),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(backgroundColor: accentColor, child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20)),
@@ -212,7 +212,7 @@ class _CategoryPageState extends State<CategoryPage> {
                       decoration: InputDecoration(
                         isDense: true, 
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), 
-                        border: const OutlineInputBorder(), 
+                        border: InputBorder.none, 
                         labelText: "Category",
                         labelStyle: Theme.of(context).textTheme.bodySmall,
                       ),
@@ -230,7 +230,6 @@ class _CategoryPageState extends State<CategoryPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).colorScheme.outline), 
                     borderRadius: BorderRadius.circular(8),
                     color: Theme.of(context).colorScheme.surface,
                   ),
@@ -349,7 +348,7 @@ class _CategoryPageState extends State<CategoryPage> {
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16), 
-                          side: BorderSide(color: accentColor.withOpacity(0.1), width: 1.2)
+                          side: BorderSide.none,
                         ),
                         child: ExpansionTile(
                           shape: const Border(),
@@ -482,7 +481,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                     elevation: 2,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12), 
-                                      side: BorderSide(color: itemAccentColor.withValues(alpha: 0.2), width: 1)
+                                      side: BorderSide.none,
                                     ),
                                     child: ExpansionTile(
                                     tilePadding: const EdgeInsets.symmetric(horizontal: 12),
@@ -633,14 +632,9 @@ class _CategoryPageState extends State<CategoryPage> {
                                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       color: isPaid ? Theme.of(context).colorScheme.tertiaryContainer : itemBgColor,
                                       elevation: 2,
-                                      shape: RoundedRectangleBorder(
+                                        shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
-                                        side: BorderSide(
-                                          color: isOccupied 
-                                            ? (isPaid ? Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.2) : itemAccentColor.withValues(alpha: 0.2)) 
-                                            : Theme.of(context).colorScheme.error.withValues(alpha: 0.2), 
-                                          width: 1
-                                        )
+                                        side: BorderSide.none,
                                       ),
                                       child: ExpansionTile(
                                       shape: const Border(),
@@ -879,7 +873,6 @@ class _CategoryPageState extends State<CategoryPage> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLow, 
         borderRadius: BorderRadius.circular(12), 
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant)
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -967,7 +960,7 @@ class _CategoryPageState extends State<CategoryPage> {
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16), 
-                side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 1)
+                side: BorderSide.none,
               ),
               child: ExpansionTile(
                 leading: CircleAvatar(
@@ -1019,7 +1012,7 @@ class _CategoryPageState extends State<CategoryPage> {
       color: effectiveBgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16), 
-        side: BorderSide(color: effectiveAccentColor.withOpacity(0.3), width: 1)
+        side: BorderSide.none,
       ),
       child: ExpansionTile(
         leading: CircleAvatar(backgroundColor: effectiveAccentColor, child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20)),
@@ -1042,14 +1035,13 @@ class _CategoryPageState extends State<CategoryPage> {
                 child: Table(
                   defaultColumnWidth: const IntrinsicColumnWidth(),
                   defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  border: TableBorder(
-                    verticalInside: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1),
+                  border: const TableBorder(
+                    verticalInside: BorderSide.none,
                   ),
                   children: [
                     TableRow(
                       decoration: BoxDecoration(
                         color: effectiveAccentColor,
-                        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5))
                       ),
                       children: [
                         "#", "Meter Number", "Last Readings", "Present Readings", "Govt. Last\n Bill Readings", "Govt. New\nBill Readings", "Govt. Bill\nAmounts", "Govt. Bill\nUnits", "Last Month\nUnit Rate", "This Month\nUnit Rate", "Govt.\nDue/Adv Units", "Main Meter\nUsed Units", "Sub Units", "Balance", "Action"
@@ -1146,7 +1138,7 @@ class _CategoryPageState extends State<CategoryPage> {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16), 
-            side: BorderSide(color: Theme.of(context).colorScheme.secondary.withOpacity(0.2), width: 1)
+            side: BorderSide.none,
           ),
           child: ExpansionTile(
             leading: CircleAvatar(
@@ -1172,14 +1164,13 @@ class _CategoryPageState extends State<CategoryPage> {
                     child: Table(
                       defaultColumnWidth: const IntrinsicColumnWidth(),
                       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                      border: TableBorder(
-                        verticalInside: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1),
+                      border: const TableBorder(
+                        verticalInside: BorderSide.none,
                       ),
                       children: [
                         TableRow(
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.secondary,
-                            border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5))
                           ),
                           children: [
                             "#", "Sub-Meter", "Main-Meter", "Last", "Present", "Used", "Action"

@@ -67,14 +67,13 @@ class CategoryDialogs {
             Expanded(
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error, 
-                  side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                  foregroundColor: Colors.blueGrey, 
                   backgroundColor: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () => Navigator.pop(ctx), 
-                child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error))
+                child: const Text("Cancel")
               ),
             ),
             const SizedBox(width: 12),
@@ -111,14 +110,13 @@ class CategoryDialogs {
             controller: controller, 
             textAlign: TextAlign.center, 
             style: Theme.of(context).textTheme.bodyLarge,
-            decoration: const InputDecoration(labelText: "Category Name", border: OutlineInputBorder())
+            decoration: const InputDecoration(labelText: "Category Name")
           ),
           actions: [
             Row(children: [
               Expanded(child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
-                  side: BorderSide(color: Theme.of(context).colorScheme.error),
+                  foregroundColor: Colors.blueGrey,
                 ),
                 onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
               const SizedBox(width: 12),
@@ -165,7 +163,7 @@ class CategoryDialogs {
                       controller: nameController, 
                       textAlign: TextAlign.center, 
                       style: Theme.of(context).textTheme.bodyLarge,
-                      decoration: const InputDecoration(labelText: "New Service Name", border: OutlineInputBorder(), isDense: true)
+                      decoration: const InputDecoration(labelText: "New Service Name", isDense: true)
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -173,7 +171,7 @@ class CategoryDialogs {
                       textAlign: TextAlign.center, 
                       keyboardType: TextInputType.number, 
                       style: Theme.of(context).textTheme.bodyLarge,
-                      decoration: const InputDecoration(labelText: "Price (BDT)", prefixText: "৳ ", border: OutlineInputBorder(), isDense: true)
+                      decoration: const InputDecoration(labelText: "Price (BDT)", prefixText: "৳ ", isDense: true)
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
@@ -290,15 +288,14 @@ class CategoryDialogs {
               controller: subItemController, 
               textAlign: TextAlign.center, 
               style: Theme.of(context).textTheme.bodyLarge,
-              decoration: InputDecoration(labelText: "$categoryName No", border: const OutlineInputBorder())
+              decoration: InputDecoration(labelText: "$categoryName No")
             ),
           ])),
           actions: [
             Row(children: [
               Expanded(child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
-                  side: BorderSide(color: Theme.of(context).colorScheme.error),
+                  foregroundColor: Colors.blueGrey,
                 ),
                 onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
               const SizedBox(width: 12),
@@ -341,7 +338,7 @@ class CategoryDialogs {
               children: [
                 DropdownButtonFormField<String>(
                   value: meterType,
-                  decoration: const InputDecoration(labelText: "Meter Type", border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: "Meter Type"),
                   items: const [
                     DropdownMenuItem(value: "Residential", child: Text("Residential")),
                     DropdownMenuItem(value: "Commercial", child: Text("Commercial")),
@@ -353,7 +350,7 @@ class CategoryDialogs {
                   controller: meterNoController,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
-                  decoration: const InputDecoration(labelText: "Meter Number", border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: "Meter Number"),
                 ),
               ],
             ),
@@ -362,14 +359,13 @@ class CategoryDialogs {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error,
-                      side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                      foregroundColor: Colors.blueGrey,
                       backgroundColor: Theme.of(context).colorScheme.surface,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () => Navigator.pop(ctx),
-                    child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
+                    child: const Text("Cancel"),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -463,7 +459,7 @@ class CategoryDialogs {
                     textAlign: TextAlign.center,
                     onChanged: (_) => setDialogState(() {}),
                     style: Theme.of(context).textTheme.bodyLarge,
-                    decoration: const InputDecoration(labelText: "New Present Reading", border: OutlineInputBorder(), isDense: true),
+                    decoration: const InputDecoration(labelText: "New Present Reading", isDense: true),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -477,7 +473,7 @@ class CategoryDialogs {
                     textAlign: TextAlign.center,
                     onChanged: (_) => setDialogState(() {}),
                     style: Theme.of(context).textTheme.bodyLarge,
-                    decoration: const InputDecoration(labelText: "New Govt. Bill Reading", border: OutlineInputBorder(), isDense: true),
+                    decoration: const InputDecoration(labelText: "New Govt. Bill Reading", isDense: true),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -486,7 +482,7 @@ class CategoryDialogs {
                     textAlign: TextAlign.center,
                     onChanged: (_) => setDialogState(() {}),
                     style: Theme.of(context).textTheme.bodyLarge,
-                    decoration: const InputDecoration(labelText: "Govt. Bill Amount", prefixText: "৳ ", border: OutlineInputBorder(), isDense: true),
+                    decoration: const InputDecoration(labelText: "Govt. Bill Amount", prefixText: "৳ ", isDense: true),
                   ),
                   _buildReadOnlyRow(context, "Govt. Bill Unit", govtBillUnit.toStringAsFixed(1)),
                   _buildReadOnlyRow(context, "Last Month Unit Rate", "৳${lastMonthRate.toStringAsFixed(2)}"),
@@ -529,14 +525,13 @@ class CategoryDialogs {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error,
-                      side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                      foregroundColor: Colors.blueGrey,
                       backgroundColor: Theme.of(context).colorScheme.surface,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () => Navigator.pop(ctx),
-                    child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
+                    child: const Text("Cancel"),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -675,7 +670,7 @@ class CategoryDialogs {
                   
                   return DropdownButtonFormField<String>(
                     value: selectedMainMeter,
-                    decoration: const InputDecoration(labelText: "Select Main Meter", border: OutlineInputBorder()),
+                    decoration: const InputDecoration(labelText: "Select Main Meter"),
                     items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text("Meter: ${doc['meterNo']}", style: Theme.of(context).textTheme.bodyMedium))).toList(),
                     onChanged: (v) => setDialogState(() => selectedMainMeter = v),
                   );
@@ -686,7 +681,7 @@ class CategoryDialogs {
                 controller: subMeterNoController,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge,
-                decoration: const InputDecoration(labelText: "Sub Meter Number", border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: "Sub Meter Number"),
               ),
             ],
           ),
@@ -695,13 +690,12 @@ class CategoryDialogs {
               Expanded(
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                    side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                    foregroundColor: Colors.blueGrey,
                     backgroundColor: Theme.of(context).colorScheme.surface,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () => Navigator.pop(ctx),
-                  child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
+                  child: const Text("Cancel"),
                 ),
               ),
               const SizedBox(width: 12),
@@ -797,7 +791,7 @@ class CategoryDialogs {
 
                     return DropdownButtonFormField<String>(
                       value: dropdownValue,
-                      decoration: const InputDecoration(labelText: "Sub-meter No", border: OutlineInputBorder(), isDense: true),
+                      decoration: const InputDecoration(labelText: "Sub-meter No", isDense: true),
                       items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text("Sub-meter: ${doc['subMeterNo']} (Main: ${doc['mainMeterNo']})", style: Theme.of(context).textTheme.bodyMedium))).toList(),
                       onChanged: isOperator ? null : (v) => setDialogState(() {
                         selectedSubMeter = v;
@@ -815,14 +809,14 @@ class CategoryDialogs {
                   controller: presentReadingController, 
                   textAlign: TextAlign.center, 
                   keyboardType: TextInputType.number, 
-                  decoration: const InputDecoration(labelText: "New Present Reading", border: OutlineInputBorder(), isDense: true)
+                  decoration: const InputDecoration(labelText: "New Present Reading", isDense: true)
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: priceController, 
                   textAlign: TextAlign.center, 
                   keyboardType: TextInputType.number, 
-                  decoration: const InputDecoration(labelText: "Price (per unit) BDT", prefixText: "৳ ", border: OutlineInputBorder(), isDense: true)
+                  decoration: const InputDecoration(labelText: "Price (per unit) BDT", prefixText: "৳ ", isDense: true)
                 ),
               ],
             ),
@@ -833,14 +827,13 @@ class CategoryDialogs {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error,
-                      side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                      foregroundColor: Colors.blueGrey,
                       backgroundColor: Theme.of(context).colorScheme.surface,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () => Navigator.pop(ctx),
-                    child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
+                    child: const Text("Cancel"),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -957,7 +950,6 @@ class CategoryDialogs {
                     style: Theme.of(context).textTheme.bodyLarge,
                     decoration: InputDecoration(
                       labelText: "Notes", 
-                      border: const OutlineInputBorder(), 
                       isDense: true,
                       counterText: "$wordCount / 100 words",
                       counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: wordCount > 100 ? Theme.of(context).colorScheme.error : null),
@@ -1009,8 +1001,7 @@ class CategoryDialogs {
                 width: double.infinity,
                 child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error, 
-                      side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                      foregroundColor: Colors.blueGrey, 
                     ),
                     onPressed: () => Navigator.pop(ctx), 
                     child: const Text("Cancel")
@@ -1022,8 +1013,7 @@ class CategoryDialogs {
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.error, 
-                        side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                        foregroundColor: Colors.blueGrey,
                       ),
                       onPressed: () => Navigator.pop(ctx), 
                       child: const Text("Cancel")
@@ -1153,8 +1143,7 @@ class CategoryDialogs {
              Row(children: [
                Expanded(child: OutlinedButton(
                  style: OutlinedButton.styleFrom(
-                   foregroundColor: Theme.of(context).colorScheme.error,
-                   side: BorderSide(color: Theme.of(context).colorScheme.error),
+                   foregroundColor: Colors.blueGrey,
                  ),
                  onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
                const SizedBox(width: 12),
@@ -1219,7 +1208,6 @@ class CategoryDialogs {
                     onChanged: (val) => setDialogState(() => wordCount = _getWordCount(val)),
                     decoration: InputDecoration(
                       labelText: "Notes (Max 100 words)", 
-                      border: const OutlineInputBorder(), 
                       alignLabelWithHint: true,
                       counterText: "$wordCount / 100 words",
                       counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: wordCount > 100 ? Theme.of(context).colorScheme.error : null),
@@ -1236,8 +1224,7 @@ class CategoryDialogs {
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.error, 
-                        side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                        foregroundColor: Colors.blueGrey,
                       ),
                       onPressed: () => Navigator.pop(ctx), 
                       child: const Text("Cancel")
@@ -1288,7 +1275,7 @@ class CategoryDialogs {
       controller: controller, 
       textAlign: TextAlign.center,
       style: Theme.of(context).textTheme.bodyLarge,
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      decoration: InputDecoration(labelText: label),
     );
   }
 
@@ -1321,14 +1308,14 @@ class CategoryDialogs {
                   controller: tenantController,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
-                  decoration: const InputDecoration(labelText: "Tenant Name", border: OutlineInputBorder(), isDense: true),
+                  decoration: const InputDecoration(labelText: "Tenant Name", isDense: true),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: nidController,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
-                  decoration: const InputDecoration(labelText: "NID Number", border: OutlineInputBorder(), isDense: true),
+                  decoration: const InputDecoration(labelText: "NID Number", isDense: true),
                 ),
               ],
             ),
@@ -1338,12 +1325,11 @@ class CategoryDialogs {
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.error,
-                        side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                        foregroundColor: Colors.blueGrey,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () => Navigator.pop(ctx),
-                      child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
+                      child: const Text("Cancel"),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1429,12 +1415,12 @@ class CategoryDialogs {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error, 
-                      side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                      foregroundColor: Colors.blueGrey, 
+                      side: BorderSide.none,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () => Navigator.pop(ctx), 
-                    child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error))
+                    child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.blueGrey))
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1604,7 +1590,7 @@ class CategoryDialogs {
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge,
-                decoration: const InputDecoration(labelText: "Wifi cost per device", prefixText: "৳ ", border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: "Wifi cost per device", prefixText: "৳ "),
                 onChanged: (val) {
                   double? p = double.tryParse(val);
                   if (p != null) setDialogState(() => unitPrice = p);
@@ -1622,7 +1608,7 @@ class CategoryDialogs {
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Theme.of(context).colorScheme.error,
-                        side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                        side: BorderSide.none,
                         backgroundColor: Theme.of(context).colorScheme.surface,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 12),

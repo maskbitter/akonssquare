@@ -170,8 +170,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                         String dbVersion = "...";
                         String bnText = "BN$buildNumber";
                         if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
-                          dbVersion = (dbInfoSnap.data!['dbVersion'] ?? 26.0).toStringAsFixed(1);
-                          int firestoreBN = dbInfoSnap.data!['buildNumber']?.toInt() ?? 0;
+                          var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                          dbVersion = (data?['dbVersion'] ?? 26.0).toDouble().toStringAsFixed(1);
+                          int firestoreBN = data?['buildNumber']?.toInt() ?? 0;
                           if (firestoreBN > buildNumber) bnText = "BN$firestoreBN";
                         }
                         
