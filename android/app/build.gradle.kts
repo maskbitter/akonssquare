@@ -40,6 +40,17 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            val counterFile = file("build_counter.txt")
+            val bn = if (counterFile.exists()) counterFile.readText().trim() else "0"
+            val newName = "akonssquare_V${variant.versionName}_${variant.versionCode}_BN${bn}_${variant.buildType.name}.apk"
+            output.outputFileName = newName
+        }
+    }
 }
 
 kotlin {

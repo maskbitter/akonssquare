@@ -329,7 +329,7 @@ class _LoginPageState extends State<LoginPage> {
           builder: (context, dbInfoSnap) {
             String serverStatus = 'completed';
             String dbVersion = "...";
-            String bnText = "BN-$buildNumber"; // Default to local BN
+            String bnText = "BN$buildNumber"; // Default to local BN
             if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
               var info = dbInfoSnap.data!.data() as Map<String, dynamic>;
               serverStatus = info['serverStatus'] ?? 'completed';
@@ -337,7 +337,7 @@ class _LoginPageState extends State<LoginPage> {
               int firestoreBN = info['buildNumber']?.toInt() ?? 0;
               // If server has a newer BN, show that, otherwise show local
               if (firestoreBN > buildNumber) {
-                bnText = "BN-$firestoreBN";
+                bnText = "BN$firestoreBN";
               }
               
               if (serverStatus == 'completed' && _temporaryMessage != null && _temporaryMessage!.contains("Updating")) {
@@ -390,6 +390,7 @@ class _LoginPageState extends State<LoginPage> {
                             text: TextSpan(
                               children: [
                                 TextSpan(text: "V: $_currentVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold)),
+                                TextSpan(text: "_$bnText", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold)),
                                 if (isOutdated) ...[
                                   TextSpan(text: " | ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline)),
                                   TextSpan(text: "Latest V: $latestV", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
@@ -399,7 +400,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _temporaryMessage ?? "DB V-$dbVersion/$bnText",
+                            _temporaryMessage ?? "DB V-$dbVersion",
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: (_temporaryMessage != null && (_temporaryMessage!.contains("Delet") || _temporaryMessage!.contains("Backup"))) 
                                 ? Theme.of(context).colorScheme.error 

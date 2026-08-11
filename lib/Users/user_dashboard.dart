@@ -212,21 +212,21 @@ class _UserDashboardState extends State<UserDashboard> {
                           String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
                           String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
                           String dbVersion = "...";
-                          String bnText = "BN-$buildNumber";
+                          String bnText = "BN$buildNumber";
                           if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
                             dbVersion = (dbInfoSnap.data!['dbVersion'] ?? 26.0).toStringAsFixed(1);
                             int firestoreBN = dbInfoSnap.data!['buildNumber']?.toInt() ?? 0;
-                            if (firestoreBN > buildNumber) bnText = "BN-$firestoreBN";
+                            if (firestoreBN > buildNumber) bnText = "BN$firestoreBN";
                           }
                           
                           return Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 9)),
+                              Text("${local}_$bnText", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 9)),
                               if (remote != null && remote != local)
                                 Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 8)),
                               Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 18),
-                              Text("DB V-$dbVersion/$bnText", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 9)),
+                              Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 9)),
                             ],
                           );
                         }
