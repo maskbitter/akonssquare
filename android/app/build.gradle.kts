@@ -51,3 +51,23 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+tasks.register("incrementBuildNumber") {
+    doLast {
+        val counterFile = file("build_counter.txt")
+        if (!counterFile.exists()) {
+            counterFile.writeText("0")
+        }
+        val currentBuild = counterFile.readText().trim().toIntOrNull() ?: 0
+        val newBuild = currentBuild + 1
+        counterFile.writeText(newBuild.toString())
+        
+        val dartFile = file("../../lib/Common/build_config.dart")
+        dartFile.parentFile.mkdirs()
+        dartFile.writeText("const int buildNumber = $newBuild;\n")
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn("incrementBuildNumber")
+}

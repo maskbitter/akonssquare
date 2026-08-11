@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:akonssquare/Common/splash_screen.dart';
 import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:flutter/services.dart';
+import 'package:akonssquare/Common/build_config.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:akonssquare/Common/firebase_options.dart';
@@ -127,6 +128,8 @@ class _LoginPageState extends State<LoginPage> {
           _appName = doc['appName'] ?? "AkonsSquare";
         });
       }
+      // Sync local build number to Firestore
+      await _dbService.updateSystemBuildNumber(buildNumber);
     } catch (e) {
       setState(() { _appName = "AkonsSquare"; });
     }
@@ -326,12 +329,16 @@ class _LoginPageState extends State<LoginPage> {
           builder: (context, dbInfoSnap) {
             String serverStatus = 'completed';
             String dbVersion = "...";
-            double progressValue = 0.0;
+            String bnText = "BN-$buildNumber"; // Default to local BN
             if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
               var info = dbInfoSnap.data!.data() as Map<String, dynamic>;
               serverStatus = info['serverStatus'] ?? 'completed';
               dbVersion = (info['dbVersion'] ?? 26.0).toStringAsFixed(1);
-              progressValue = (info['progress'] ?? 0.0).toDouble();
+              int firestoreBN = info['buildNumber']?.toInt() ?? 0;
+              // If server has a newer BN, show that, otherwise show local
+              if (firestoreBN > buildNumber) {
+                bnText = "BN-$firestoreBN";
+              }
               
               if (serverStatus == 'completed' && _temporaryMessage != null && _temporaryMessage!.contains("Updating")) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -392,7 +399,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _temporaryMessage ?? "DB V-$dbVersion",
+                            _temporaryMessage ?? "DB V-$dbVersion/$bnText",
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: (_temporaryMessage != null && (_temporaryMessage!.contains("Delet") || _temporaryMessage!.contains("Backup"))) 
                                 ? Theme.of(context).colorScheme.error 

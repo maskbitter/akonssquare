@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:akonssquare/Common/database_service.dart';
 import 'package:akonssquare/Common/update_guard.dart';
 import 'package:akonssquare/Common/automation_guide.dart';
+import 'package:akonssquare/Common/build_config.dart';
 import 'package:akonssquare/Users/user_report_page.dart';
 import 'package:akonssquare/main.dart';
 
@@ -211,8 +212,11 @@ class _UserDashboardState extends State<UserDashboard> {
                           String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
                           String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
                           String dbVersion = "...";
+                          String bnText = "BN-$buildNumber";
                           if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
                             dbVersion = (dbInfoSnap.data!['dbVersion'] ?? 26.0).toStringAsFixed(1);
+                            int firestoreBN = dbInfoSnap.data!['buildNumber']?.toInt() ?? 0;
+                            if (firestoreBN > buildNumber) bnText = "BN-$firestoreBN";
                           }
                           
                           return Column(
@@ -222,7 +226,7 @@ class _UserDashboardState extends State<UserDashboard> {
                               if (remote != null && remote != local)
                                 Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 8)),
                               Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 18),
-                              Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 9)),
+                              Text("DB V-$dbVersion/$bnText", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 9)),
                             ],
                           );
                         }

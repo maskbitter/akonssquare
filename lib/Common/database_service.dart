@@ -460,6 +460,24 @@ class DatabaseService {
     }, SetOptions(merge: true));
   }
 
+  Future<void> updateSystemBuildNumber(int localBN) async {
+    // Only update if the local build number is higher than what's on the server
+    DocumentSnapshot snap = await _db.collection('app_config').doc('database_info').get();
+    if (snap.exists) {
+      int serverBN = (snap.data() as Map<String, dynamic>)['buildNumber']?.toInt() ?? 0;
+      if (localBN > serverBN) {
+        await _db.collection('app_config').doc('database_info').update({
+          'buildNumber': localBN,
+          'bnUpdatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } else {
+      await _db.collection('app_config').doc('database_info').set({
+        'buildNumber': localBN,
+      }, SetOptions(merge: true));
+    }
+  }
+
   // --- ROLLBACK SYSTEM ---
 
   Future<void> createRollbackSnapshot(String actor) async {
