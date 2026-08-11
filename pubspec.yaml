@@ -48,6 +48,7 @@ dependencies:
   fl_chart: ^0.70.2
   shimmer: ^3.0.0
   connectivity_plus: ^7.3.1
+  device_info_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:

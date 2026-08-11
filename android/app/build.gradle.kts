@@ -65,6 +65,15 @@ flutter {
 
 tasks.register("incrementBuildNumber") {
     doLast {
+        // Only increment if we are running in debug mode or from IDE (which usually triggers debug tasks)
+        val taskNames = project.gradle.startParameter.taskNames
+        val isDebug = taskNames.any { it.contains("Debug", ignoreCase = true) || it.contains("assemble") == false }
+        
+        if (!isDebug) {
+            println("BuildNumber: Skipping increment for non-debug/release build.")
+            return@doLast
+        }
+
         val counterFile = file("build_counter.txt")
         if (!counterFile.exists()) {
             counterFile.writeText("0")

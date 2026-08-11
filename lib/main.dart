@@ -16,8 +16,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:akonssquare/Common/firebase_options.dart';
 
 import 'dart:async';
+import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:akonssquare/Common/automation_guide.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -128,8 +130,17 @@ class _LoginPageState extends State<LoginPage> {
           _appName = doc['appName'] ?? "AkonsSquare";
         });
       }
-      // Sync local build number to Firestore
-      await _dbService.updateSystemBuildNumber(buildNumber);
+      
+      // Sync local build number to Firestore ONLY on emulator/AVD
+      bool isEmulator = false;
+      if (Platform.isAndroid) {
+        var deviceInfo = await DeviceInfoPlugin().androidInfo;
+        isEmulator = !deviceInfo.isPhysicalDevice;
+      }
+
+      if (isEmulator) {
+        await _dbService.updateSystemBuildNumber(buildNumber);
+      }
     } catch (e) {
       setState(() { _appName = "AkonsSquare"; });
     }
