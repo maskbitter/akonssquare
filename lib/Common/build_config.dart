@@ -1,1 +1,1 @@
-const int buildNumber = 36;
+const int buildNumber = 39;

@@ -921,7 +921,7 @@ class _AdminHomeState extends State<AdminHome> {
                 titleIcon: Icons.balance,
                 containerColor: Theme.of(context).colorScheme.secondaryContainer,
                 accentColor: Theme.of(context).colorScheme.secondary,
-                headers: ["#", "Meter\nNumber", "Main Meter\nUsed Units", "Sub-Meter\nTotal Units", "This Month\nUnit Rate", "Balance Units"],
+                headers: ["#", "Meter\nNumber", "Main Meter\nUsed Units", "Sub-Meter\nTotal Units", "This Month\nUnit Rate", "Balance\nUnits"],
                 meters: mainMeters,
                 rowBuilder: (data, index) {
                   double last = (data['lastReading'] as num?)?.toDouble() ?? 0;
@@ -953,7 +953,7 @@ class _AdminHomeState extends State<AdminHome> {
                 titleIcon: Icons.receipt_long,
                 containerColor: Theme.of(context).colorScheme.primaryContainer,
                 accentColor: Theme.of(context).colorScheme.primary,
-                headers: ["#", "Meter\nNumber", "Main Meter\nReadings", "Govt. Bill\nReadings", "Balance Units"],
+                headers: ["#", "Meter\nNumber", "Main Meter\nReadings", "Govt. Bill\nReadings", "Balance\nUnits"],
                 meters: mainMeters,
                 rowBuilder: (data, index) {
                   double present = (data['presentReading'] as num?)?.toDouble() ?? 0;

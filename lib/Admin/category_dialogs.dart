@@ -1436,7 +1436,7 @@ class CategoryDialogs {
                       SharedPreferences prefs = await SharedPreferences.getInstance();
                       await _dbService.updateSubItemStatus(subItemId, 'Vacant', prefs.getString('username') ?? "Admin");
                     },
-                    child: const Text("Proceed anyway"),
+                    child: const Text("Proceed"),
                   ),
                 ),
               ]),

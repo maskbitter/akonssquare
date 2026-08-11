@@ -175,7 +175,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               child: Column(
                 children: [
                   Text(
-                    "AKONS SQUARE",
+                    "AkonsSquare",
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: Colors.white.withValues(alpha: 0.95),
                       letterSpacing: 5.0,
@@ -186,7 +186,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    "PERSONAL PROPERTY MANAGEMENT",
+                    "personal.property.management",
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: const Color(0xFF00FFC2).withValues(alpha: 0.8),
                       fontWeight: FontWeight.bold,
