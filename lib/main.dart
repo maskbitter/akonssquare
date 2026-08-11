@@ -192,7 +192,20 @@ class _LoginPageState extends State<LoginPage> {
             content: Column(mainAxisSize: MainAxisSize.min, children: [
               Text("Enter last 4 digits of your NID:", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall),
               const SizedBox(height: 12),
-              TextField(controller: passController, obscureText: true, keyboardType: TextInputType.number, maxLength: 4, style: Theme.of(context).textTheme.bodyLarge, onChanged: (v) => setST((){}), decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock_outline), counterText: "")),
+              TextField(
+                controller: passController, 
+                obscureText: true, 
+                keyboardType: TextInputType.number, 
+                maxLength: 4, 
+                style: Theme.of(context).textTheme.bodyLarge, 
+                onChanged: (v) => setST((){}), 
+                decoration: const InputDecoration(
+                  labelText: "Password", 
+                  hintText: "Last 4 digits of NID",
+                  prefixIcon: Icon(Icons.lock_outline), 
+                  counterText: ""
+                )
+              ),
             ]),
             actions: [
               Row(children: [
@@ -251,9 +264,26 @@ class _LoginPageState extends State<LoginPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Center(child: Text("Access Login", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: uC, decoration: const InputDecoration(labelText: "Username", prefixIcon: Icon(Icons.person)), onChanged: (v) => setST((){})),
+            TextField(
+              controller: uC, 
+              decoration: const InputDecoration(
+                labelText: "Username", 
+                hintText: "Enter username",
+                prefixIcon: Icon(Icons.person)
+              ), 
+              onChanged: (v) => setST((){})
+            ),
             const SizedBox(height: 10),
-            TextField(controller: pC, obscureText: true, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock)), onChanged: (v) => setST((){})),
+            TextField(
+              controller: pC, 
+              obscureText: true, 
+              decoration: const InputDecoration(
+                labelText: "Password", 
+                hintText: "Enter password",
+                prefixIcon: Icon(Icons.lock)
+              ), 
+              onChanged: (v) => setST((){})
+            ),
           ]),
           actions: [
             Row(children: [
@@ -328,7 +358,16 @@ class _LoginPageState extends State<LoginPage> {
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             Text("Enter secret key:", style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 12),
-            TextField(controller: keyController, obscureText: true, onChanged: (v) => setST((){}), decoration: const InputDecoration(labelText: "Secret Key", prefixIcon: Icon(Icons.vpn_key_outlined))),
+            TextField(
+              controller: keyController, 
+              obscureText: true, 
+              onChanged: (v) => setST((){}), 
+              decoration: const InputDecoration(
+                labelText: "Secret Key", 
+                hintText: "Master password",
+                prefixIcon: Icon(Icons.vpn_key_outlined)
+              )
+            ),
           ]),
           actions: [
             Row(children: [

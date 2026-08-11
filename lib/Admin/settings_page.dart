@@ -714,11 +714,35 @@ class _SettingsPageState extends State<SettingsPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text(docId == null ? "Add Account" : "Edit Account", style: Theme.of(context).textTheme.titleLarge)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: uC, decoration: const InputDecoration(labelText: "Username"), onChanged: (v) => setST((){})),
+          TextField(
+            controller: uC, 
+            decoration: const InputDecoration(
+              labelText: "Username",
+              hintText: "Enter account username",
+              prefixIcon: Icon(Icons.person_outline),
+            ), 
+            onChanged: (v) => setST((){})
+          ),
           const SizedBox(height: 12),
-          TextField(controller: pC, decoration: const InputDecoration(labelText: "Password"), onChanged: (v) => setST((){})),
+          TextField(
+            controller: pC, 
+            decoration: const InputDecoration(
+              labelText: "Password",
+              hintText: "Enter account password",
+              prefixIcon: Icon(Icons.lock_outline),
+            ), 
+            onChanged: (v) => setST((){})
+          ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(value: role, decoration: const InputDecoration(labelText: "Role"), items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))], onChanged: (v) => setST(() => role = v!)),
+          DropdownButtonFormField<String>(
+            value: role, 
+            decoration: const InputDecoration(
+              labelText: "Role",
+              prefixIcon: Icon(Icons.security_outlined),
+            ), 
+            items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))], 
+            onChanged: (v) => setST(() => role = v!)
+          ),
         ]),
         actions: [
           Row(children: [

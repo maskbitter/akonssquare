@@ -111,10 +111,13 @@ class CategoryDialogs {
           title: Center(child: Text("New Category", style: Theme.of(context).textTheme.titleLarge)),
           content: TextField(
             controller: controller, 
-            textAlign: TextAlign.center, 
             style: Theme.of(context).textTheme.bodyLarge,
             onChanged: (val) => setDialogState(() {}),
-            decoration: const InputDecoration(labelText: "Category Name")
+            decoration: const InputDecoration(
+              labelText: "Category Name",
+              hintText: "e.g. Apartment, Shop",
+              prefixIcon: Icon(Icons.category_outlined),
+            )
           ),
           actions: [
             Row(children: [
@@ -169,19 +172,28 @@ class CategoryDialogs {
                   children: [
                     TextField(
                       controller: nameController, 
-                      textAlign: TextAlign.center, 
                       style: Theme.of(context).textTheme.bodyLarge,
                       onChanged: (val) => setDialogState(() {}),
-                      decoration: const InputDecoration(labelText: "New Service Name", isDense: true)
+                      decoration: const InputDecoration(
+                        labelText: "New Service Name", 
+                        hintText: "e.g. Water, Security",
+                        prefixIcon: Icon(Icons.miscellaneous_services_outlined),
+                        isDense: true
+                      )
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: amountController, 
-                      textAlign: TextAlign.center, 
                       keyboardType: TextInputType.number, 
                       style: Theme.of(context).textTheme.bodyLarge,
                       onChanged: (val) => setDialogState(() {}),
-                      decoration: const InputDecoration(labelText: "Price (BDT)", prefixText: "৳ ", isDense: true)
+                      decoration: const InputDecoration(
+                        labelText: "Price (BDT)", 
+                        hintText: "Enter amount",
+                        prefixIcon: Icon(Icons.payments_outlined),
+                        prefixText: "৳ ", 
+                        isDense: true
+                      )
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
@@ -298,10 +310,13 @@ class CategoryDialogs {
           content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(
               controller: subItemController, 
-              textAlign: TextAlign.center, 
               style: Theme.of(context).textTheme.bodyLarge,
               onChanged: (val) => setDialogState(() {}),
-              decoration: InputDecoration(labelText: "$categoryName No")
+              decoration: InputDecoration(
+                labelText: "$categoryName No",
+                hintText: "e.g. 101, A-1",
+                prefixIcon: const Icon(Icons.meeting_room_outlined),
+              )
             ),
           ])),
           actions: [
@@ -355,7 +370,10 @@ class CategoryDialogs {
               children: [
                 DropdownButtonFormField<String>(
                   value: meterType,
-                  decoration: const InputDecoration(labelText: "Meter Type"),
+                  decoration: const InputDecoration(
+                    labelText: "Meter Type",
+                    prefixIcon: Icon(Icons.merge_type_outlined),
+                  ),
                   items: const [
                     DropdownMenuItem(value: "Residential", child: Text("Residential")),
                     DropdownMenuItem(value: "Commercial", child: Text("Commercial")),
@@ -365,10 +383,13 @@ class CategoryDialogs {
                 const SizedBox(height: 16),
                 TextField(
                   controller: meterNoController,
-                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
                   onChanged: (val) => setDialogState(() {}),
-                  decoration: const InputDecoration(labelText: "Meter Number"),
+                  decoration: const InputDecoration(
+                    labelText: "Meter Number",
+                    hintText: "Enter main meter no",
+                    prefixIcon: Icon(Icons.speed_outlined),
+                  ),
                 ),
               ],
             ),
@@ -475,10 +496,14 @@ class CategoryDialogs {
                   TextField(
                     controller: presentReadingController,
                     keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
                     onChanged: (_) => setDialogState(() {}),
                     style: Theme.of(context).textTheme.bodyLarge,
-                    decoration: const InputDecoration(labelText: "New Present Reading", isDense: true),
+                    decoration: const InputDecoration(
+                      labelText: "New Present Reading", 
+                      hintText: "Enter reading",
+                      prefixIcon: Icon(Icons.speed),
+                      isDense: true
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -489,19 +514,28 @@ class CategoryDialogs {
                   TextField(
                     controller: govtReadingController,
                     keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
                     onChanged: (_) => setDialogState(() {}),
                     style: Theme.of(context).textTheme.bodyLarge,
-                    decoration: const InputDecoration(labelText: "New Govt. Bill Reading", isDense: true),
+                    decoration: const InputDecoration(
+                      labelText: "New Govt. Bill Reading", 
+                      hintText: "Enter govt reading",
+                      prefixIcon: Icon(Icons.receipt_long_outlined),
+                      isDense: true
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: amountController,
                     keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
                     onChanged: (_) => setDialogState(() {}),
                     style: Theme.of(context).textTheme.bodyLarge,
-                    decoration: const InputDecoration(labelText: "Govt. Bill Amount", prefixText: "৳ ", isDense: true),
+                    decoration: const InputDecoration(
+                      labelText: "Govt. Bill Amount", 
+                      hintText: "Enter bill amount",
+                      prefixIcon: Icon(Icons.payments_outlined),
+                      prefixText: "৳ ", 
+                      isDense: true
+                    ),
                   ),
                   _buildReadOnlyRow(context, "Govt. Bill Unit", govtBillUnit.toStringAsFixed(1)),
                   _buildReadOnlyRow(context, "Last Month Unit Rate", "৳${lastMonthRate.toStringAsFixed(2)}"),
@@ -693,7 +727,10 @@ class CategoryDialogs {
                   
                   return DropdownButtonFormField<String>(
                     value: selectedMainMeter,
-                    decoration: const InputDecoration(labelText: "Select Main Meter"),
+                    decoration: const InputDecoration(
+                      labelText: "Select Main Meter",
+                      prefixIcon: Icon(Icons.speed_outlined),
+                    ),
                     items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text("Meter: ${doc['meterNo']}", style: Theme.of(context).textTheme.bodyMedium))).toList(),
                     onChanged: (v) => setDialogState(() => selectedMainMeter = v),
                   );
@@ -702,10 +739,13 @@ class CategoryDialogs {
               const SizedBox(height: 16),
               TextField(
                 controller: subMeterNoController,
-                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge,
                 onChanged: (val) => setDialogState(() {}),
-                decoration: const InputDecoration(labelText: "Sub Meter Number"),
+                decoration: const InputDecoration(
+                  labelText: "Sub Meter Number",
+                  hintText: "Enter sub meter no",
+                  prefixIcon: Icon(Icons.av_timer_outlined),
+                ),
               ),
             ],
           ),
@@ -832,18 +872,27 @@ class CategoryDialogs {
                 const SizedBox(height: 12),
                 TextField(
                   controller: presentReadingController, 
-                  textAlign: TextAlign.center, 
                   keyboardType: TextInputType.number, 
                   onChanged: (val) => setDialogState(() {}),
-                  decoration: const InputDecoration(labelText: "New Present Reading", isDense: true)
+                  decoration: const InputDecoration(
+                    labelText: "New Present Reading", 
+                    hintText: "Enter current reading",
+                    prefixIcon: Icon(Icons.electric_bolt_outlined),
+                    isDense: true
+                  )
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: priceController, 
-                  textAlign: TextAlign.center, 
                   keyboardType: TextInputType.number, 
                   onChanged: (val) => setDialogState(() {}),
-                  decoration: const InputDecoration(labelText: "Price (per unit) BDT", prefixText: "৳ ", isDense: true)
+                  decoration: const InputDecoration(
+                    labelText: "Price (per unit) BDT", 
+                    hintText: "Enter unit rate",
+                    prefixIcon: Icon(Icons.price_change_outlined),
+                    prefixText: "৳ ", 
+                    isDense: true
+                  )
                 ),
               ],
             ),
@@ -977,11 +1026,12 @@ class CategoryDialogs {
                 if (!isFuture) ...[
                    TextField(
                     controller: noteController, 
-                    textAlign: TextAlign.center, 
                     onChanged: (val) => setDialogState(() => wordCount = _getWordCount(val)),
                     style: Theme.of(context).textTheme.bodyLarge,
                     decoration: InputDecoration(
                       labelText: "Notes", 
+                      hintText: "Add payment notes",
+                      prefixIcon: const Icon(Icons.note_alt_outlined),
                       isDense: true,
                       counterText: "$wordCount / 100 words",
                       counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: wordCount > 100 ? Theme.of(context).colorScheme.error : null),
@@ -1246,11 +1296,12 @@ class CategoryDialogs {
                   const SizedBox(height: 12),
                   TextField(
                     controller: notesController, 
-                    textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge,
                     onChanged: (val) => setDialogState(() => wordCount = _getWordCount(val)),
                     decoration: InputDecoration(
                       labelText: "Notes (Max 100 words)", 
+                      hintText: "Enter tenant or unit notes",
+                      prefixIcon: const Icon(Icons.description_outlined),
                       alignLabelWithHint: true,
                       counterText: "$wordCount / 100 words",
                       counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: wordCount > 100 ? Theme.of(context).colorScheme.error : null),
@@ -1322,12 +1373,28 @@ class CategoryDialogs {
   }
 
   static Widget _buildCenteredField(BuildContext context, TextEditingController controller, String label, {ValueChanged<String>? onChanged}) {
+    IconData icon;
+    String hint;
+    if (label.toLowerCase().contains("tenant")) {
+      icon = Icons.person_outline;
+      hint = "Enter tenant name";
+    } else if (label.toLowerCase().contains("nid")) {
+      icon = Icons.badge_outlined;
+      hint = "Enter NID number";
+    } else {
+      icon = Icons.edit_note_outlined;
+      hint = "Enter information";
+    }
+
     return TextField(
       controller: controller, 
-      textAlign: TextAlign.center,
       style: Theme.of(context).textTheme.bodyLarge,
       onChanged: onChanged,
-      decoration: InputDecoration(labelText: label),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon),
+      ),
     );
   }
 
@@ -1358,18 +1425,26 @@ class CategoryDialogs {
                 const SizedBox(height: 16),
                 TextField(
                   controller: tenantController,
-                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
                   onChanged: (val) => setDialogState(() {}),
-                  decoration: const InputDecoration(labelText: "Tenant Name", isDense: true),
+                  decoration: const InputDecoration(
+                    labelText: "Tenant Name", 
+                    hintText: "Enter full name",
+                    prefixIcon: Icon(Icons.person_outline),
+                    isDense: true
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: nidController,
-                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
                   onChanged: (val) => setDialogState(() {}),
-                  decoration: const InputDecoration(labelText: "NID Number", isDense: true),
+                  decoration: const InputDecoration(
+                    labelText: "NID Number", 
+                    hintText: "Enter NID (for password)",
+                    prefixIcon: Icon(Icons.badge_outlined),
+                    isDense: true
+                  ),
                 ),
               ],
             ),
@@ -1648,9 +1723,13 @@ class CategoryDialogs {
               const SizedBox(height: 16),
               TextField(
                 keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge,
-                decoration: const InputDecoration(labelText: "Wifi cost per device", prefixText: "৳ "),
+                decoration: const InputDecoration(
+                  labelText: "Wifi cost per device", 
+                  hintText: "Enter amount",
+                  prefixIcon: Icon(Icons.price_change_outlined),
+                  prefixText: "৳ "
+                ),
                 onChanged: (val) {
                   double? p = double.tryParse(val);
                   if (p != null) setDialogState(() => unitPrice = p);
@@ -1727,8 +1806,26 @@ class CategoryDialogs {
         content: Column(
           mainAxisSize: MainAxisSize.min, 
           children: [
-            TextField(controller: nameController, decoration: const InputDecoration(labelText: "Name"), onChanged: (v) => setDialogState((){})), 
-            TextField(controller: amountController, decoration: const InputDecoration(labelText: "Amount"), onChanged: (v) => setDialogState((){}))
+            TextField(
+              controller: nameController, 
+              decoration: const InputDecoration(
+                labelText: "Name",
+                hintText: "Enter service name",
+                prefixIcon: Icon(Icons.edit_outlined),
+              ), 
+              onChanged: (v) => setDialogState((){})
+            ), 
+            const SizedBox(height: 12),
+            TextField(
+              controller: amountController, 
+              decoration: const InputDecoration(
+                labelText: "Amount",
+                hintText: "Enter amount",
+                prefixIcon: Icon(Icons.payments_outlined),
+                prefixText: "৳ "
+              ), 
+              onChanged: (v) => setDialogState((){})
+            )
           ]
         ), 
         actions: [
