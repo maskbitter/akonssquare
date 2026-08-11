@@ -7,6 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  // --- Normalization Helper ---
+  String _normalize(String input) => input.toLowerCase().replaceAll(' ', '');
+
   // --- Static Cache for Pre-fetching ---
   static List<Map<String, dynamic>> cachedSubItems = [];
   static Map<String, dynamic>? cachedAppConfig;
@@ -47,15 +50,20 @@ class DatabaseService {
     return await _db.collection('categories').doc(categoryId).get();
   }
 
-  Future<bool> checkCategoryExists(String lowerName) async {
-    var existingDocs = await _db.collection('categories').where('categoryNameLower', isEqualTo: lowerName).get();
+  Future<bool> checkCategoryExists(String name) async {
+    String normalized = _normalize(name);
+    var existingDocs = await _db.collection('categories').where('categoryNameNormalized', isEqualTo: normalized).get();
     return existingDocs.docs.isNotEmpty;
   }
 
   Future<void> addCategory(String name, String actor) async {
+    if (await checkCategoryExists(name)) {
+      throw Exception("DuplicateFound:Category");
+    }
     DocumentReference doc = await _db.collection('categories').add({
       'categoryName': name,
       'categoryNameLower': name.toLowerCase(),
+      'categoryNameNormalized': _normalize(name),
       'assignedServices': [],
       'createdAt': FieldValue.serverTimestamp(),
       'clientTimestamp': DateTime.now().toIso8601String(),
@@ -94,9 +102,19 @@ class DatabaseService {
     return _db.collection('services').orderBy('createdAt', descending: true).snapshots();
   }
 
+  Future<bool> checkServiceExists(String name) async {
+    String normalized = _normalize(name);
+    var existingDocs = await _db.collection('services').where('serviceNameNormalized', isEqualTo: normalized).get();
+    return existingDocs.docs.isNotEmpty;
+  }
+
   Future<void> addService(String name, double amount, String actor) async {
+    if (await checkServiceExists(name)) {
+      throw Exception("DuplicateFound:Service");
+    }
     DocumentReference doc = await _db.collection('services').add({
       'serviceName': name,
+      'serviceNameNormalized': _normalize(name),
       'amount': amount,
       'createdAt': FieldValue.serverTimestamp(),
       'clientTimestamp': DateTime.now().toIso8601String(),
@@ -123,18 +141,23 @@ class DatabaseService {
   }
 
   Future<bool> checkSubItemExists(String categoryId, String name) async {
+    String normalized = _normalize(name);
     var duplicateCheck = await _db
         .collection('sub_items')
         .where('categoryId', isEqualTo: categoryId)
-        .where('subItemName', isEqualTo: name)
+        .where('subItemNameNormalized', isEqualTo: normalized)
         .get();
     return duplicateCheck.docs.isNotEmpty;
   }
 
   Future<void> addSubItem(String categoryId, String name, String actor) async {
+    if (await checkSubItemExists(categoryId, name)) {
+      throw Exception("DuplicateFound:Unit");
+    }
     DocumentReference doc = await _db.collection('sub_items').add({
       'categoryId': categoryId,
       'subItemName': name,
+      'subItemNameNormalized': _normalize(name),
       'TenantName': 'No Name',
       'nidNumber': 'No Number',
       'notes': '',
@@ -298,7 +321,18 @@ class DatabaseService {
     return _db.collection('sub_items').where('electricityDetails.mainMeterNo', isEqualTo: mainMeterNo).snapshots();
   }
 
+  Future<bool> checkMainMeterExists(String meterNo) async {
+    String normalized = _normalize(meterNo);
+    var existingDocs = await _db.collection('main_meters').where('meterNoNormalized', isEqualTo: normalized).get();
+    return existingDocs.docs.isNotEmpty;
+  }
+
   Future<void> addMainMeter(Map<String, dynamic> data, String actor) async {
+    String meterNo = data['meterNo'] ?? '';
+    if (await checkMainMeterExists(meterNo)) {
+      throw Exception("DuplicateFound:MainMeter");
+    }
+    data['meterNoNormalized'] = _normalize(meterNo);
     data['createdAt'] = FieldValue.serverTimestamp();
     data['updatedAt'] = FieldValue.serverTimestamp();
     data['clientTimestamp'] = DateTime.now().toIso8601String();
@@ -347,7 +381,18 @@ class DatabaseService {
     return _db.collection('sub_meters').orderBy('createdAt', descending: true).snapshots();
   }
 
+  Future<bool> checkSubMeterExists(String subMeterNo) async {
+    String normalized = _normalize(subMeterNo);
+    var existingDocs = await _db.collection('sub_meters').where('subMeterNoNormalized', isEqualTo: normalized).get();
+    return existingDocs.docs.isNotEmpty;
+  }
+
   Future<void> addSubMeter(Map<String, dynamic> data, String actor) async {
+    String subMeterNo = data['subMeterNo'] ?? '';
+    if (await checkSubMeterExists(subMeterNo)) {
+      throw Exception("DuplicateFound:SubMeter");
+    }
+    data['subMeterNoNormalized'] = _normalize(subMeterNo);
     data['createdAt'] = FieldValue.serverTimestamp();
     data['updatedAt'] = FieldValue.serverTimestamp();
     data['clientTimestamp'] = DateTime.now().toIso8601String();

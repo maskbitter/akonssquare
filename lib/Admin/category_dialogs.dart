@@ -45,6 +45,71 @@ class CategoryDialogs {
     );
   }
 
+  static void _showDuplicateErrorDialog(BuildContext context, String name, String type) {
+    String typeLabel = "Item";
+    if (type == 'Category') typeLabel = "Category";
+    else if (type == 'Unit') typeLabel = "Unit/Room";
+    else if (type == 'Service') typeLabel = "Service";
+    else if (type.contains('Meter')) typeLabel = "Meter";
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.copy_all_rounded, color: Theme.of(context).colorScheme.error, size: 40),
+            ),
+            const SizedBox(height: 16),
+            Text("Duplicate Found!", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: Theme.of(context).textTheme.bodyMedium,
+                children: [
+                  const TextSpan(text: "Uh oh! '"),
+                  TextSpan(text: name, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                  const TextSpan(text: "' is already registered in our system."),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "Please use a unique name to keep your records organized and error-free.",
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("I'll change it"),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   static void showConfirmDialog({
     required BuildContext context, 
     required String title, 
@@ -139,9 +204,16 @@ class CategoryDialogs {
                   onPressed: (isLoading || controller.text.trim().isEmpty) ? null : () async {
                     String name = controller.text.trim(); if (name.isEmpty) return;
                     setDialogState(() => isLoading = true);
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                    await _dbService.addCategory(name, prefs.getString('username') ?? "Admin");
-                    if (context.mounted) Navigator.pop(ctx);
+                    try {
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await _dbService.addCategory(name, prefs.getString('username') ?? "Admin");
+                      if (context.mounted) Navigator.pop(ctx);
+                    } catch (e) {
+                      setDialogState(() => isLoading = false);
+                      if (e.toString().contains("DuplicateFound")) {
+                        if (context.mounted) _showDuplicateErrorDialog(context, name, "Category");
+                      }
+                    }
                   }, 
                   child: isLoading ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary)) : const Text("Save")
                 ),
@@ -208,11 +280,18 @@ class CategoryDialogs {
                         double amt = double.tryParse(amountController.text) ?? 0;
                         if (name.isEmpty) return;
                         setDialogState(() => isLoading = true);
-                        SharedPreferences prefs = await SharedPreferences.getInstance();
-                        await _dbService.addService(name, amt, prefs.getString('username') ?? "Admin");
-                        nameController.clear();
-                        amountController.clear();
-                        setDialogState(() => isLoading = false);
+                        try {
+                          SharedPreferences prefs = await SharedPreferences.getInstance();
+                          await _dbService.addService(name, amt, prefs.getString('username') ?? "Admin");
+                          nameController.clear();
+                          amountController.clear();
+                        } catch (e) {
+                          if (e.toString().contains("DuplicateFound")) {
+                            if (context.mounted) _showDuplicateErrorDialog(context, name, "Service");
+                          }
+                        } finally {
+                          setDialogState(() => isLoading = false);
+                        }
                       }, 
                       child: Text(isLoading ? "Saving..." : "Add Service")
                     ),
@@ -341,9 +420,16 @@ class CategoryDialogs {
                   onPressed: (isLoading || subItemController.text.trim().isEmpty) ? null : () async {
                     String name = subItemController.text.trim(); if (name.isEmpty) return;
                     setDialogState(() => isLoading = true);
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                    await _dbService.addSubItem(categoryId, name, prefs.getString('username') ?? "Admin");
-                    if (context.mounted) Navigator.pop(ctx);
+                    try {
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await _dbService.addSubItem(categoryId, name, prefs.getString('username') ?? "Admin");
+                      if (context.mounted) Navigator.pop(ctx);
+                    } catch (e) {
+                      setDialogState(() => isLoading = false);
+                      if (e.toString().contains("DuplicateFound")) {
+                        if (context.mounted) _showDuplicateErrorDialog(context, name, "Unit");
+                      }
+                    }
                   }, 
                   child: isLoading ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary)) : const Text("Add")
                 ),
@@ -421,19 +507,26 @@ class CategoryDialogs {
                       String no = meterNoController.text.trim();
                       if (no.isEmpty) return;
                       setDialogState(() => isLoading = true);
-                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                      await _dbService.addMainMeter({
-                        'meterNo': no,
-                        'meterType': meterType,
-                        'lastReading': 0.0,
-                        'presentReading': 0.0,
-                        'govtBillReading': 0.0,
-                        'lastGovtReading': 0.0,
-                        'govtBillAmount': 0.0,
-                        'unitRate': 0.0,
-                        'lastMonthUnitRate': 0.0,
-                      }, prefs.getString('username') ?? "Admin");
-                      if (context.mounted) Navigator.pop(ctx);
+                      try {
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        await _dbService.addMainMeter({
+                          'meterNo': no,
+                          'meterType': meterType,
+                          'lastReading': 0.0,
+                          'presentReading': 0.0,
+                          'govtBillReading': 0.0,
+                          'lastGovtReading': 0.0,
+                          'govtBillAmount': 0.0,
+                          'unitRate': 0.0,
+                          'lastMonthUnitRate': 0.0,
+                        }, prefs.getString('username') ?? "Admin");
+                        if (context.mounted) Navigator.pop(ctx);
+                      } catch (e) {
+                        setDialogState(() => isLoading = false);
+                        if (e.toString().contains("DuplicateFound")) {
+                          if (context.mounted) _showDuplicateErrorDialog(context, no, "MainMeter");
+                        }
+                      }
                     },
                     child: isLoading 
                       ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
@@ -781,12 +874,19 @@ class CategoryDialogs {
                     String no = subMeterNoController.text.trim();
                     if (no.isEmpty || selectedMainMeter == null) return;
                     setDialogState(() => isLoading = true);
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                    await _dbService.addSubMeter({
-                      'subMeterNo': no,
-                      'mainMeterNo': selectedMainMeter,
-                    }, prefs.getString('username') ?? "Admin");
-                    if (context.mounted) Navigator.pop(ctx);
+                    try {
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await _dbService.addSubMeter({
+                        'subMeterNo': no,
+                        'mainMeterNo': selectedMainMeter,
+                      }, prefs.getString('username') ?? "Admin");
+                      if (context.mounted) Navigator.pop(ctx);
+                    } catch (e) {
+                      setDialogState(() => isLoading = false);
+                      if (e.toString().contains("DuplicateFound")) {
+                        if (context.mounted) _showDuplicateErrorDialog(context, no, "SubMeter");
+                      }
+                    }
                   },
                   child: isLoading 
                     ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
