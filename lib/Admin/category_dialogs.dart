@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:akonssquare/Common/database_service.dart';
 import 'package:flutter/services.dart';
 import 'package:akonssquare/Common/theme_manager.dart';
+import 'package:flutter/foundation.dart';
 
 class CategoryDialogs {
   static final DatabaseService _dbService = DatabaseService();
@@ -28,8 +29,9 @@ class CategoryDialogs {
           Center(
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.tertiary,
-                foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.pop(ctx), 
               child: const Text("OK")
@@ -65,10 +67,11 @@ class CategoryDialogs {
         actions: [
           Row(children: [
             Expanded(
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blueGrey, 
-                  backgroundColor: Theme.of(context).colorScheme.surface,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -110,13 +113,17 @@ class CategoryDialogs {
             controller: controller, 
             textAlign: TextAlign.center, 
             style: Theme.of(context).textTheme.bodyLarge,
+            onChanged: (val) => setDialogState(() {}),
             decoration: const InputDecoration(labelText: "Category Name")
           ),
           actions: [
             Row(children: [
-              Expanded(child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blueGrey,
+              Expanded(child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
                 onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
               const SizedBox(width: 12),
@@ -124,8 +131,9 @@ class CategoryDialogs {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: isLoading ? null : () async {
+                onPressed: (isLoading || controller.text.trim().isEmpty) ? null : () async {
                   String name = controller.text.trim(); if (name.isEmpty) return;
                   setDialogState(() => isLoading = true);
                   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -163,6 +171,7 @@ class CategoryDialogs {
                       controller: nameController, 
                       textAlign: TextAlign.center, 
                       style: Theme.of(context).textTheme.bodyLarge,
+                      onChanged: (val) => setDialogState(() {}),
                       decoration: const InputDecoration(labelText: "New Service Name", isDense: true)
                     ),
                     const SizedBox(height: 12),
@@ -171,15 +180,17 @@ class CategoryDialogs {
                       textAlign: TextAlign.center, 
                       keyboardType: TextInputType.number, 
                       style: Theme.of(context).textTheme.bodyLarge,
+                      onChanged: (val) => setDialogState(() {}),
                       decoration: const InputDecoration(labelText: "Price (BDT)", prefixText: "৳ ", isDense: true)
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.tertiary, 
-                        foregroundColor: Theme.of(context).colorScheme.onTertiary
+                        foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: isLoading ? null : () async {
+                      onPressed: (isLoading || nameController.text.trim().isEmpty || amountController.text.trim().isEmpty) ? null : () async {
                         String name = nameController.text.trim(); 
                         double amt = double.tryParse(amountController.text) ?? 0;
                         if (name.isEmpty) return;
@@ -258,10 +269,11 @@ class CategoryDialogs {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
                   ),
                   onPressed: () => Navigator.pop(ctx), 
                   child: const Text("Close")
@@ -288,14 +300,18 @@ class CategoryDialogs {
               controller: subItemController, 
               textAlign: TextAlign.center, 
               style: Theme.of(context).textTheme.bodyLarge,
+              onChanged: (val) => setDialogState(() {}),
               decoration: InputDecoration(labelText: "$categoryName No")
             ),
           ])),
           actions: [
             Row(children: [
-              Expanded(child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blueGrey,
+              Expanded(child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
                 onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
               const SizedBox(width: 12),
@@ -303,8 +319,9 @@ class CategoryDialogs {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.tertiary,
                   foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: isLoading ? null : () async {
+                onPressed: (isLoading || subItemController.text.trim().isEmpty) ? null : () async {
                   String name = subItemController.text.trim(); if (name.isEmpty) return;
                   setDialogState(() => isLoading = true);
                   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -350,6 +367,7 @@ class CategoryDialogs {
                   controller: meterNoController,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
+                  onChanged: (val) => setDialogState(() {}),
                   decoration: const InputDecoration(labelText: "Meter Number"),
                 ),
               ],
@@ -357,12 +375,13 @@ class CategoryDialogs {
             actions: [
               Row(children: [
                 Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blueGrey,
-                      backgroundColor: Theme.of(context).colorScheme.surface,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
                     ),
                     onPressed: () => Navigator.pop(ctx),
                     child: const Text("Cancel"),
@@ -377,7 +396,7 @@ class CategoryDialogs {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    onPressed: isLoading ? null : () async {
+                    onPressed: (isLoading || meterNoController.text.trim().isEmpty) ? null : () async {
                       String no = meterNoController.text.trim();
                       if (no.isEmpty) return;
                       setDialogState(() => isLoading = true);
@@ -523,12 +542,13 @@ class CategoryDialogs {
             actions: [
               Row(children: [
                 Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blueGrey,
-                      backgroundColor: Theme.of(context).colorScheme.surface,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
                     ),
                     onPressed: () => Navigator.pop(ctx),
                     child: const Text("Cancel"),
@@ -543,7 +563,10 @@ class CategoryDialogs {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    onPressed: isLoading ? null : () async {
+                    onPressed: (isLoading || 
+                                (presentReadingController.text == data['presentReading'].toString() &&
+                                 govtReadingController.text == data['govtBillReading'].toString() &&
+                                 amountController.text == data['govtBillAmount'].toString())) ? null : () async {
                       double last = double.tryParse(lastReadingController.text) ?? 0; 
                       double pres = double.tryParse(presentReadingController.text) ?? last;
                       double govt = double.tryParse(govtReadingController.text) ?? 0; 
@@ -681,6 +704,7 @@ class CategoryDialogs {
                 controller: subMeterNoController,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge,
+                onChanged: (val) => setDialogState(() {}),
                 decoration: const InputDecoration(labelText: "Sub Meter Number"),
               ),
             ],
@@ -688,11 +712,12 @@ class CategoryDialogs {
           actions: [
             Row(children: [
               Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blueGrey,
-                    backgroundColor: Theme.of(context).colorScheme.surface,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
                   ),
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text("Cancel"),
@@ -706,7 +731,7 @@ class CategoryDialogs {
                     foregroundColor: Theme.of(context).colorScheme.onTertiary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: isLoading ? null : () async {
+                  onPressed: (isLoading || subMeterNoController.text.trim().isEmpty || selectedMainMeter == null) ? null : () async {
                     String no = subMeterNoController.text.trim();
                     if (no.isEmpty || selectedMainMeter == null) return;
                     setDialogState(() => isLoading = true);
@@ -809,6 +834,7 @@ class CategoryDialogs {
                   controller: presentReadingController, 
                   textAlign: TextAlign.center, 
                   keyboardType: TextInputType.number, 
+                  onChanged: (val) => setDialogState(() {}),
                   decoration: const InputDecoration(labelText: "New Present Reading", isDense: true)
                 ),
                 const SizedBox(height: 12),
@@ -816,6 +842,7 @@ class CategoryDialogs {
                   controller: priceController, 
                   textAlign: TextAlign.center, 
                   keyboardType: TextInputType.number, 
+                  onChanged: (val) => setDialogState(() {}),
                   decoration: const InputDecoration(labelText: "Price (per unit) BDT", prefixText: "৳ ", isDense: true)
                 ),
               ],
@@ -825,12 +852,13 @@ class CategoryDialogs {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blueGrey,
-                      backgroundColor: Theme.of(context).colorScheme.surface,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
                     ),
                     onPressed: () => Navigator.pop(ctx),
                     child: const Text("Cancel"),
@@ -845,7 +873,11 @@ class CategoryDialogs {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    onPressed: isLoading ? null : () async {
+                    onPressed: (isLoading || 
+                                (presentReadingController.text.trim().isEmpty && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString()) ||
+                                (presentReadingController.text == (existingData?['presentReading'] ?? 0).toString() && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString()) ||
+                                (selectedSubMeter == existingData?['subMeterNo'] && presentReadingController.text.trim().isEmpty && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString())
+                                ) ? null : () async {
                       double last = double.tryParse(lastReadingController.text) ?? 0; 
                       double pres = double.tryParse(presentReadingController.text) ?? last;
                       if (pres < last) { _showValidationWarning(context, "Reading cannot be lower than previous."); return; }
@@ -999,9 +1031,12 @@ class CategoryDialogs {
             if (isFuture) 
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blueGrey, 
+                child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
                     ),
                     onPressed: () => Navigator.pop(ctx), 
                     child: const Text("Cancel")
@@ -1011,9 +1046,12 @@ class CategoryDialogs {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.blueGrey,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
                       ),
                       onPressed: () => Navigator.pop(ctx), 
                       child: const Text("Cancel")
@@ -1025,6 +1063,7 @@ class CategoryDialogs {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.tertiary,
                         foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: (isLoading || wordCount > 100) ? null : () async {
                         setDialogState(() => isLoading = true);
@@ -1141,9 +1180,12 @@ class CategoryDialogs {
            ),
            actions: [
              Row(children: [
-               Expanded(child: OutlinedButton(
-                 style: OutlinedButton.styleFrom(
-                   foregroundColor: Colors.blueGrey,
+               Expanded(child: ElevatedButton(
+                 style: ElevatedButton.styleFrom(
+                   foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                   backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                   elevation: 0,
                  ),
                  onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
                const SizedBox(width: 12),
@@ -1151,8 +1193,9 @@ class CategoryDialogs {
                  style: ElevatedButton.styleFrom(
                    backgroundColor: Theme.of(context).colorScheme.tertiary,
                    foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                  ),
-                 onPressed: isLoading ? null : () async {
+                 onPressed: (isLoading || setEquals(currentAssigned.map((e) => e['name']).toSet(), dynamicAssignedServices.map((e) => (e is Map) ? e['name'] : e.toString()).toSet())) ? null : () async {
                  setDialogState(() => isLoading = true);
                  SharedPreferences prefs = await SharedPreferences.getInstance();
                  await _dbService.updateCategoryServices(categoryId, currentAssigned, prefs.getString('username') ?? "Admin");
@@ -1195,11 +1238,11 @@ class CategoryDialogs {
               child: Column(
                 mainAxisSize: MainAxisSize.min, 
                 children: [
-                  _buildCenteredField(context, subItemController, "Sub-item Name / Number"),
+                  _buildCenteredField(context, subItemController, "Sub-item Name / Number", onChanged: (v) => setDialogState((){})),
                   const SizedBox(height: 12),
-                  _buildCenteredField(context, tenantController, "Tenant Name (Optional)"),
+                  _buildCenteredField(context, tenantController, "Tenant Name (Optional)", onChanged: (v) => setDialogState((){})),
                   const SizedBox(height: 12),
-                  _buildCenteredField(context, nidController, "Tenant NID Number"),
+                  _buildCenteredField(context, nidController, "Tenant NID Number", onChanged: (v) => setDialogState((){})),
                   const SizedBox(height: 12),
                   TextField(
                     controller: notesController, 
@@ -1222,9 +1265,12 @@ class CategoryDialogs {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.blueGrey,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
                       ),
                       onPressed: () => Navigator.pop(ctx), 
                       child: const Text("Cancel")
@@ -1236,8 +1282,13 @@ class CategoryDialogs {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.tertiary,
                         foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: (isLoading || wordCount > 100) ? null : () async {
+                      onPressed: (isLoading || wordCount > 100 || 
+                                  (subItemController.text == currentName &&
+                                   tenantController.text == (currentTenantName == "No Name" ? "" : currentTenantName) &&
+                                   nidController.text == (currentNidNumber == "No Number" ? "" : currentNidNumber) &&
+                                   notesController.text == currentNotes)) ? null : () async {
                         setDialogState(() => isLoading = true);
                         try {
                           SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -1270,11 +1321,12 @@ class CategoryDialogs {
     );
   }
 
-  static Widget _buildCenteredField(BuildContext context, TextEditingController controller, String label) {
+  static Widget _buildCenteredField(BuildContext context, TextEditingController controller, String label, {ValueChanged<String>? onChanged}) {
     return TextField(
       controller: controller, 
       textAlign: TextAlign.center,
       style: Theme.of(context).textTheme.bodyLarge,
+      onChanged: onChanged,
       decoration: InputDecoration(labelText: label),
     );
   }
@@ -1308,6 +1360,7 @@ class CategoryDialogs {
                   controller: tenantController,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
+                  onChanged: (val) => setDialogState(() {}),
                   decoration: const InputDecoration(labelText: "Tenant Name", isDense: true),
                 ),
                 const SizedBox(height: 12),
@@ -1315,6 +1368,7 @@ class CategoryDialogs {
                   controller: nidController,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
+                  onChanged: (val) => setDialogState(() {}),
                   decoration: const InputDecoration(labelText: "NID Number", isDense: true),
                 ),
               ],
@@ -1323,10 +1377,12 @@ class CategoryDialogs {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.blueGrey,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
                       ),
                       onPressed: () => Navigator.pop(ctx),
                       child: const Text("Cancel"),
@@ -1340,7 +1396,7 @@ class CategoryDialogs {
                         foregroundColor: Theme.of(context).colorScheme.onTertiary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: isLoading ? null : () async {
+                      onPressed: (isLoading || tenantController.text.trim().isEmpty || nidController.text.trim().isEmpty) ? null : () async {
                         String name = tenantController.text.trim();
                         String nid = nidController.text.trim();
                         if (name.isEmpty || nid.isEmpty) {
@@ -1413,14 +1469,15 @@ class CategoryDialogs {
             actions: [
               Row(children: [
                 Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blueGrey, 
-                      side: BorderSide.none,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () => Navigator.pop(ctx), 
-                    child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.blueGrey))
+                    child: const Text("Cancel")
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1504,13 +1561,15 @@ class CategoryDialogs {
           actions: [
             Row(children: [
               Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error, 
-                    side: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () => Navigator.pop(ctx), 
-                  child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error))
+                  child: const Text("Cancel")
                 ),
               ),
               const SizedBox(width: 12),
@@ -1519,8 +1578,9 @@ class CategoryDialogs {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.tertiary,
                     foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: isLoading ? null : () async {
+                  onPressed: (isLoading || setEquals(currentExcluded.toSet(), excludedServices.toSet())) ? null : () async {
                     setDialogState(() => isLoading = true);
                     SharedPreferences prefs = await SharedPreferences.getInstance();
                     await _dbService.updateSubItemExcludedServices(subItemId, currentExcluded, prefs.getString('username') ?? "Admin");
@@ -1605,16 +1665,16 @@ class CategoryDialogs {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.error,
-                        side: BorderSide.none,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
                       ),
                       onPressed: () => Navigator.pop(ctx),
-                      child: Text("Cancel", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
+                      child: const Text("Cancel"),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1626,7 +1686,9 @@ class CategoryDialogs {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      onPressed: isLoading ? null : () async {
+                      onPressed: (isLoading || 
+                                  (quantity == (serviceMap['deviceQuantity'] ?? 1).toInt() && 
+                                   unitPrice == (serviceMap['wifiCost'] ?? serviceMap['amount'] ?? 0).toDouble())) ? null : () async {
                         setDialogState(() => isLoading = true);
                         List updated = overriddenServices.map((s) => Map<String, dynamic>.from(s)).toList();
                         updated.removeWhere((s) => s['originalName'] == serviceMap['originalName']);
@@ -1656,24 +1718,52 @@ class CategoryDialogs {
   }
 
   static void showEditSubItemServiceDialog({required BuildContext context, required String subItemId, required String subItemName, required Map<String, dynamic> serviceMap, required List overriddenServices}) {
-    final nameController = TextEditingController(text: serviceMap['name']); final amountController = TextEditingController(text: serviceMap['amount'].toString());
-    showDialog(context: context, builder: (ctx) => AlertDialog(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), title: const Center(child: Text("Edit Service")), content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: nameController, decoration: const InputDecoration(labelText: "Name")), TextField(controller: amountController, decoration: const InputDecoration(labelText: "Amount"))]), actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(ctx), 
-        child: Text("Cancel", style: TextStyle(color: Theme.of(context).colorScheme.error))
-      ), 
-      ElevatedButton(
-        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Theme.of(context).colorScheme.onPrimary),
-        onPressed: () async {
-          List updated = overriddenServices.map((s) => Map<String, dynamic>.from(s)).toList();
-          updated.removeWhere((s) => s['originalName'] == serviceMap['originalName']);
-          updated.add({'originalName': serviceMap['originalName'], 'name': nameController.text.trim(), 'amount': double.tryParse(amountController.text) ?? 0});
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await _dbService.updateSubItemOverriddenServices(subItemId, updated, prefs.getString('username') ?? "Admin");
-          if (context.mounted) Navigator.pop(ctx);
-        }, 
-        child: const Text("Save")
-      )]));
+    final nameController = TextEditingController(text: serviceMap['name']); 
+    final amountController = TextEditingController(text: serviceMap['amount'].toString());
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), 
+        title: const Center(child: Text("Edit Service")), 
+        content: Column(
+          mainAxisSize: MainAxisSize.min, 
+          children: [
+            TextField(controller: nameController, decoration: const InputDecoration(labelText: "Name"), onChanged: (v) => setDialogState((){})), 
+            TextField(controller: amountController, decoration: const InputDecoration(labelText: "Amount"), onChanged: (v) => setDialogState((){}))
+          ]
+        ), 
+        actions: [
+          Row(children: [
+            Expanded(child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => Navigator.pop(ctx), 
+              child: const Text("Cancel")
+            )),
+            const SizedBox(width: 12),
+            Expanded(child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary, 
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: (nameController.text == serviceMap['name'] && amountController.text == serviceMap['amount'].toString()) ? null : () async {
+                List updated = overriddenServices.map((s) => Map<String, dynamic>.from(s)).toList();
+                updated.removeWhere((s) => s['originalName'] == serviceMap['originalName']);
+                updated.add({'originalName': serviceMap['originalName'], 'name': nameController.text.trim(), 'amount': double.tryParse(amountController.text) ?? 0});
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await _dbService.updateSubItemOverriddenServices(subItemId, updated, prefs.getString('username') ?? "Admin");
+                if (context.mounted) Navigator.pop(ctx);
+              }, 
+              child: const Text("Save")
+            )),
+          ]),
+        ]
+      );
+    }));
   }
 
   static int _getWordCount(String text) {

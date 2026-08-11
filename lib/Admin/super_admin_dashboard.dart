@@ -54,19 +54,29 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         ),
         content: const Text("A previous database operation was interrupted. Rollback to safe state?"),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
               await _dbService.clearRollbackSnapshot();
             },
-            child: const Text("Ignore", style: TextStyle(color: Colors.grey)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+              foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: const Text("Ignore"),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               _showRollbackProgressDialog();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange, 
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
             child: const Text("Rollback Now"),
           ),
         ],

@@ -60,20 +60,30 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         content: const Text("A previous database operation (Restore/Delete) was interrupted or failed. Would you like to rollback to the safe state or ignore?"),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
               await _dbService.clearRollbackSnapshot();
               DatabaseService.showToast(context, "Snapshot cleared.");
             },
-            child: const Text("Ignore", style: TextStyle(color: Colors.grey)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+              foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: const Text("Ignore"),
           ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
               _showRollbackProgressDialog();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange, 
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
             child: const Text("Rollback Now"),
           ),
         ],
@@ -199,9 +209,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blueGrey, 
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () => Navigator.pop(context),
                     child: const Text("Cancel"),
@@ -212,7 +226,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.error, 
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () {
                       Navigator.pop(context);

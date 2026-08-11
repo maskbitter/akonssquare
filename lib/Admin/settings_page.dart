@@ -146,9 +146,26 @@ class _SettingsPageState extends State<SettingsPage> {
             content: const Text("It is recommended to backup before wiping.", textAlign: TextAlign.center),
             actions: [
               Row(children: [
-                Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel"))),
+                Expanded(child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.pop(ctx, false), 
+                  child: const Text("Cancel")
+                )),
                 const SizedBox(width: 12),
-                Expanded(child: ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Backup Now"))),
+                Expanded(child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx, true), 
+                  child: const Text("Backup Now")
+                )),
               ]),
             ],
           ),
@@ -187,7 +204,11 @@ class _SettingsPageState extends State<SettingsPage> {
         content: Text(msg, textAlign: TextAlign.center),
         actions: [
           SizedBox(width: double.infinity, child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Theme.of(context).colorScheme.onTertiary),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary, 
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
             onPressed: () => Navigator.pop(ctx), child: const Text("OK"))),
         ],
       ),
@@ -203,9 +224,22 @@ class _SettingsPageState extends State<SettingsPage> {
         content: Text(msg, textAlign: TextAlign.center),
         actions: [
           Row(children: [
-            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel"))),
+            Expanded(child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ), 
+              onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel"))),
             const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () => Navigator.pop(ctx, true), child: const Text("Proceed"))),
+            Expanded(child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ), 
+              onPressed: () => Navigator.pop(ctx, true), child: const Text("Proceed"))),
           ]),
         ],
       ),
@@ -646,9 +680,22 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         actions: [
           Row(children: [
-            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+            Expanded(child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ), 
+              onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
             const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: () async {
+            Expanded(child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ), 
+              onPressed: () async {
               await ThemeManager.setTheme(local);
               if (ctx.mounted) Navigator.pop(ctx);
             }, child: const Text("Apply"))),
@@ -667,17 +714,30 @@ class _SettingsPageState extends State<SettingsPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text(docId == null ? "Add Account" : "Edit Account", style: Theme.of(context).textTheme.titleLarge)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: uC, decoration: const InputDecoration(labelText: "Username")),
+          TextField(controller: uC, decoration: const InputDecoration(labelText: "Username"), onChanged: (v) => setST((){})),
           const SizedBox(height: 12),
-          TextField(controller: pC, decoration: const InputDecoration(labelText: "Password")),
+          TextField(controller: pC, decoration: const InputDecoration(labelText: "Password"), onChanged: (v) => setST((){})),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(value: role, decoration: const InputDecoration(labelText: "Role"), items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))], onChanged: (v) => setST(() => role = v!)),
         ]),
         actions: [
           Row(children: [
-            Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+            Expanded(child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ), 
+              onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
             const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), onPressed: () async {
+            Expanded(child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary, 
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ), 
+              onPressed: (uC.text == (currentData?['username'] ?? '') && pC.text == (currentData?['password'] ?? '') && role == (currentData?['role'] ?? 'operator')) ? null : () async {
               SharedPreferences prefs = await SharedPreferences.getInstance();
               await _dbService.saveUser(uC.text, pC.text, role, prefs.getString('username') ?? '', docId: docId);
               if (ctx.mounted) Navigator.pop(ctx);
@@ -693,12 +753,36 @@ class _SettingsPageState extends State<SettingsPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text("Remove Account?"), content: Text("Are you sure you want to remove user '$username'?"),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-        TextButton(onPressed: () async {
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await _dbService.removeUser(docId, prefs.getString('username') ?? '');
-          if (mounted) Navigator.pop(ctx);
-        }, child: Text("Remove", style: TextStyle(color: Theme.of(context).colorScheme.error))),
+        Row(children: [
+          Expanded(
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              onPressed: () => Navigator.pop(ctx), 
+              child: const Text("Cancel")
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () async {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await _dbService.removeUser(docId, prefs.getString('username') ?? '');
+                if (mounted) Navigator.pop(ctx);
+              }, 
+              child: const Text("Remove")
+            ),
+          ),
+        ]),
       ],
     ));
   }

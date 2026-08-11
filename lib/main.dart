@@ -154,8 +154,9 @@ class _LoginPageState extends State<LoginPage> {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.surface, 
-                foregroundColor: Theme.of(context).colorScheme.onSurface, 
+                backgroundColor: Theme.of(context).colorScheme.primary, 
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text("OK"),
@@ -191,13 +192,29 @@ class _LoginPageState extends State<LoginPage> {
             content: Column(mainAxisSize: MainAxisSize.min, children: [
               Text("Enter last 4 digits of your NID:", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall),
               const SizedBox(height: 12),
-              TextField(controller: passController, obscureText: true, keyboardType: TextInputType.number, maxLength: 4, style: Theme.of(context).textTheme.bodyLarge, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock_outline), counterText: "")),
+              TextField(controller: passController, obscureText: true, keyboardType: TextInputType.number, maxLength: 4, style: Theme.of(context).textTheme.bodyLarge, onChanged: (v) => setST((){}), decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock_outline), counterText: "")),
             ]),
             actions: [
               Row(children: [
-                Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: isAuthenticating ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
+                Expanded(child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ), 
+                  onPressed: isAuthenticating ? null : () => Navigator.pop(ctx), 
+                  child: const Text("Cancel")
+                )),
                 const SizedBox(width: 12),
-                Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Theme.of(context).colorScheme.onTertiary, textStyle: const TextStyle(fontWeight: FontWeight.bold)), onPressed: isAuthenticating ? null : () async {
+                Expanded(child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                    foregroundColor: Theme.of(context).colorScheme.onTertiary, 
+                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ), 
+                  onPressed: (isAuthenticating || passController.text.length != 4) ? null : () async {
                   String input = passController.text.trim(); String storedNid = (subData['nidNumber'] ?? '').toString();
                   if (input.isEmpty || input.length != 4) { DatabaseService.showToast(context, "Enter 4 digits!", backgroundColor: Theme.of(context).colorScheme.secondary); return; }
                   setST(() => isAuthenticating = true);
@@ -234,15 +251,29 @@ class _LoginPageState extends State<LoginPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Center(child: Text("Access Login", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: uC, decoration: const InputDecoration(labelText: "Username", prefixIcon: Icon(Icons.person))),
+            TextField(controller: uC, decoration: const InputDecoration(labelText: "Username", prefixIcon: Icon(Icons.person)), onChanged: (v) => setST((){})),
             const SizedBox(height: 10),
-            TextField(controller: pC, obscureText: true, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock))),
+            TextField(controller: pC, obscureText: true, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock)), onChanged: (v) => setST((){})),
           ]),
           actions: [
             Row(children: [
-              Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: isVerifying ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
+              Expanded(child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ), 
+                onPressed: isVerifying ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
               const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Theme.of(context).colorScheme.onTertiary, textStyle: const TextStyle(fontWeight: FontWeight.bold)), onPressed: isVerifying ? null : () async {
+              Expanded(child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                  foregroundColor: Theme.of(context).colorScheme.onTertiary, 
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ), 
+                onPressed: (isVerifying || uC.text.trim().isEmpty || pC.text.trim().isEmpty) ? null : () async {
                 String u = uC.text.trim(); String p = pC.text.trim(); if (u.isEmpty || p.isEmpty) return;
                 setST(() => isVerifying = true);
                 try {
@@ -297,13 +328,28 @@ class _LoginPageState extends State<LoginPage> {
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             Text("Enter secret key:", style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 12),
-            TextField(controller: keyController, obscureText: true, decoration: const InputDecoration(labelText: "Secret Key", prefixIcon: Icon(Icons.vpn_key_outlined))),
+            TextField(controller: keyController, obscureText: true, onChanged: (v) => setST((){}), decoration: const InputDecoration(labelText: "Secret Key", prefixIcon: Icon(Icons.vpn_key_outlined))),
           ]),
           actions: [
             Row(children: [
-              Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.blueGrey), onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
+              Expanded(child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ), 
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text("Cancel")
+              )),
               const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Theme.of(context).colorScheme.onTertiary), onPressed: isLoading ? null : () async {
+              Expanded(child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                  foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ), 
+                onPressed: (isLoading || keyController.text.trim().isEmpty) ? null : () async {
                 if (keyController.text.trim() == 'superadmin') {
                   setST(() => isLoading = true);
                   SharedPreferences prefs = await SharedPreferences.getInstance();
