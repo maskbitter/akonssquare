@@ -8,7 +8,10 @@ import 'package:akonssquare/Users/user_dashboard.dart';
 import 'package:akonssquare/Operator/operator_dashboard.dart';
 import 'package:akonssquare/Viewer/viewer_dashboard.dart';
 import 'package:akonssquare/Admin/super_admin_dashboard.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:akonssquare/Common/build_config.dart';
 import 'dart:async';
+import 'dart:io';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -78,7 +81,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       // Fetch DB Version
       DocumentSnapshot dbSnap = await FirebaseFirestore.instance.collection('app_config').doc('database_info').get();
       if (dbSnap.exists) {
-        DatabaseService.cachedDBVersion = (dbSnap.data() as Map)['dbVersion']?.toDouble();
+        var data = dbSnap.data() as Map<String, dynamic>?;
+        DatabaseService.cachedDBVersion = data?['dbVersion']?.toDouble();
+      }
+
+      // Sync local build number to Firestore ONLY on emulator/AVD
+      if (Platform.isAndroid) {
+        var deviceInfo = await DeviceInfoPlugin().androidInfo;
+        if (!deviceInfo.isPhysicalDevice) {
+          await DatabaseService().updateSystemBuildNumber(buildNumber);
+        }
       }
 
       // Fetch Occupied Sub-items for Login Page

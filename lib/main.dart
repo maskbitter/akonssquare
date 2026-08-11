@@ -130,17 +130,6 @@ class _LoginPageState extends State<LoginPage> {
           _appName = doc['appName'] ?? "AkonsSquare";
         });
       }
-      
-      // Sync local build number to Firestore ONLY on emulator/AVD
-      bool isEmulator = false;
-      if (Platform.isAndroid) {
-        var deviceInfo = await DeviceInfoPlugin().androidInfo;
-        isEmulator = !deviceInfo.isPhysicalDevice;
-      }
-
-      if (isEmulator) {
-        await _dbService.updateSystemBuildNumber(buildNumber);
-      }
     } catch (e) {
       setState(() { _appName = "AkonsSquare"; });
     }

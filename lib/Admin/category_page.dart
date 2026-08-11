@@ -484,7 +484,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                       side: BorderSide.none,
                                     ),
                                     child: ExpansionTile(
-                                    tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                                    tilePadding: const EdgeInsets.symmetric(horizontal: 8),
                                     iconColor: itemAccentColor,
                                     collapsedIconColor: itemAccentColor,
                                     title: Row(
@@ -639,7 +639,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                       child: ExpansionTile(
                                       shape: const Border(),
                                       collapsedShape: const Border(),
-                                      tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                                      tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                                       iconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error,
                                       collapsedIconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error,
                                       title: Column(
@@ -868,8 +868,8 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color? color, Widget? trailing}) {
     final effectiveColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLow, 
         borderRadius: BorderRadius.circular(12), 
@@ -879,12 +879,14 @@ class _CategoryPageState extends State<CategoryPage> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: effectiveColor),
+              Icon(icon, size: 16, color: effectiveColor),
               const SizedBox(width: 8),
-              Text(title, style: Theme.of(context).textTheme.titleSmall),
-              const Spacer(),
-              if (amount != null) Text("৳${amount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleSmall),
-              if (trailing != null) trailing,
+              Expanded(child: Text(title, style: Theme.of(context).textTheme.titleSmall)),
+              if (amount != null) Text("৳${amount.toStringAsFixed(1)}", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing,
+              ],
             ],
           ),
           const SizedBox(height: 4),
@@ -905,35 +907,40 @@ class _CategoryPageState extends State<CategoryPage> {
     double? unitPrice = isWifi ? (s['wifiCost'] as num?)?.toDouble() : null;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
         children: [
-          const SizedBox(width: 4),
+          Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isWifi && devices != null ? "$name (Devices: $devices)" : name, 
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)
+                  isWifi && devices != null ? "$name (x$devices)" : name, 
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, height: 1.2)
                 ),
                 if (isWifi && unitPrice != null)
-                  Text("(৳${unitPrice.toStringAsFixed(0)} per device)", style: Theme.of(context).textTheme.labelSmall),
-                if (isOverridden && !isWifi) Text("Customized from 'Original'", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.secondary, fontStyle: FontStyle.italic)),
+                  Text("৳${unitPrice.toStringAsFixed(0)} / device", style: Theme.of(context).textTheme.labelSmall?.copyWith(height: 1.2)),
+                if (isOverridden && !isWifi) Text("Customized", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.secondary, fontStyle: FontStyle.italic, height: 1.2)),
               ],
             ),
           ),
-          Text("৳${s['amount'].toStringAsFixed(1)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
           const SizedBox(width: 8),
-          IconButton(
-            icon: Icon(Icons.edit_outlined, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            onPressed: () {
+          Text("৳${s['amount'].toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, height: 1.2)),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: () {
               if (isWifi) {
                 CategoryDialogs.showWifiServiceEditDialog(context: context, subItemId: subId, subItemName: subName, serviceMap: s, overriddenServices: overridden);
               } else {
                 CategoryDialogs.showEditSubItemServiceDialog(context: context, subItemId: subId, subItemName: subName, serviceMap: s, overriddenServices: overridden);
               }
             },
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(Icons.edit_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+            ),
           ),
         ],
       ),

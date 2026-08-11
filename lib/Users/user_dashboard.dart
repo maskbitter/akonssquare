@@ -128,7 +128,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
   Widget _buildInfoRow(String label, String value, {bool isBold = false, IconData? icon}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 12.0),
+      padding: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -136,10 +136,10 @@ class _UserDashboardState extends State<UserDashboard> {
             children: [
               if (icon != null) Icon(icon, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
               if (icon != null) const SizedBox(width: 6),
-              Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.2)),
             ],
           ),
-          Text(value, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.w500)),
+          Text(value, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.w500, height: 1.2)),
         ],
       ),
     );
@@ -418,8 +418,8 @@ class _UserDashboardState extends State<UserDashboard> {
                     // --- OUTSTANDING BILL SECTION ---
                     Container(
                       width: double.infinity,
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      padding: const EdgeInsets.all(20),
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(20),
@@ -527,10 +527,9 @@ class _UserDashboardState extends State<UserDashboard> {
                     if (ed != null && !isElectricStopped)
                       Card(
                         elevation: 0,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
-                          side: BorderSide.none,
                         ),
                         child: ExpansionTile(
                           shape: const Border(),
@@ -558,12 +557,15 @@ class _UserDashboardState extends State<UserDashboard> {
                     ...activeServices.map((s) {
                       bool isWifi = s['name'].toString().toLowerCase().contains("wifi");
                       return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: ListTile(
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                           leading: CircleAvatar(
                             backgroundColor: (isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary).withValues(alpha: 0.1),
                             child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary, size: 20),
