@@ -985,8 +985,12 @@ class _AdminHomeState extends State<AdminHome> {
                 rowBuilder: (data, index) {
                   double present = (data['presentReading'] as num?)?.toDouble() ?? 0;
                   double govtPresent = (data['govtBillReading'] as num?)?.toDouble() ?? 0;
-                  double balance = govtPresent - present;
-                  bool isAlert = balance < -5 || balance > 100;
+                  double balance = present - govtPresent;
+                  
+                  String suffix = "";
+                  if (balance < 0) suffix = "(A)";
+                  else if (balance > 0) suffix = "(D)";
+                  bool isRed = balance != 0;
 
                   return [
                     Text("${index + 1}", style: Theme.of(context).textTheme.bodyMedium),
@@ -994,10 +998,10 @@ class _AdminHomeState extends State<AdminHome> {
                     Text(present.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
                     Text(govtPresent.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
                     Text(
-                      balance.toStringAsFixed(1),
+                      "${balance.toStringAsFixed(1)}$suffix",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isAlert ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
-                        fontWeight: isAlert ? FontWeight.bold : FontWeight.normal,
+                        color: isRed ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                        fontWeight: isRed ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                   ];

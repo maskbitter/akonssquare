@@ -1173,7 +1173,12 @@ class _CategoryPageState extends State<CategoryPage> {
                       double govtUnit = newGovt - lastGovt;
                       double lastRate = (data['lastMonthUnitRate'] ?? 0).toDouble();
                       double thisRate = (data['unitRate'] ?? 0).toDouble();
-                      double govtDueAdv = newGovt - pres;
+                      double govtDueAdv = pres - newGovt;
+                      
+                      String advDueSuffix = "";
+                      if (govtDueAdv < 0) advDueSuffix = "(A)";
+                      else if (govtDueAdv > 0) advDueSuffix = "(D)";
+                      bool isAdvDueRed = govtDueAdv != 0;
                       double totalSubPaid = paidUnitsMap[meterNo] ?? 0;
                       double balance = mainUsed - totalSubPaid;
 
@@ -1197,7 +1202,7 @@ class _CategoryPageState extends State<CategoryPage> {
                           wrapCell(Text(govtUnit.toStringAsFixed(0), style: dataStyle)),
                           wrapCell(Text(lastRate.toStringAsFixed(1), style: dataStyle)),
                           wrapCell(Text(thisRate.toStringAsFixed(1), style: dataStyle)),
-                          wrapCell(Text(govtDueAdv.toStringAsFixed(0), style: dataStyle?.copyWith(color: govtDueAdv.abs() > 5 ? Theme.of(context).colorScheme.secondary : null, fontWeight: govtDueAdv.abs() > 5 ? FontWeight.bold : null))),
+                          wrapCell(Text("${govtDueAdv.toStringAsFixed(0)}$advDueSuffix", style: dataStyle?.copyWith(color: isAdvDueRed ? Theme.of(context).colorScheme.error : null, fontWeight: isAdvDueRed ? FontWeight.bold : null))),
                           wrapCell(Text(mainUsed.toStringAsFixed(0), style: dataStyle?.copyWith(fontWeight: FontWeight.bold))),
                           wrapCell(Text(totalSubPaid.toStringAsFixed(0), style: dataStyle)),
                           wrapCell(Text(balance.toStringAsFixed(0), style: dataStyle?.copyWith(color: balance > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold))),
