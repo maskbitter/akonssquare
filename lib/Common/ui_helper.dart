@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:akonssquare/Common/theme_manager.dart';
 
 class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
@@ -27,7 +28,18 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeStyle = Theme.of(context).elevatedButtonTheme.style;
-    final effectiveStyle = themeStyle?.merge(style) ?? style;
+    
+    // Explicit override for Outline Theme to ensure no fill
+    ButtonStyle? effectiveStyle;
+    if (ThemeManager.appThemeNotifier.value == "Outline Theme") {
+      effectiveStyle = themeStyle?.copyWith(
+        backgroundColor: WidgetStateProperty.all(Colors.transparent),
+        shadowColor: WidgetStateProperty.all(Colors.transparent),
+        elevation: WidgetStateProperty.all(0),
+      ).merge(style);
+    } else {
+      effectiveStyle = themeStyle?.merge(style) ?? style;
+    }
 
     if (icon != null) {
       return ElevatedButton.icon(

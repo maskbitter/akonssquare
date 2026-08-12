@@ -168,6 +168,14 @@ class ThemeManager {
         surface: Colors.white,
         onSurface: Colors.black,
         outline: _sessionSeedColor,
+        primaryContainer: Colors.transparent,
+        onPrimaryContainer: _sessionSeedColor,
+        secondaryContainer: Colors.transparent,
+        onSecondaryContainer: _sessionSeedColor,
+        tertiaryContainer: Colors.transparent,
+        onTertiaryContainer: _sessionSeedColor,
+        errorContainer: Colors.transparent,
+        onErrorContainer: Colors.black,
         surfaceContainerLow: Colors.white,
       );
     } else if (themeName == "Black & White Theme") {

@@ -283,8 +283,14 @@ class _AdminHomeState extends State<AdminHome> {
                   children: [
                     Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 1,
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
+                            : BorderSide.none,
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Column(
@@ -294,11 +300,11 @@ class _AdminHomeState extends State<AdminHome> {
                               children: [
                                 Row(
                                   children: [
-                                    Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.onPrimary, size: 14),
+                                    Icon(Icons.analytics_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary, size: 14),
                                     const SizedBox(width: 8),
                                     Text(
                                       "$_selectedMonthStr Total Revenue",
-                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
@@ -314,7 +320,11 @@ class _AdminHomeState extends State<AdminHome> {
                             const SizedBox(height: 4),
                             Text(
                               "৳${grandTotal.toStringAsFixed(2)}",
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onPrimary, letterSpacing: -0.5),
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w900, 
+                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary, 
+                                letterSpacing: -0.5
+                              ),
                             ),
                             
                             if (ThemeManager.appThemeNotifier.value != "Black & White Theme" && (_showPieChart || _showBarChart)) 
@@ -774,8 +784,8 @@ class _AdminHomeState extends State<AdminHome> {
 
   Widget _buildSubOverviewCard({required String title, required int count, required Color color, required IconData icon, required VoidCallback onTap, Color? countColor}) {
     return Card(
-      elevation: 2,
-      color: Theme.of(context).colorScheme.surface,
+      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16), 
         side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
@@ -807,10 +817,15 @@ class _AdminHomeState extends State<AdminHome> {
 
   Widget _buildInteractiveStat(String label, double amount, Color color, Color bgColor, IconData icon, VoidCallback onTap) {
     return Card(
-      elevation: 2,
+      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
       margin: EdgeInsets.zero,
-      color: bgColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : bgColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+            ? BorderSide(color: color, width: 1.5) 
+            : BorderSide.none,
+      ),
       child: InkWell(
         onTap: () {
           DatabaseService.vibrate();
@@ -901,11 +916,12 @@ class _AdminHomeState extends State<AdminHome> {
                     children: [
                       TableRow(
                         decoration: BoxDecoration(
-                          color: accentColor,
+                          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : accentColor,
+                          border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border(bottom: BorderSide(color: accentColor, width: 1.5)) : null,
                         ),
                         children: headers.map((h) => Padding(
                           padding: const EdgeInsets.all(12),
-                          child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle)),
+                          child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? accentColor : null))),
                         )).toList(),
                       ),
                       ...List.generate(meters.length, (index) {
@@ -1047,8 +1063,8 @@ class _AdminHomeState extends State<AdminHome> {
         }
 
         return Card(
-          elevation: 2,
-          color: bgColor,
+          elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : bgColor,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -1062,8 +1078,14 @@ class _AdminHomeState extends State<AdminHome> {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: accentColor,
-                  child: Icon(Icons.category_outlined, color: Theme.of(context).colorScheme.onTertiary, size: 16),
+                  backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : accentColor,
+                  child: Container(
+                    decoration: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                        ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: accentColor, width: 1)) 
+                        : null,
+                    alignment: Alignment.center,
+                    child: Icon(Icons.category_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? accentColor : Theme.of(context).colorScheme.onTertiary, size: 16),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
