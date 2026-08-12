@@ -93,10 +93,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           // 1. Update Global BN instantly (BN106, BN107...)
           await DatabaseService().updateSystemBuildNumber(buildNumber);
           
-          // 2. Update Global App Version (1.0.0+5)
-          PackageInfo packageInfo = await PackageInfo.fromPlatform();
-          String versionString = "${packageInfo.version}+${packageInfo.buildNumber}";
-          await DatabaseService().updateRequiredVersion(versionString);
+          // 2. Update Global App Version (e.g. 1.0.0+9)
+          await DatabaseService().updateRequiredVersion(appVersion);
         }
       }
 

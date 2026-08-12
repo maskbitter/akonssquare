@@ -177,46 +177,41 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                 return StreamBuilder<DocumentSnapshot>(
                   stream: DatabaseService().getDatabaseInfoStream(),
                   builder: (context, dbInfoSnap) {
-                    return FutureBuilder<PackageInfo>(
-                      future: PackageInfo.fromPlatform(),
-                      builder: (context, pSnap) {
-                        String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
-                        String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
-                        String dbVersion = "...";
-                        if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
-                          var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                          dbVersion = (data?['dbVersion'] ?? 26.0).toDouble().toStringAsFixed(1);
+                    String local = appVersion; // Instant update from build_config.dart
+                    String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
+                    String dbVersion = "...";
+                    if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                      var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                      dbVersion = (data?['dbVersion'] ?? 26.0).toDouble().toStringAsFixed(1);
+                    }
+                    
+                    bool isOutdated = false;
+                    if (remote != null && remote != local) {
+                      try {
+                        List<String> localParts = local.split('+');
+                        List<String> serverParts = remote.split('+');
+                        int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                        int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                        if (serverMain > localMain) {
+                          isOutdated = true;
+                        } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                          int localBuild = int.tryParse(localParts[1]) ?? 0;
+                          int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                          if (serverBuild > localBuild) isOutdated = true;
                         }
-                        
-                        bool isOutdated = false;
-                        if (remote != null && remote != local) {
-                          try {
-                            List<String> localParts = local.split('+');
-                            List<String> serverParts = remote.split('+');
-                            int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
-                            int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
-                            if (serverMain > localMain) {
-                              isOutdated = true;
-                            } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
-                              int localBuild = int.tryParse(localParts[1]) ?? 0;
-                              int serverBuild = int.tryParse(serverParts[1]) ?? 0;
-                              if (serverBuild > localBuild) isOutdated = true;
-                            }
-                          } catch (e) { isOutdated = remote != local; }
-                        }
-                        
-                          return Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 9)),
-                              if (isOutdated)
-                                Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 8)),
-                              Icon(Icons.power_settings_new, color: Theme.of(context).colorScheme.error, size: 18),
-                              Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 9)),
-                            ],
-                          );
-                      }
-                    );
+                      } catch (e) { isOutdated = remote != local; }
+                    }
+                    
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 9)),
+                          if (isOutdated)
+                            Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 8)),
+                          Icon(Icons.power_settings_new, color: Theme.of(context).colorScheme.error, size: 18),
+                          Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 9)),
+                        ],
+                      );
                   }
                 );
               }

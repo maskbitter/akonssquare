@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:akonssquare/Common/database_service.dart';
 import 'package:akonssquare/Common/ui_helper.dart';
+import 'package:akonssquare/Common/build_config.dart';
 import 'package:akonssquare/main.dart';
 
 class UpdateGuard extends StatefulWidget {
@@ -96,9 +97,8 @@ class _UpdateGuardState extends State<UpdateGuard> {
   }
 
   Future<void> _initVersioning() async {
-    // 1. Get local version from pubspec.yaml
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    _localVersion = "${packageInfo.version}+${packageInfo.buildNumber}";
+    // 1. Get local version from build_config.dart
+    _localVersion = appVersion;
 
     // 2. Listen to remote version and popup status from Firestore
     _dbService.getAppConfigStream().listen((snapshot) {
