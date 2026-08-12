@@ -488,105 +488,128 @@ class _CategoryPageState extends State<CategoryPage> {
                                       side: BorderSide.none,
                                     ),
                                     child: ExpansionTile(
-                                    tilePadding: const EdgeInsets.symmetric(horizontal: 8),
-                                    iconColor: itemAccentColor,
-                                    collapsedIconColor: itemAccentColor,
-                                    title: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 4),
-                                          child: Icon(Icons.meeting_room_outlined, color: itemAccentColor, size: 24),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                      shape: const Border(),
+                                      collapsedShape: const Border(),
+                                      tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                      iconColor: itemAccentColor,
+                                      collapsedIconColor: itemAccentColor,
+                                      title: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
                                             children: [
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(4)),
-                                                    child: Text(subName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: itemAccentColor)),
+                                              Icon(Icons.meeting_room_outlined, color: itemAccentColor, size: 22),
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context).colorScheme.surface,
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  subName,
+                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.w900, 
+                                                    color: itemAccentColor, 
                                                   ),
-                                                  const Spacer(),
-                                                  const SizedBox(width: 12),
-                                                  PopupMenuButton<String>(
-                                                    padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
-                                                    icon: Icon(Icons.more_vert, size: 24, color: itemOnBgColor.withValues(alpha: 0.7)),
-                                                    onSelected: (val) async {
-                                                      if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator);
-                                                      if (val == 'stop') {
-                                                        bool isStopping = ed?['isStopped'] != true;
-                                                        if (isStopping) {
-                                                          double last = (ed?['lastReading'] ?? 0).toDouble();
-                                                          double pres = (ed?['presentReading'] ?? 0).toDouble();
-                                                          if (pres > last) {
-                                                            CategoryDialogs.showConfirmDialog(
-                                                              context: context,
-                                                              title: "Confirm Stop Electric",
-                                                              content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
-                                                              onConfirm: () async {
-                                                                await _dbService.updateSubItemElectricity(subId, {
-                                                                  ...ed!,
-                                                                  'presentReading': last,
-                                                                  'isStopped': true,
-                                                                  'updatedAt': FieldValue.serverTimestamp(),
-                                                                }, "Admin");
-                                                              },
-                                                            );
-                                                          } else {
-                                                            await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
-                                                          }
-                                                        } else {
-                                                          await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
-                                                        }
-                                                      } else if (val == 'services') {
-                                                        CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
-                                                      } else if (val == 'remove') {
-                                                         CategoryDialogs.showConfirmDialog(
-                                                          context: context, 
-                                                          title: "Remove '$subName'?", 
-                                                          content: "Are you sure you want to remove this $subName?", 
-                                                          onConfirm: () async { 
-                                                            SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                                            await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
-                                                          }
-                                                        );
-                                                      }
-                                                    },
-                                                    itemBuilder: (ctx) => [
-                                                      PopupMenuItem(
-                                                        value: ed == null ? 'electric' : 'stop', 
-                                                        child: ListTile(
-                                                          leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
-                                                          title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
-                                                          dense: true
-                                                        )
-                                                      ),
-                                                      const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
-                                                      if (!widget.isOperator)
-                                                        PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
-                                                    ],
-                                                  ),
-                                                ],
+                                                ),
                                               ),
-                                              const SizedBox(height: 4),
-                                              Text("Status: Vacant", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: itemOnBgColor.withValues(alpha: 0.8))),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.end,
-                                                children: [
-                                                  if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 20),
-                                                  Text("৳${total.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: itemOnBgColor)),
+                                              const Spacer(),
+                                              const SizedBox(width: 6),
+                                              PopupMenuButton<String>(
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                                icon: Icon(Icons.more_vert, size: 22, color: itemOnBgColor.withValues(alpha: 0.7)),
+                                                onSelected: (val) async {
+                                                  if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator);
+                                                  if (val == 'stop') {
+                                                    bool isStopping = ed?['isStopped'] != true;
+                                                    if (isStopping) {
+                                                      double last = (ed?['lastReading'] ?? 0).toDouble();
+                                                      double pres = (ed?['presentReading'] ?? 0).toDouble();
+                                                      if (pres > last) {
+                                                        CategoryDialogs.showConfirmDialog(
+                                                          context: context,
+                                                          title: "Confirm Stop Electric",
+                                                          content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
+                                                          onConfirm: () async {
+                                                            await _dbService.updateSubItemElectricity(subId, {
+                                                              ...ed!,
+                                                              'presentReading': last,
+                                                              'isStopped': true,
+                                                              'updatedAt': FieldValue.serverTimestamp(),
+                                                            }, "Admin");
+                                                          },
+                                                        );
+                                                      } else {
+                                                        await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
+                                                      }
+                                                    } else {
+                                                      await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
+                                                    }
+                                                  } else if (val == 'services') {
+                                                    CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
+                                                  } else if (val == 'remove') {
+                                                     CategoryDialogs.showConfirmDialog(
+                                                      context: context, 
+                                                      title: "Remove '$subName'?", 
+                                                      content: "Are you sure you want to remove this $subName?", 
+                                                      onConfirm: () async { 
+                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                        await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
+                                                      }
+                                                    );
+                                                  }
+                                                },
+                                                itemBuilder: (ctx) => [
+                                                  PopupMenuItem(
+                                                    value: ed == null ? 'electric' : 'stop', 
+                                                    child: ListTile(
+                                                      leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
+                                                      title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
+                                                      dense: true
+                                                    )
+                                                  ),
+                                                  const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
+                                                  if (!widget.isOperator)
+                                                    PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
                                                 ],
                                               ),
                                             ],
                                           ),
-                                        ),
-                                      ],
-                                    ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 30),
+                                                child: Text(
+                                                  'Vacant',
+                                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error),
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                "৳${total.toStringAsFixed(2)}",
+                                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                                  fontWeight: FontWeight.w900, 
+                                                  color: itemOnBgColor, 
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 30, top: 1),
+                                            child: Text(
+                                              "${active.length} Services | Ready for new tenant",
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                color: itemOnBgColor.withValues(alpha: 0.8), 
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     children: [
                                       Padding(
                                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
