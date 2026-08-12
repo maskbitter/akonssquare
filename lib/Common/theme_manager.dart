@@ -71,6 +71,9 @@ class ThemeManager {
   }
 
   static Color getCardColor(int index, {double alpha = 1.0, bool isSubCard = false}) {
+    if (appThemeNotifier.value == "Black & White Theme") {
+      return (isSubCard ? Colors.grey.shade700 : Colors.black).withValues(alpha: alpha);
+    }
     if (appThemeNotifier.value == "Normal Theme") {
       if (isSubCard) {
         final List<Color> colors = [
@@ -90,6 +93,9 @@ class ThemeManager {
   }
 
   static Color getCardContainerColor(int index, {double alpha = 1.0, bool isSubCard = false}) {
+    if (appThemeNotifier.value == "Black & White Theme") {
+      return (isSubCard ? Colors.grey.shade200 : Colors.white).withValues(alpha: alpha);
+    }
     if (appThemeNotifier.value == "Normal Theme") {
       if (isSubCard) {
         final List<Color> colors = [
@@ -110,6 +116,9 @@ class ThemeManager {
   }
 
   static Color getCardOnContainerColor(int index, {bool isSubCard = false}) {
+    if (appThemeNotifier.value == "Black & White Theme") {
+      return isSubCard ? Colors.black : Colors.black;
+    }
     if (appThemeNotifier.value == "Normal Theme") {
       if (isSubCard) {
         final List<Color> colors = [
@@ -138,7 +147,38 @@ class ThemeManager {
     final activeFont = fontName ?? appFontNotifier.value;
     
     ColorScheme colorScheme;
-    if (themeName == "Normal Theme") {
+    if (themeName == "Black & White Theme") {
+      colorScheme = const ColorScheme.light(
+        primary: Colors.black,
+        onPrimary: Colors.white,
+        primaryContainer: Color(0xFFE0E0E0), // grey 300
+        onPrimaryContainer: Colors.black,
+        secondary: Color(0xFF424242), // grey 800
+        onSecondary: Colors.white,
+        secondaryContainer: Color(0xFFF5F5F5), // grey 100
+        onSecondaryContainer: Colors.black,
+        tertiary: Color(0xFF616161), // grey 700
+        onTertiary: Colors.white,
+        tertiaryContainer: Color(0xFFEEEEEE), // grey 200
+        onTertiaryContainer: Colors.black,
+        error: Colors.black,
+        onError: Colors.white,
+        errorContainer: Color(0xFFBDBDBD), // grey 400
+        onErrorContainer: Colors.black,
+        surface: Colors.white,
+        onSurface: Colors.black,
+        surfaceContainerLowest: Colors.white,
+        surfaceContainerLow: Color(0xFFF5F5F5),
+        surfaceContainer: Color(0xFFEEEEEE),
+        surfaceContainerHigh: Color(0xFFE0E0E0),
+        surfaceContainerHighest: Color(0xFFBDBDBD),
+        outline: Color(0xFF757575), // grey 600
+        outlineVariant: Color(0xFFEEEEEE),
+        inverseSurface: Colors.black,
+        onInverseSurface: Colors.white,
+        inversePrimary: Color(0xFFBDBDBD),
+      );
+    } else if (themeName == "Normal Theme") {
       colorScheme = ColorScheme.fromSeed(
         seedColor: Colors.indigo,
         brightness: Brightness.light,
@@ -190,21 +230,21 @@ class ThemeManager {
       textTheme: baseTextTheme,
       extensions: [
         AppColors(
-          success: const Color(0xFF2E7D32),
+          success: themeName == "Black & White Theme" ? Colors.black : const Color(0xFF2E7D32),
           onSuccess: Colors.white,
-          warning: const Color(0xFFF57C00),
+          warning: themeName == "Black & White Theme" ? const Color(0xFF424242) : const Color(0xFFF57C00),
           onWarning: Colors.white,
-          info: const Color(0xFF0288D1),
+          info: themeName == "Black & White Theme" ? const Color(0xFF616161) : const Color(0xFF0288D1),
           onInfo: Colors.white,
-          active: const Color(0xFF4CAF50),
+          active: themeName == "Black & White Theme" ? Colors.black : const Color(0xFF4CAF50),
           inactive: const Color(0xFF9E9E9E),
-          pending: const Color(0xFFFFA000),
-          gold: const Color(0xFFFFD700),
+          pending: themeName == "Black & White Theme" ? const Color(0xFF757575) : const Color(0xFFFFA000),
+          gold: themeName == "Black & White Theme" ? const Color(0xFF424242) : const Color(0xFFFFD700),
           silver: const Color(0xFFC0C0C0),
-          bronze: const Color(0xFFCD7F32),
-          premium: const Color(0xFF673AB7),
-          verified: const Color(0xFF2196F3),
-          electric: themeName == "Normal Theme" ? const Color(0xFFE65100) : colorScheme.secondary,
+          bronze: themeName == "Black & White Theme" ? const Color(0xFF757575) : const Color(0xFFCD7F32),
+          premium: themeName == "Black & White Theme" ? Colors.black : const Color(0xFF673AB7),
+          verified: themeName == "Black & White Theme" ? Colors.black : const Color(0xFF2196F3),
+          electric: themeName == "Normal Theme" ? const Color(0xFFE65100) : (themeName == "Black & White Theme" ? Colors.black : colorScheme.secondary),
         ),
       ],
       cardTheme: CardThemeData(
