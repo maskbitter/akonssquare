@@ -787,31 +787,38 @@ class DatabaseService {
 
   // Wipe all administrative data EXCEPT users with countdown progress
   Future<void> wipeDatabase(String actor, {Function(double)? onProgress}) async {
-    // Collections to wipe (Administrative data)
-    // PROTECTED: 'users', 'activity_log', 'removed_history'
-    List<String> collections = [
+    // Collections to archive then wipe
+    List<String> mainCollections = [
       'categories', 'services', 'sub_items', 'main_meters', 'sub_meters', 'billing_history'
     ];
+    // Collections to wipe directly (Logs and History)
+    List<String> logCollections = ['activity_log', 'removed_history'];
 
     // 1. Calculate Total Documents
     int totalDocs = 0;
-    Map<String, List<QueryDocumentSnapshot>> docSnaps = {};
-    for (String col in collections) {
+    Map<String, List<QueryDocumentSnapshot>> mainSnaps = {};
+    Map<String, List<QueryDocumentSnapshot>> logSnaps = {};
+
+    for (String col in mainCollections) {
       QuerySnapshot snap = await _db.collection(col).get();
       totalDocs += snap.docs.length;
-      docSnaps[col] = snap.docs;
+      mainSnaps[col] = snap.docs;
+    }
+    for (String col in logCollections) {
+      QuerySnapshot snap = await _db.collection(col).get();
+      totalDocs += snap.docs.length;
+      logSnaps[col] = snap.docs;
     }
 
     if (totalDocs == 0) {
-      if (onProgress != null) onProgress(0.0); // End at 0%
+      if (onProgress != null) onProgress(0.0);
       return;
     }
 
-    // 2. Archive to history, then Delete
+    // 2. Process Main Collections (Archive then Delete)
     int processedCount = 0;
-    for (String col in collections) {
-      for (var doc in docSnaps[col]!) {
-        // Safe Archive before deletion
+    for (String col in mainCollections) {
+      for (var doc in mainSnaps[col]!) {
         await _db.collection('removed_history').add({
           'collection': col,
           'originalDocId': doc.id,
@@ -821,15 +828,18 @@ class DatabaseService {
           'clientTimestamp': DateTime.now().toIso8601String(),
           'reason': 'Bulk Database Wipe by Admin',
         });
-
-        // Delete original
         await doc.reference.delete();
-        
         processedCount++;
-        if (onProgress != null) {
-          // Progress starts at 1.0 (100%) and goes down to 0.0 (0%)
-          onProgress(1.0 - (processedCount / totalDocs));
-        }
+        if (onProgress != null) onProgress(1.0 - (processedCount / totalDocs));
+      }
+    }
+
+    // 3. Process Log Collections (Delete Directly)
+    for (String col in logCollections) {
+      for (var doc in logSnaps[col]!) {
+        await doc.reference.delete();
+        processedCount++;
+        if (onProgress != null) onProgress(1.0 - (processedCount / totalDocs));
       }
     }
 
