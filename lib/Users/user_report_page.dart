@@ -214,6 +214,7 @@ class UserReportPage extends StatelessWidget {
 
           DateTime? createdAt = (subData['createdAt'] as Timestamp?)?.toDate();
           String subName = subData['subItemName'] ?? 'Unnamed';
+          String currentTenant = subData['TenantName'] ?? '';
 
           return Column(
             children: [
@@ -242,7 +243,7 @@ class UserReportPage extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      subName,
+                      currentTenant.isNotEmpty ? "$subName ($currentTenant)" : subName,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 4),
@@ -337,7 +338,7 @@ class UserReportPage extends StatelessWidget {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              "${data['monthYear'] ?? 'N/A'} - ${data['subItemName'] ?? 'Unit'}",
+                                              "${data['monthYear'] ?? 'N/A'} - ${data['TenantName'] ?? 'No Name'}",
                                               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                                             ),
                                             Text("Paid on: $paidTime", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10)),
