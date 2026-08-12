@@ -839,8 +839,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                             padding: const EdgeInsets.only(left: 30, top: 1),
                                             child: Text(
                                               isOccupied 
-                                                ? (isPaid ? "Payment Clear • $_selectedMonthStr" : "${active.length} Services | Due") 
-                                                : "Ready for new tenant",
+                                                ? (isPaid ? "${active.length} Services | Payment Clear" : "${active.length} Services | Due") 
+                                                : "${active.length} Services | Ready for new tenant",
                                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                                 color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
                                               ),
