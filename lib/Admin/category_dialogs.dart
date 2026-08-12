@@ -928,9 +928,9 @@ class CategoryDialogs {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (existingData?['updatedAt'] != null)
+                if (existingData?['updatedAt'] != null) ...[
                   Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    margin: const EdgeInsets.only(top: 4),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, borderRadius: BorderRadius.circular(8)),
                     child: Row(
@@ -941,6 +941,8 @@ class CategoryDialogs {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+                ],
                 StreamBuilder<QuerySnapshot>(
                   stream: _dbService.getSubMetersStream(),
                   builder: (context, snapshot) {
