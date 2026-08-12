@@ -29,12 +29,13 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeStyle = Theme.of(context).elevatedButtonTheme.style;
     
-    // Explicit override for Outline Theme to ensure no fill
+    // Explicit override for Outline Theme to ensure no fill and black text
     ButtonStyle? effectiveStyle;
     if (ThemeManager.appThemeNotifier.value == "Outline Theme") {
       effectiveStyle = themeStyle?.copyWith(
         backgroundColor: WidgetStateProperty.all(Colors.transparent),
         shadowColor: WidgetStateProperty.all(Colors.transparent),
+        foregroundColor: WidgetStateProperty.all(Colors.black),
         elevation: WidgetStateProperty.all(0),
       ).merge(style);
     } else {

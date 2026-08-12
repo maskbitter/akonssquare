@@ -108,7 +108,7 @@ class _AdminHomeState extends State<AdminHome> {
                                   children: [
                                     Row(
                                       children: [
-                                        Icon(Icons.account_balance_wallet_outlined, size: 22, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary),
+                                        Icon(Icons.account_balance_wallet_outlined, size: 22, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.indigo : Theme.of(context).colorScheme.primary),
                                         const SizedBox(width: 8),
                                         Text(
                                           "Accounts",
@@ -307,7 +307,7 @@ class _AdminHomeState extends State<AdminHome> {
                               children: [
                                 Row(
                                   children: [
-                                    Icon(Icons.analytics_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary, size: 14),
+                                    Icon(Icons.analytics_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.blue : Theme.of(context).colorScheme.onPrimary, size: 14),
                                     const SizedBox(width: 8),
                                     Text(
                                       "$_selectedMonthStr Total Revenue",
@@ -425,6 +425,7 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _chartIconButton(IconData icon, bool active, VoidCallback onTap) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return InkWell(
       onTap: () {
         DatabaseService.vibrate();
@@ -433,10 +434,11 @@ class _AdminHomeState extends State<AdminHome> {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: active ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.2) : Colors.transparent,
+          color: (active && !isOutline) ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
+          border: (active && isOutline) ? Border.all(color: Colors.black, width: 1) : null,
         ),
-        child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 18),
+        child: Icon(icon, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, size: 18),
       ),
     );
   }
@@ -646,7 +648,11 @@ class _AdminHomeState extends State<AdminHome> {
           children: [
             Row(
               children: [
-                CircleAvatar(backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color, size: 20)),
+                CircleAvatar(
+                  backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : color.withOpacity(0.1), 
+                  child: Icon(icon, color: color, size: 20),
+                  foregroundColor: color,
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -665,8 +671,9 @@ class _AdminHomeState extends State<AdminHome> {
                 AppButton(
                   onPressed: onAction,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isHighlighted ? color : Colors.grey.shade300,
-                    foregroundColor: isHighlighted ? Colors.white : Colors.grey,
+                    backgroundColor: isHighlighted ? color : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Colors.grey.shade300),
+                    foregroundColor: isHighlighted ? Colors.white : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Colors.grey),
+                    side: (ThemeManager.appThemeNotifier.value == "Outline Theme") ? BorderSide(color: isHighlighted ? color : Colors.black, width: 1.5) : null,
                     elevation: isHighlighted ? 2 : 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -1006,15 +1013,15 @@ class _AdminHomeState extends State<AdminHome> {
                   double balance = mainUsed - totalSubPaid;
                   
                   return [
-                    Text("${index + 1}", style: Theme.of(context).textTheme.bodyMedium),
-                    Text(meterNo, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    Text(mainUsed.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
-                    Text(totalSubPaid.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
-                    Text("৳${unitRate.toStringAsFixed(2)}", style: Theme.of(context).textTheme.bodyMedium),
+                    Text("${index + 1}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    Text(meterNo, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    Text(mainUsed.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    Text(totalSubPaid.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    Text("৳${unitRate.toStringAsFixed(2)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
                     Text(
                       balance.toStringAsFixed(1),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: balance > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                        color: balance > 0 ? Colors.red : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1040,14 +1047,14 @@ class _AdminHomeState extends State<AdminHome> {
                   bool isRed = balance != 0;
 
                   return [
-                    Text("${index + 1}", style: Theme.of(context).textTheme.bodyMedium),
-                    Text(data['meterNo'] ?? 'N/A', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    Text(present.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
-                    Text(govtPresent.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
+                    Text("${index + 1}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    Text(data['meterNo'] ?? 'N/A', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    Text(present.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    Text(govtPresent.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
                     Text(
                       "${balance.toStringAsFixed(1)}$suffix",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isRed ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                        color: isRed ? Colors.red : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary),
                         fontWeight: isRed ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
@@ -1112,11 +1119,15 @@ class _AdminHomeState extends State<AdminHome> {
                 Expanded(
                   child: Text(
                     catName.toUpperCase(),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: ThemeManager.getCardOnContainerColor(index), letterSpacing: 0.5),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w900, 
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : ThemeManager.getCardOnContainerColor(index), 
+                      letterSpacing: 0.5
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                _buildNestedStatItem("Total", total, ThemeManager.getCardOnContainerColor(index)),
+                _buildNestedStatItem("Total", total, ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : ThemeManager.getCardOnContainerColor(index)),
                 const SizedBox(width: 12),
                 _buildNestedStatItem("Occupied", occupied, Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 12),
@@ -1483,8 +1494,9 @@ class _AdminHomeState extends State<AdminHome> {
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.15),
+          backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : color.withOpacity(0.15),
           child: Icon(icon, color: color, size: 22),
+          foregroundColor: color,
         ),
         title: Text(title, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: textColor)),
         subtitle: Column(
@@ -1505,7 +1517,7 @@ class _AdminHomeState extends State<AdminHome> {
             if (paidAt != null)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text(DatabaseService.formatFullDateTime(paidAt), style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10, color: textColor.withOpacity(0.6))),
+                child: Text(DatabaseService.formatFullDateTime(paidAt), style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : textColor.withOpacity(0.6))),
               ),
           ],
         ),
@@ -1517,7 +1529,7 @@ class _AdminHomeState extends State<AdminHome> {
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: color),
             ),
             const SizedBox(width: 4),
-            Icon(Icons.arrow_forward_ios, size: 12, color: color.withOpacity(0.5)),
+            Icon(Icons.arrow_forward_ios, size: 12, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : color.withOpacity(0.5)),
           ],
         ),
       ),

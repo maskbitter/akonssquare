@@ -163,7 +163,7 @@ class ThemeManager {
         brightness: Brightness.light,
       ).copyWith(
         primary: _sessionSeedColor,
-        onPrimary: Colors.black, // Default text on primary surface
+        onPrimary: Colors.black, 
         surface: Colors.white,
         onSurface: Colors.black,
         outline: _sessionSeedColor,
@@ -176,6 +176,11 @@ class ThemeManager {
         errorContainer: Colors.transparent,
         onErrorContainer: Colors.black,
         surfaceContainerLow: Colors.white,
+        surfaceContainerLowest: Colors.white,
+        surfaceContainer: Colors.white,
+        surfaceContainerHigh: Colors.white,
+        surfaceContainerHighest: Colors.white,
+        outlineVariant: Colors.black,
       );
     } else if (themeName == "Black & White Theme") {
       colorScheme = const ColorScheme.light(
@@ -359,6 +364,9 @@ class ThemeManager {
   }
 
   static TextTheme _getTextTheme(String fontName, Color onSurface) {
+    bool isOutline = appThemeNotifier.value == "Outline Theme";
+    Color effectiveColor = isOutline ? Colors.black : onSurface;
+
     TextTheme base;
     switch (fontName) {
       case "Inter": base = GoogleFonts.interTextTheme(); break;
@@ -372,14 +380,14 @@ class ThemeManager {
     }
 
     return base.copyWith(
-      headlineMedium: base.headlineMedium?.copyWith(fontSize: 26, fontWeight: FontWeight.w900, color: onSurface),
-      titleLarge: base.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold, color: onSurface),
-      titleMedium: base.titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.bold, color: onSurface),
-      titleSmall: base.titleSmall?.copyWith(fontSize: 14, fontWeight: FontWeight.bold, color: onSurface),
-      bodyLarge: base.bodyLarge?.copyWith(fontSize: 15, color: onSurface),
-      bodyMedium: base.bodyMedium?.copyWith(fontSize: 13, color: onSurface),
-      bodySmall: base.bodySmall?.copyWith(fontSize: 12, color: onSurface.withOpacity(0.7)),
-      labelSmall: base.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.bold, color: onSurface.withOpacity(0.7)),
+      headlineMedium: base.headlineMedium?.copyWith(fontSize: 26, fontWeight: FontWeight.w900, color: effectiveColor),
+      titleLarge: base.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold, color: effectiveColor),
+      titleMedium: base.titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.bold, color: effectiveColor),
+      titleSmall: base.titleSmall?.copyWith(fontSize: 14, fontWeight: FontWeight.bold, color: effectiveColor),
+      bodyLarge: base.bodyLarge?.copyWith(fontSize: 15, color: effectiveColor),
+      bodyMedium: base.bodyMedium?.copyWith(fontSize: 13, color: effectiveColor),
+      bodySmall: base.bodySmall?.copyWith(fontSize: 12, color: effectiveColor),
+      labelSmall: base.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.bold, color: effectiveColor),
     );
   }
 }

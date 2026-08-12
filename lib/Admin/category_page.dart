@@ -40,7 +40,7 @@ class _CategoryPageState extends State<CategoryPage> {
     DatabaseService.vibrate();
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
+      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         decoration: BoxDecoration(
@@ -90,17 +90,30 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget _buildActionCard(BuildContext context, {required String title, required String subtitle, required IconData icon, required Color color, required Color accentColor, required VoidCallback onTap}) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return Card(
-      elevation: 2,
+      elevation: isOutline ? 0 : 2,
       margin: EdgeInsets.zero,
-      color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),
+      color: isOutline ? Colors.transparent : color,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), 
+        side: isOutline ? BorderSide(color: accentColor, width: 1.5) : BorderSide.none
+      ),
       child: ListTile(
         onTap: onTap,
-        leading: CircleAvatar(backgroundColor: accentColor, child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20)),
-        title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: accentColor)),
-        subtitle: Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: accentColor.withOpacity(0.7))),
-        trailing: Icon(Icons.arrow_forward_ios, size: 14, color: accentColor),
+        leading: Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isOutline ? Colors.transparent : accentColor,
+            border: isOutline ? Border.all(color: accentColor, width: 1.5) : null,
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: isOutline ? accentColor : Theme.of(context).colorScheme.onPrimary, size: 20),
+        ),
+        title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : accentColor)),
+        subtitle: Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : accentColor.withOpacity(0.7))),
+        trailing: Icon(Icons.arrow_forward_ios, size: 14, color: isOutline ? Colors.black : accentColor),
       ),
     );
   }
@@ -108,7 +121,7 @@ class _CategoryPageState extends State<CategoryPage> {
   void _showMeterChoiceMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
+      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
