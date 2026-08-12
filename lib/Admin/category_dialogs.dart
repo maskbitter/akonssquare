@@ -961,9 +961,17 @@ class CategoryDialogs {
                     }
 
                     return DropdownButtonFormField<String>(
+                      isExpanded: true,
                       value: dropdownValue,
                       decoration: const InputDecoration(labelText: "Sub-meter No", isDense: true),
-                      items: available.map((doc) => DropdownMenuItem(value: doc['subMeterNo'].toString(), child: Text("Sub-meter: ${doc['subMeterNo']} (Main: ${doc['mainMeterNo']})", style: Theme.of(context).textTheme.bodyMedium))).toList(),
+                      items: available.map((doc) => DropdownMenuItem(
+                        value: doc['subMeterNo'].toString(), 
+                        child: Text(
+                          "SM: ${doc['subMeterNo']} (Main: ${doc['mainMeterNo']})", 
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          softWrap: true,
+                        )
+                      )).toList(),
                       onChanged: isOperator ? null : (v) => setDialogState(() {
                         selectedSubMeter = v;
                         var match = available.firstWhere((d) => d['subMeterNo'] == v);
