@@ -1,1 +1,1 @@
-﻿const int buildNumber = 106;
+﻿const int buildNumber = 3;
