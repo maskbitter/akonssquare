@@ -519,30 +519,12 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          RichText(
-                            text: TextSpan(
-                              children: [
-                                // Header ONLY shows App Version (V: 1.0.0+7)
-                                TextSpan(text: "V: $_currentVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold, fontSize: 8)),
-                                
-                                // Show RED Latest V only if Server Version > Local Version
-                                if (isOutdated) ...[
-                                  TextSpan(text: " | ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline, fontSize: 8)),
-                                  TextSpan(text: "Latest V: $latestV", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 8)),
-                                ]
-                              ]
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _temporaryMessage ?? "DB V-$dbVersion",
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontSize: 8,
-                              color: (_temporaryMessage != null && (_temporaryMessage!.contains("Delet") || _temporaryMessage!.contains("Backup"))) 
-                                ? Theme.of(context).colorScheme.error 
-                                : Theme.of(context).colorScheme.secondary, 
-                              fontWeight: FontWeight.bold, 
-                            ),
+                          AppVersionInfo(
+                            version: _currentVersion,
+                            dbVersion: dbVersion,
+                            latestVersion: latestV,
+                            isOutdated: isOutdated,
+                            color: Theme.of(context).colorScheme.tertiary,
                           ),
                         ],
                       ),

@@ -361,15 +361,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         } catch (e) { isOutdated = remote != local; }
                       }
                       
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, fontWeight: FontWeight.bold)),
-                          if (isOutdated)
-                            Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontSize: 8)),
-                          Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 18),
-                          Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),
-                        ],
+                      return AppVersionInfo(
+                        version: local,
+                        dbVersion: dbVersion,
+                        latestVersion: remote,
+                        isOutdated: isOutdated,
+                        color: Theme.of(context).colorScheme.primary,
+                        secondaryColor: Theme.of(context).colorScheme.secondary,
                       );
                     }
                   );

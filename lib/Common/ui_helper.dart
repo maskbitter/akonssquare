@@ -94,3 +94,80 @@ class AppDialogActions extends StatelessWidget {
     );
   }
 }
+
+class AppVersionInfo extends StatelessWidget {
+  final String version;
+  final String dbVersion;
+  final String? latestVersion;
+  final bool isOutdated;
+  final Color? color;
+  final Color? secondaryColor;
+  final CrossAxisAlignment crossAxisAlignment;
+
+  const AppVersionInfo({
+    super.key,
+    required this.version,
+    required this.dbVersion,
+    this.latestVersion,
+    this.isOutdated = false,
+    this.color,
+    this.secondaryColor,
+    this.crossAxisAlignment = CrossAxisAlignment.center,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // CENTRALIZED STYLE CONFIG
+    const double mainFontSize = 8.0;
+    const double secondaryFontSize = 7.0;
+
+    final effectiveColor = color ?? Theme.of(context).colorScheme.tertiary;
+    final effectiveSecondary = secondaryColor ?? Theme.of(context).colorScheme.secondary;
+
+    return Column(
+      crossAxisAlignment: crossAxisAlignment,
+      children: [
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: "V: $version", 
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: effectiveColor, 
+                  fontWeight: FontWeight.bold, 
+                  fontSize: mainFontSize
+                )
+              ),
+              if (isOutdated && latestVersion != null) ...[
+                TextSpan(
+                  text: " | ", 
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline, 
+                    fontSize: mainFontSize
+                  )
+                ),
+                TextSpan(
+                  text: "Latest V: $latestVersion", 
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error, 
+                    fontWeight: FontWeight.bold, 
+                    fontSize: mainFontSize
+                  )
+                ),
+              ]
+            ]
+          ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          "DB V-$dbVersion",
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontSize: mainFontSize,
+            color: effectiveSecondary, 
+            fontWeight: FontWeight.bold, 
+          ),
+        ),
+      ],
+    );
+  }
+}

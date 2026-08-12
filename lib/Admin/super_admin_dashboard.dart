@@ -202,15 +202,13 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                       } catch (e) { isOutdated = remote != local; }
                     }
                     
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 8)),
-                          if (isOutdated)
-                            Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 7)),
-                          Icon(Icons.power_settings_new, color: Theme.of(context).colorScheme.error, size: 18),
-                          Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 8)),
-                        ],
+                      return AppVersionInfo(
+                        version: local,
+                        dbVersion: dbVersion,
+                        latestVersion: remote,
+                        isOutdated: isOutdated,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        secondaryColor: Theme.of(context).colorScheme.onPrimary,
                       );
                   }
                 );
