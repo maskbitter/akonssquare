@@ -302,12 +302,13 @@ class _AdminHomeState extends State<AdminHome> {
                                     ),
                                   ],
                                 ),
-                                _buildChartToggle(
-                                  pieActive: _showPieChart,
-                                  barActive: _showBarChart,
-                                  onPieToggle: () => setState(() => _showPieChart = !_showPieChart),
-                                  onBarToggle: () => setState(() => _showBarChart = !_showBarChart),
-                                ),
+                                if (ThemeManager.appThemeNotifier.value != "Black & White Theme")
+                                  _buildChartToggle(
+                                    pieActive: _showPieChart,
+                                    barActive: _showBarChart,
+                                    onPieToggle: () => setState(() => _showPieChart = !_showPieChart),
+                                    onBarToggle: () => setState(() => _showBarChart = !_showBarChart),
+                                  ),
                               ],
                             ),
                             const SizedBox(height: 4),
@@ -316,7 +317,7 @@ class _AdminHomeState extends State<AdminHome> {
                               style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onPrimary, letterSpacing: -0.5),
                             ),
                             
-                            if (_showPieChart || _showBarChart) 
+                            if (ThemeManager.appThemeNotifier.value != "Black & White Theme" && (_showPieChart || _showBarChart)) 
                               Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 8),
                                 child: Row(
@@ -1065,7 +1066,7 @@ class _AdminHomeState extends State<AdminHome> {
                 const SizedBox(width: 12),
                 _buildNestedStatItem("Occupied", occupied, Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 12),
-                _buildNestedStatItem("Vacant", vacant, Theme.of(context).colorScheme.error),
+                _buildNestedStatItem("Vacant", vacant, Colors.red),
               ],
             ),
           ),
