@@ -787,19 +787,19 @@ class DatabaseService {
 
   // Wipe all administrative data EXCEPT users with countdown progress
   Future<void> wipeDatabase(String actor, {Function(double)? onProgress}) async {
+    // Collections to wipe (Administrative data)
+    // PROTECTED: 'users', 'activity_log', 'removed_history'
     List<String> collections = [
-      'categories', 'services', 'sub_items', 'main_meters', 'sub_meters',
-      'billing_history', 'activity_log', 'removed_history'
+      'categories', 'services', 'sub_items', 'main_meters', 'sub_meters', 'billing_history'
     ];
 
-    // 1. Count total documents
+    // 1. Calculate Total Documents
     int totalDocs = 0;
-    Map<String, List<DocumentReference>> docRefs = {};
-    
+    Map<String, List<QueryDocumentSnapshot>> docSnaps = {};
     for (String col in collections) {
       QuerySnapshot snap = await _db.collection(col).get();
       totalDocs += snap.docs.length;
-      docRefs[col] = snap.docs.map((d) => d.reference).toList();
+      docSnaps[col] = snap.docs;
     }
 
     if (totalDocs == 0) {
@@ -807,15 +807,28 @@ class DatabaseService {
       return;
     }
 
-    // 2. Delete with countdown progress (1.0 -> 0.0)
-    int deletedCount = 0;
+    // 2. Archive to history, then Delete
+    int processedCount = 0;
     for (String col in collections) {
-      for (var ref in docRefs[col]!) {
-        await ref.delete();
-        deletedCount++;
+      for (var doc in docSnaps[col]!) {
+        // Safe Archive before deletion
+        await _db.collection('removed_history').add({
+          'collection': col,
+          'originalDocId': doc.id,
+          'originalData': doc.data(),
+          'removedBy': actor,
+          'removedAt': FieldValue.serverTimestamp(),
+          'clientTimestamp': DateTime.now().toIso8601String(),
+          'reason': 'Bulk Database Wipe by Admin',
+        });
+
+        // Delete original
+        await doc.reference.delete();
+        
+        processedCount++;
         if (onProgress != null) {
           // Progress starts at 1.0 (100%) and goes down to 0.0 (0%)
-          onProgress(1.0 - (deletedCount / totalDocs));
+          onProgress(1.0 - (processedCount / totalDocs));
         }
       }
     }
