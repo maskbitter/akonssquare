@@ -99,6 +99,7 @@ class AppVersionInfo extends StatelessWidget {
   final String version;
   final String dbVersion;
   final String? latestVersion;
+  final String? statusMessage;
   final bool isOutdated;
   final Color? color;
   final Color? secondaryColor;
@@ -109,6 +110,7 @@ class AppVersionInfo extends StatelessWidget {
     required this.version,
     required this.dbVersion,
     this.latestVersion,
+    this.statusMessage,
     this.isOutdated = false,
     this.color,
     this.secondaryColor,
@@ -119,10 +121,19 @@ class AppVersionInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     // CENTRALIZED STYLE CONFIG
     const double mainFontSize = 8.0;
-    const double secondaryFontSize = 7.0;
 
     final effectiveColor = color ?? Theme.of(context).colorScheme.tertiary;
-    final effectiveSecondary = secondaryColor ?? Theme.of(context).colorScheme.secondary;
+    
+    // Logic for status message color and text
+    Color effectiveSecondary = secondaryColor ?? Theme.of(context).colorScheme.secondary;
+    String displayDBText = "DB V-$dbVersion";
+    
+    if (statusMessage != null && statusMessage!.isNotEmpty) {
+      displayDBText = statusMessage!;
+      if (statusMessage!.contains("Delet") || statusMessage!.contains("Failed") || statusMessage!.contains("Backup")) {
+        effectiveSecondary = Theme.of(context).colorScheme.error;
+      }
+    }
 
     return Column(
       crossAxisAlignment: crossAxisAlignment,
@@ -160,7 +171,7 @@ class AppVersionInfo extends StatelessWidget {
         ),
         const SizedBox(height: 1),
         Text(
-          "DB V-$dbVersion",
+          displayDBText,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             fontSize: mainFontSize,
             color: effectiveSecondary, 

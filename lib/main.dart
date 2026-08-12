@@ -154,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showTemporaryMessage(String msg) {
     setState(() { _temporaryMessage = msg; });
-    Future.delayed(const Duration(seconds: 5), () {
+    Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() { _temporaryMessage = null; });
     });
   }
@@ -523,6 +523,7 @@ class _LoginPageState extends State<LoginPage> {
                             version: _currentVersion,
                             dbVersion: dbVersion,
                             latestVersion: latestV,
+                            statusMessage: _temporaryMessage,
                             isOutdated: isOutdated,
                             color: Theme.of(context).colorScheme.tertiary,
                           ),
