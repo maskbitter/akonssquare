@@ -73,6 +73,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
   void _startSessionListener() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? currentPassword = prefs.getString('savedPassword');
+    String? currentSessionId = prefs.getString('sessionId');
 
     // Listen to the specific user document
     _userSessionSubscription = FirebaseFirestore.instance
@@ -82,13 +83,22 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
         .snapshots()
         .listen((snapshot) {
       if (snapshot.docs.isEmpty) {
+        // User deleted or DB wiped
         _handleLogout();
       } else {
-        var userData = snapshot.docs.first.data();
+        var userData = snapshot.docs.first.data() as Map<String, dynamic>;
         if (userData['password'] != currentPassword) {
           _handleLogout();
         }
+
+        String? serverSessionId = userData['currentSessionId'];
+        if (currentSessionId != null && serverSessionId != null && serverSessionId != currentSessionId) {
+          // New session started elsewhere
+          _handleLogout();
+        }
       }
+    }, onError: (e) {
+      _handleLogout();
     });
   }
 
@@ -133,12 +143,17 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
   }
 
   Future<void> _handleLogout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userDocId = prefs.getString('userDocId');
-    if (userDocId != null) {
-      await DatabaseService().updateUserSession('users', userDocId, null);
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userDocId = prefs.getString('userDocId');
+      if (userDocId != null) {
+        DatabaseService().updateUserSession('users', userDocId, null).catchError((e) => null);
+      }
+      await prefs.clear();
+    } catch (e) {
+      debugPrint("Logout Error: $e");
     }
-    await prefs.clear();
+
     if (mounted) {
       Navigator.pushReplacement(
         context,

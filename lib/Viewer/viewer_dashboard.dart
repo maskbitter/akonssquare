@@ -9,6 +9,7 @@ import 'package:akonssquare/Common/build_config.dart';
 import 'package:akonssquare/Common/ui_helper.dart';
 import 'package:akonssquare/main.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 class ViewerDashboard extends StatefulWidget {
   const ViewerDashboard({super.key});
@@ -20,11 +21,47 @@ class ViewerDashboard extends StatefulWidget {
 class _ViewerDashboardState extends State<ViewerDashboard> {
   String _appName = "";
   String _username = "Viewer";
+  StreamSubscription? _userSessionSubscription;
 
   @override
   void initState() {
     super.initState();
     _fetchAppData();
+    _startSessionListener();
+  }
+
+  @override
+  void dispose() {
+    _userSessionSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _startSessionListener() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userDocId = prefs.getString('userDocId');
+    String? currentSessionId = prefs.getString('sessionId');
+
+    if (userDocId == null || userDocId.isEmpty) return;
+
+    _userSessionSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userDocId)
+        .snapshots()
+        .listen((snapshot) {
+      if (!snapshot.exists) {
+        // User deleted or DB wiped
+        _handleLogout();
+      } else {
+        var data = snapshot.data() as Map<String, dynamic>;
+        String? serverSessionId = data['currentSessionId'];
+        if (currentSessionId != null && serverSessionId != null && serverSessionId != currentSessionId) {
+          // New session started elsewhere
+          _handleLogout();
+        }
+      }
+    }, onError: (e) {
+      _handleLogout();
+    });
   }
 
   Future<void> _fetchAppData() async {
@@ -37,12 +74,17 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
   }
 
   Future<void> _handleLogout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userDocId = prefs.getString('userDocId');
-    if (userDocId != null) {
-      await DatabaseService().updateUserSession('users', userDocId, null);
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userDocId = prefs.getString('userDocId');
+      if (userDocId != null) {
+        DatabaseService().updateUserSession('users', userDocId, null).catchError((e) => null);
+      }
+      await prefs.clear();
+    } catch (e) {
+      debugPrint("Logout Error: $e");
     }
-    await prefs.clear();
+
     if (mounted) {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
     }

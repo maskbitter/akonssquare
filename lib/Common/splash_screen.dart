@@ -119,15 +119,30 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (!mounted) return;
 
     if (isLoggedIn) {
-      if (role == 'admin') {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
-      } else if (role == 'operator') {
-        String username = prefs.getString('username') ?? "Operator";
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OperatorDashboard(username: username)));
-      } else if (role == 'viewer') {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ViewerDashboard()));
-      } else if (role == 'superadmin') {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard()));
+      if (role == 'admin' || role == 'operator' || role == 'viewer' || role == 'superadmin') {
+        if (role != 'superadmin') {
+          // Verify user exists in Firestore
+          String? username = prefs.getString('username');
+          if (username != null) {
+            var userSnap = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: username).limit(1).get();
+            if (userSnap.docs.isEmpty) {
+              await prefs.clear();
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+              return;
+            }
+          }
+        }
+        
+        if (role == 'admin') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
+        } else if (role == 'operator') {
+          String username = prefs.getString('username') ?? "Operator";
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OperatorDashboard(username: username)));
+        } else if (role == 'viewer') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ViewerDashboard()));
+        } else if (role == 'superadmin') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard()));
+        }
       } else {
         String subId = prefs.getString('subItemId') ?? "";
         String catId = prefs.getString('categoryId') ?? "";
@@ -136,6 +151,24 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
           return;
         }
+        
+        // Verify sub-item exists and is occupied
+        var subSnap = await FirebaseFirestore.instance.collection('sub_items').doc(subId).get();
+        if (!subSnap.exists) {
+          await prefs.clear();
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+          return;
+        }
+        
+        var data = subSnap.data() as Map<String, dynamic>;
+        String tenant = data['TenantName'] ?? '';
+        String status = data['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
+        if (status == 'Vacant') {
+          await prefs.clear();
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+          return;
+        }
+
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboard(subItemId: subId, categoryId: catId)));
       }
     } else {

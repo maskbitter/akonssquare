@@ -531,17 +531,56 @@ class _CategoryPageState extends State<CategoryPage> {
                                                     constraints: const BoxConstraints(),
                                                     icon: Icon(Icons.more_vert, size: 24, color: itemOnBgColor.withValues(alpha: 0.7)),
                                                     onSelected: (val) async {
-                                                      if (val == 'remove') CategoryDialogs.showConfirmDialog(
-                                                        context: context, 
-                                                        title: "Remove '$subName'?", 
-                                                        content: "Are you sure you want to remove this $subName?", 
-                                                        onConfirm: () async { 
-                                                          SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                                          await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
+                                                      if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator);
+                                                      if (val == 'stop') {
+                                                        bool isStopping = ed?['isStopped'] != true;
+                                                        if (isStopping) {
+                                                          double last = (ed?['lastReading'] ?? 0).toDouble();
+                                                          double pres = (ed?['presentReading'] ?? 0).toDouble();
+                                                          if (pres > last) {
+                                                            CategoryDialogs.showConfirmDialog(
+                                                              context: context,
+                                                              title: "Confirm Stop Electric",
+                                                              content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
+                                                              onConfirm: () async {
+                                                                await _dbService.updateSubItemElectricity(subId, {
+                                                                  ...ed!,
+                                                                  'presentReading': last,
+                                                                  'isStopped': true,
+                                                                  'updatedAt': FieldValue.serverTimestamp(),
+                                                                }, "Admin");
+                                                              },
+                                                            );
+                                                          } else {
+                                                            await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
+                                                          }
+                                                        } else {
+                                                          await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
                                                         }
-                                                      );
+                                                      } else if (val == 'services') {
+                                                        CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
+                                                      } else if (val == 'remove') {
+                                                         CategoryDialogs.showConfirmDialog(
+                                                          context: context, 
+                                                          title: "Remove '$subName'?", 
+                                                          content: "Are you sure you want to remove this $subName?", 
+                                                          onConfirm: () async { 
+                                                            SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                            await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
+                                                          }
+                                                        );
+                                                      }
                                                     },
                                                     itemBuilder: (ctx) => [
+                                                      PopupMenuItem(
+                                                        value: ed == null ? 'electric' : 'stop', 
+                                                        child: ListTile(
+                                                          leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
+                                                          title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
+                                                          dense: true
+                                                        )
+                                                      ),
+                                                      const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
                                                       if (!widget.isOperator)
                                                         PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
                                                     ],
@@ -614,12 +653,9 @@ class _CategoryPageState extends State<CategoryPage> {
                                 builder: (context, paySnap) {
                                   bool isPaid = paySnap.hasData && paySnap.data!.docs.isNotEmpty;
                                   
-                                  // displayTotal is the balance. If paid, we subtract the paid amount.
-                                  // If new services are added or reading moves, total increases, 
-                                  // so balance reflects correctly.
-                                  double paidAmount = isPaid ? (paySnap.data!.docs.first['totalAmount'] as num).toDouble() : 0.0;
-                                  double displayTotal = total - paidAmount;
-                                  if (displayTotal < 0) displayTotal = 0;
+                                  // Always show the current calculated total (Usage-based Elec + Fixed Services)
+                                  // After payment, eBillAmount is naturally 0 because of reading reset.
+                                  double displayTotal = total; 
 
                                   bool isOccupied = status == 'Occupied';
 
@@ -794,10 +830,10 @@ class _CategoryPageState extends State<CategoryPage> {
                                             padding: const EdgeInsets.only(left: 30, top: 1),
                                             child: Text(
                                               isOccupied 
-                                                ? ((isPaid && displayTotal <= 0) ? "Payment Clear • $_selectedMonthStr" : "${active.length} Services | Due") 
+                                                ? (isPaid ? "Payment Clear • $_selectedMonthStr" : "${active.length} Services | Due") 
                                                 : "Ready for new tenant",
                                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                color: isOccupied ? ((isPaid && displayTotal <= 0) ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
+                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
                                               ),
                                             ),
                                           ),

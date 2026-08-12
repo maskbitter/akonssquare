@@ -157,6 +157,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? currentUsername = prefs.getString('username');
     String? currentPassword = prefs.getString('savedPassword');
+    String? currentSessionId = prefs.getString('sessionId');
 
     if (currentUsername == null) return;
 
@@ -168,15 +169,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
         .snapshots()
         .listen((snapshot) {
       if (snapshot.docs.isEmpty) {
-        // User deleted
+        // User deleted or DB wiped
         _handleLogout();
       } else {
-        var userData = snapshot.docs.first.data();
+        var userData = snapshot.docs.first.data() as Map<String, dynamic>;
         if (userData['password'] != currentPassword) {
           // Password changed
           _handleLogout();
         }
+        
+        String? serverSessionId = userData['currentSessionId'];
+        if (currentSessionId != null && serverSessionId != null && serverSessionId != currentSessionId) {
+          // New session started elsewhere
+          _handleLogout();
+        }
       }
+    }, onError: (e) {
+       _handleLogout();
     });
   }
 
@@ -246,12 +255,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Future<void> _handleLogout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userDocId = prefs.getString('userDocId');
-    if (userDocId != null) {
-      await DatabaseService().updateUserSession('users', userDocId, null);
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userDocId = prefs.getString('userDocId');
+      if (userDocId != null) {
+        DatabaseService().updateUserSession('users', userDocId, null).catchError((e) => null);
+      }
+      await prefs.clear();
+    } catch (e) {
+      debugPrint("Logout Error: $e");
     }
-    await prefs.clear();
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
