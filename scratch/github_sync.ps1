@@ -32,7 +32,7 @@ if ($LASTEXITCODE -ne 0) {
 # Step 3: Git Sync
 Write-Host "Saving changes to GitHub..." -ForegroundColor Cyan
 git add .
-$msg = "build #${newBN}: $Comment"
+$msg = "app build no ${newBN}: $Comment"
 git commit -m "$msg"
 git push origin HEAD:master
 

@@ -21,6 +21,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:akonssquare/Common/automation_guide.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:akonssquare/Common/ui_helper.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,7 +66,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final DatabaseService _dbService = DatabaseService();
   String _appName = "";
-  final String _currentVersion = "1.0.0+4";
+  String _currentVersion = "...";
   String? _selectedSubItemId;
   String? _temporaryMessage;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -140,11 +141,12 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _loadAppConfig() async {
     try {
       var doc = await _dbService.getAppConfigStream().first;
-      if (doc.exists) {
-        setState(() {
+      setState(() {
+        _currentVersion = appVersion; // Use the auto-injected version from build.gradle
+        if (doc.exists) {
           _appName = doc['appName'] ?? "AkonsSquare";
-        });
-      }
+        }
+      });
     } catch (e) {
       setState(() { _appName = "AkonsSquare"; });
     }
@@ -475,6 +477,7 @@ class _LoginPageState extends State<LoginPage> {
                 if (configSnap.hasData && configSnap.data!.exists) {
                   latestV = configSnap.data!['requiredVersion'] ?? "";
                 }
+                // RED NOTIFICATION logic: Only if App Version (1.0.0+5) is outdated
                 bool isOutdated = latestV.isNotEmpty && latestV != _currentVersion;
 
                 return Column(
@@ -498,8 +501,11 @@ class _LoginPageState extends State<LoginPage> {
                           RichText(
                             text: TextSpan(
                               children: [
+                                // Always show the local version + Global BN (max of local vs server)
                                 TextSpan(text: "V: $_currentVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold)),
                                 TextSpan(text: "_$bnText", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold)),
+                                
+                                // Show RED Latest V only if Version is outdated
                                 if (isOutdated) ...[
                                   TextSpan(text: " | ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline)),
                                   TextSpan(text: "Latest V: $latestV", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),

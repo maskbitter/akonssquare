@@ -10,6 +10,7 @@ import 'package:akonssquare/Viewer/viewer_dashboard.dart';
 import 'package:akonssquare/Admin/super_admin_dashboard.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:akonssquare/Common/build_config.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -89,7 +90,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       if (Platform.isAndroid) {
         var deviceInfo = await DeviceInfoPlugin().androidInfo;
         if (!deviceInfo.isPhysicalDevice) {
+          // 1. Update Global BN instantly (BN106, BN107...)
           await DatabaseService().updateSystemBuildNumber(buildNumber);
+          
+          // 2. Update Global App Version (1.0.0+5)
+          PackageInfo packageInfo = await PackageInfo.fromPlatform();
+          String versionString = "${packageInfo.version}+${packageInfo.buildNumber}";
+          await DatabaseService().updateRequiredVersion(versionString);
         }
       }
 

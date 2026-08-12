@@ -45,6 +45,7 @@ android {
         val variant = this
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            // Use a provider or lazy evaluation to get the latest BN during execution/finalization
             val counterFile = file("build_counter.txt")
             val bn = if (counterFile.exists()) counterFile.readText().trim() else "0"
             val newName = "akonssquare_V${variant.versionName}_${variant.versionCode}_BN${bn}_${variant.buildType.name}.apk"
@@ -64,14 +65,19 @@ flutter {
 }
 
 tasks.register("incrementBuildNumber") {
-    doLast {
-        // Only increment if we are running in debug mode or from IDE (which usually triggers debug tasks)
+    doFirst {
         val taskNames = project.gradle.startParameter.taskNames
-        val isDebug = taskNames.any { it.contains("Debug", ignoreCase = true) || it.contains("assemble") == false }
+        // Increment for all assemble/build tasks, or if explicitly called
+        val shouldIncrement = taskNames.any { 
+            it.contains("assemble", ignoreCase = true) || 
+            it.contains("build", ignoreCase = true) || 
+            it.contains("bundle", ignoreCase = true) ||
+            it.contains("run", ignoreCase = true)
+        }
         
-        if (!isDebug) {
-            println("BuildNumber: Skipping increment for non-debug/release build.")
-            return@doLast
+        if (!shouldIncrement && taskNames.isNotEmpty()) {
+            println("BN: Skipping increment for tasks: $taskNames")
+            return@doFirst
         }
 
         val counterFile = file("build_counter.txt")
@@ -81,10 +87,24 @@ tasks.register("incrementBuildNumber") {
         val currentBuild = counterFile.readText().trim().toIntOrNull() ?: 0
         val newBuild = currentBuild + 1
         counterFile.writeText(newBuild.toString())
+        println("BN: Incremented to $newBuild")
+        
+        // Parse pubspec.yaml to get the version name automatically
+        val pubspecFile = file("../../pubspec.yaml")
+        var pubspecVersion = "1.0.0"
+        if (pubspecFile.exists()) {
+            val lines = pubspecFile.readLines()
+            for (line in lines) {
+                if (line.trim().startsWith("version:")) {
+                    pubspecVersion = line.split(":")[1].trim()
+                    break
+                }
+            }
+        }
         
         val dartFile = file("../../lib/Common/build_config.dart")
         dartFile.parentFile.mkdirs()
-        dartFile.writeText("const int buildNumber = $newBuild;\n")
+        dartFile.writeText("const int buildNumber = $newBuild;\nconst String appVersion = \"$pubspecVersion\";\n")
     }
 }
 
