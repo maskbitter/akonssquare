@@ -368,7 +368,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           if (isOutdated)
                             Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontSize: 8)),
                           Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 18),
-                          Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),
+                          Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),
                         ],
                       );
                     }

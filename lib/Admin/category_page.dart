@@ -511,19 +511,6 @@ class _CategoryPageState extends State<CategoryPage> {
                                                     child: Text(subName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: itemAccentColor)),
                                                   ),
                                                   const Spacer(),
-                                                  IconButton(
-                                                    padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
-                                                    icon: Icon(Icons.edit_outlined, size: 18, color: itemOnBgColor.withValues(alpha: 0.7)),
-                                                    onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
-                                                      context: context, 
-                                                      subItemId: subId, 
-                                                      currentName: subName, 
-                                                      currentTenantName: tenant, 
-                                                      currentNidNumber: d['nidNumber'] ?? 'No Number', 
-                                                      currentNotes: d['notes'] ?? ''
-                                                    ),
-                                                  ),
                                                   const SizedBox(width: 12),
                                                   PopupMenuButton<String>(
                                                     padding: EdgeInsets.zero,
