@@ -60,9 +60,8 @@ class _UserDashboardState extends State<UserDashboard> {
       
       var data = snapshot.data() as Map<String, dynamic>;
       
-      // Check for Vacant status
-      String tenant = data['TenantName'] ?? '';
-      String status = data['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
+      // Check for Vacant status (Strict)
+      String status = data['status'] ?? 'Vacant';
       if (status == 'Vacant') {
         _handleLogout();
         return;

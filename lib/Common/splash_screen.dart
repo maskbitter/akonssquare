@@ -105,8 +105,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         data['id'] = doc.id;
         return data;
       }).where((item) {
-        String tenant = item['TenantName'] ?? '';
-        String status = item['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
+        String status = item['status'] ?? 'Vacant'; // Strict status check
         return status == 'Occupied';
       }).toList();
       DatabaseService.cachedSubItems.sort((a, b) => (a['subItemName'] ?? '').toString().compareTo((b['subItemName'] ?? '').toString()));
@@ -166,8 +165,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         }
         
         var data = subSnap.data() as Map<String, dynamic>;
-        String tenant = data['TenantName'] ?? '';
-        String status = data['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
+        String status = data['status'] ?? 'Vacant'; // Strict status check
         if (status == 'Vacant') {
           await prefs.clear();
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));

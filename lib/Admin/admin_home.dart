@@ -670,7 +670,7 @@ class _AdminHomeState extends State<AdminHome> {
 
         for (var doc in snapshot.data!.docs) {
           var d = doc.data() as Map<String, dynamic>;
-          String status = d['status'] ?? ((d['tenantName'] ?? '').toString().isNotEmpty ? 'Occupied' : 'Vacant');
+          String status = d['status'] ?? 'Vacant'; // Strict status check
           if (status == 'Occupied') {
             occupiedCount++;
           } else {
@@ -1031,7 +1031,7 @@ class _AdminHomeState extends State<AdminHome> {
           total = subSnap.data!.docs.length;
           for (var doc in subSnap.data!.docs) {
             var d = doc.data() as Map<String, dynamic>;
-            String status = d['status'] ?? ((d['tenantName'] ?? '').toString().isNotEmpty ? 'Occupied' : 'Vacant');
+            String status = d['status'] ?? 'Vacant'; // Strict status check
             if (status == 'Occupied') occupied++; else vacant++;
           }
         }

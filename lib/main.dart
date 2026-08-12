@@ -584,10 +584,9 @@ class _LoginPageState extends State<LoginPage> {
                                             data['id'] = doc.id;
                                             return data;
                                           }).where((d) {
-                                            // Only show units that are 'Occupied' OR have a valid tenant name
-                                            String status = d['status'] ?? '';
-                                            String tenant = (d['TenantName'] ?? '').toString();
-                                            return status == 'Occupied' || (tenant.isNotEmpty && tenant != 'No Name' && tenant != 'No Tenant');
+                                            // Only show units that are strictly 'Occupied'
+                                            String status = d['status'] ?? 'Vacant';
+                                            return status == 'Occupied';
                                           }).toList();
                                           items.sort((a, b) => (a['subItemName'] ?? '').compareTo(b['subItemName'] ?? ''));
                                         }

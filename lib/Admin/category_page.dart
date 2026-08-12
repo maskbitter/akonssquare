@@ -322,8 +322,7 @@ class _CategoryPageState extends State<CategoryPage> {
                       if (!subSnapshot.hasData) return const LinearProgressIndicator();
                       var subDocs = subSnapshot.data!.docs.where((doc) {
                         var d = doc.data() as Map<String, dynamic>;
-                        String tenant = d['TenantName'] ?? '';
-                        String s = d['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
+                        String s = d['status'] ?? 'Vacant'; // Strict status check
                         return s == status;
                       }).toList();
 
