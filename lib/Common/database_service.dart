@@ -735,7 +735,7 @@ class DatabaseService {
     double nextVersion = forcedVersion ?? (currentVersion + 1.0);
 
     List<String> collections = [
-      'categories', 'services', 'sub_items', 'main_meters', 
+      'categories', 'services', 'sub_items', 'main_meters', 'sub_meters',
       'billing_history', 'users', 'activity_log', 'removed_history'
     ];
 
@@ -788,7 +788,7 @@ class DatabaseService {
   // Wipe all administrative data EXCEPT users with countdown progress
   Future<void> wipeDatabase(String actor, {Function(double)? onProgress}) async {
     List<String> collections = [
-      'categories', 'services', 'sub_items', 'main_meters', 
+      'categories', 'services', 'sub_items', 'main_meters', 'sub_meters',
       'billing_history', 'activity_log', 'removed_history'
     ];
 
