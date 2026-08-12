@@ -1031,7 +1031,33 @@ class CategoryDialogs {
                               ) ? null : () async {
                     double last = double.tryParse(lastReadingController.text) ?? 0; 
                     double pres = double.tryParse(presentReadingController.text) ?? last;
-                    if (pres < last) { _showValidationWarning(context, "Reading cannot be lower than previous."); return; }
+                    
+                    if (pres < last) {
+                      bool? confirmLower = await showDialog<bool>(
+                        context: context,
+                        builder: (c) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: const Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                              SizedBox(width: 8),
+                              Text("Lower Reading?"),
+                            ],
+                          ),
+                          content: Text("New reading ($pres) is lower than the previous reading ($last). This might be a mistake or a meter reset. Do you want to proceed?"),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No")),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                              onPressed: () => Navigator.pop(c, true), 
+                              child: const Text("Yes, Proceed")
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmLower != true) return;
+                    }
+
                     if (selectedMainMeter == null || selectedSubMeter == null) { _showValidationWarning(context, "Please select both Main and Sub meters."); return; }
                     
                     setDialogState(() => isLoading = true);
@@ -1250,6 +1276,10 @@ class CategoryDialogs {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: (isLoading || wordCount > 100) ? null : () async {
+                      if (electricityDetails != null && currentRead < lastRead) {
+                        _showValidationWarning(context, "Reading cannot be lower than previous for final payment.");
+                        return;
+                      }
                       setDialogState(() => isLoading = true);
                       SharedPreferences prefs = await SharedPreferences.getInstance(); 
                       String actor = prefs.getString('username') ?? "Unknown";

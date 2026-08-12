@@ -52,9 +52,9 @@ class UserReportPage extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Column(
           children: [
-            Text("Payment Details", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text("Payment: ${data['monthYear'] ?? ''}", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text(data['monthYear'] ?? '', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+            Text("${data['subItemName'] ?? 'Unit'} (${data['TenantName'] ?? 'No Name'})", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
             const Divider(height: 24),
           ],
         ),
@@ -66,8 +66,6 @@ class UserReportPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildDetailRow(context, "Payment Time:", paidTime, isBold: true),
-                if (data['TenantName'] != null && data['TenantName'].toString().isNotEmpty)
-                  _buildDetailRow(context, "Tenant:", data['TenantName']),
                 const SizedBox(height: 16),
                 
                 Row(
@@ -339,7 +337,7 @@ class UserReportPage extends StatelessWidget {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              data['monthYear'] ?? 'N/A',
+                                              "${data['monthYear'] ?? 'N/A'} - ${data['subItemName'] ?? 'Unit'}",
                                               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                                             ),
                                             Text("Paid on: $paidTime", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10)),

@@ -509,62 +509,39 @@ class _UserDashboardState extends State<UserDashboard> {
                         const SizedBox(height: 4),
                         if (createdAt != null)
                           Text(isPaidThisMonth ? "Current month paid: $currentMonthYear" : "Active since: ${DatabaseService.formatMonthYear(createdAt)}", style: Theme.of(context).textTheme.labelSmall),
+                        
+                        // --- COMPACT PENDING MONTHS (Moved here) ---
+                        if (!isPaidThisMonth)
+                          StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance.collection('billing_history').where('subItemId', isEqualTo: widget.subItemId).snapshots(),
+                            builder: (context, historySnapshot) {
+                              if (!historySnapshot.hasData) return const SizedBox.shrink();
+                              List<String> paidMonths = historySnapshot.data!.docs.map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
+                              List<String> pendingMonths = [];
+                              if (createdAt != null) {
+                                DateTime now = DateTime.now();
+                                DateTime current = DateTime(createdAt.year, createdAt.month);
+                                List<String> monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                while (current.isBefore(now) || (current.year == now.year && current.month == now.month)) {
+                                  String mYear = "${monthNames[current.month - 1]}-${current.year.toString().substring(2)}";
+                                  if (!paidMonths.contains(mYear)) pendingMonths.add(mYear);
+                                  current = DateTime(current.year, current.month + 1);
+                                }
+                              }
+                              if (pendingMonths.isEmpty) return const SizedBox.shrink();
+                              return Column(
+                                children: [
+                                  const Divider(height: 24, indent: 40, endIndent: 40),
+                                  Text("UNPAID: ${pendingMonths.join(', ')}", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 10)),
+                                ],
+                              );
+                            }
+                          ),
                       ],
                     ),
                   ),
 
-              // --- PENDING MONTHS ---
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('billing_history').where('subItemId', isEqualTo: widget.subItemId).snapshots(),
-                builder: (context, historySnapshot) {
-                  if (!historySnapshot.hasData) return const SizedBox.shrink();
-                  
-                  List<String> paidMonths = historySnapshot.data!.docs.map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
-                  List<String> pendingMonths = [];
-                  
-                  if (createdAt != null) {
-                    DateTime now = DateTime.now();
-                    DateTime current = DateTime(createdAt.year, createdAt.month);
-                    List<String> monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                    
-                    while (current.isBefore(now) || (current.year == now.year && current.month == now.month)) {
-                      String mYear = "${monthNames[current.month - 1]}-${current.year.toString().substring(2)}";
-                      if (!paidMonths.contains(mYear)) {
-                        pendingMonths.add(mYear);
-                      }
-                      current = DateTime(current.year, current.month + 1);
-                    }
-                  }
-                  
-                  if (pendingMonths.isEmpty) return const SizedBox.shrink();
-                  
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("UNPAID MONTHS", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: pendingMonths.map((m) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              m, 
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)
-                            ),
-                          )).toList(),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-              ),
+              // (REMOVED OLD PENDING MONTHS SECTION FROM HERE)
 
               if (notes.isNotEmpty) ...[
                 Padding(
