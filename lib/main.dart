@@ -11,6 +11,7 @@ import 'package:akonssquare/Common/splash_screen.dart';
 import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:flutter/services.dart';
 import 'package:akonssquare/Common/build_config.dart';
+import 'package:akonssquare/Common/game_zone.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:akonssquare/Common/firebase_options.dart';
@@ -630,6 +631,22 @@ class _LoginPageState extends State<LoginPage> {
                                           elevation: 2,
                                         ),
                                       )
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity, height: 50,
+                                      child: OutlinedButton.icon(
+                                        onPressed: () {
+                                          HapticFeedback.lightImpact();
+                                          Navigator.push(context, MaterialPageRoute(builder: (context) => const GameZonePage()));
+                                        },
+                                        icon: const Icon(Icons.videogame_asset_outlined, size: 20),
+                                        label: const Text("Enter GameZone", style: TextStyle(fontWeight: FontWeight.bold)),
+                                        style: OutlinedButton.styleFrom(
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                          side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
