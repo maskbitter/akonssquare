@@ -617,7 +617,9 @@ class _AdminHomeState extends State<AdminHome> {
       elevation: isHighlighted ? 2 : 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20), 
-        side: BorderSide.none,
+        side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+            ? BorderSide(color: color, width: 1.5) 
+            : BorderSide.none,
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -774,7 +776,12 @@ class _AdminHomeState extends State<AdminHome> {
     return Card(
       elevation: 2,
       color: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), 
+        side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+            ? BorderSide(color: color, width: 1.5) 
+            : BorderSide.none
+      ),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: InkWell(
         onTap: onTap,
@@ -873,7 +880,9 @@ class _AdminHomeState extends State<AdminHome> {
             color: containerColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide.none,
+              side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                  ? BorderSide(color: containerColor == Colors.transparent ? accentColor : containerColor, width: 1.5) 
+                  : BorderSide.none,
             ),
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Padding(
@@ -1043,7 +1052,9 @@ class _AdminHomeState extends State<AdminHome> {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide.none,
+            side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                ? BorderSide(color: accentColor, width: 1.5) 
+                : BorderSide.none,
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1419,7 +1430,12 @@ class _AdminHomeState extends State<AdminHome> {
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
       color: itemColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), 
+        side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+            ? BorderSide(color: color, width: 1.5) 
+            : BorderSide.none
+      ),
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

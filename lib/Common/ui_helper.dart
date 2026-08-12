@@ -26,16 +26,8 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final defaultStyle = ElevatedButton.styleFrom(
-      elevation: 2, // Card-like elevation
-      shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-    );
-
-    final effectiveStyle = style != null ? defaultStyle.merge(style) : defaultStyle;
+    final themeStyle = Theme.of(context).elevatedButtonTheme.style;
+    final effectiveStyle = themeStyle?.merge(style) ?? style;
 
     if (icon != null) {
       return ElevatedButton.icon(
