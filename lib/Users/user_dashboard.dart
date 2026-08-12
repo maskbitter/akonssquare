@@ -445,17 +445,19 @@ class _UserDashboardState extends State<UserDashboard> {
                     ),
                     padding: const EdgeInsets.all(24),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Line 1: Category Name
                         Text(
                           _categoryName.toUpperCase(),
+                          textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 6),
                         // Line 2: Unit Name (Tenant Name)
                         Text(
                           TenantName.isNotEmpty ? "$subName ($TenantName)" : subName,
+                          textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
                         ),
                         // Line 3: NID Number
@@ -463,6 +465,7 @@ class _UserDashboardState extends State<UserDashboard> {
                           const SizedBox(height: 12),
                           Text(
                             "NID: $nidNumber",
+                            textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.bold),
                           ),
                         ],
