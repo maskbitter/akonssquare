@@ -590,7 +590,7 @@ class _AdminHomeState extends State<AdminHome> {
     bool isHighlighted = false,
   }) {
     return Card(
-      elevation: isHighlighted ? 4 : 1,
+      elevation: isHighlighted ? 2 : 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20), 
         side: BorderSide.none,

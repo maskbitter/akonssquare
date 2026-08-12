@@ -91,7 +91,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Widget _buildActionCard(BuildContext context, {required String title, required String subtitle, required IconData icon, required Color color, required Color accentColor, required VoidCallback onTap}) {
     return Card(
-      elevation: 4,
+      elevation: 2,
       margin: EdgeInsets.zero,
       color: color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),

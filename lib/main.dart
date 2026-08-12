@@ -525,7 +525,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: Card(
-                            elevation: 4,
+                            elevation: 2,
                             margin: EdgeInsets.zero,
                             color: Theme.of(context).colorScheme.surface,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),

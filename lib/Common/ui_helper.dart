@@ -27,8 +27,8 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final defaultStyle = ElevatedButton.styleFrom(
-      elevation: 4, // Card-like elevation
-      shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.3),
+      elevation: 2, // Card-like elevation
+      shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
