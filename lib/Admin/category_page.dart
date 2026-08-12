@@ -420,7 +420,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                   Padding(
                                     padding: const EdgeInsets.only(left: 30),
                                     child: Text(
-                                      "${subDocs.length} units | Assigned services",
+                                      "${subDocs.length} units | ${assignedServices.length} Services",
                                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         color: onBgColor.withValues(alpha: 0.7),
                                         fontWeight: FontWeight.bold
