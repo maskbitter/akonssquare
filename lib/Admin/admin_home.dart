@@ -337,8 +337,8 @@ class _AdminHomeState extends State<AdminHome> {
                                   child: _buildInteractiveStat(
                                     "Received", 
                                     receivedTotal, 
-                                    const Color(0xFF1B5E20), // Dark Green
-                                    const Color(0xFFE8F5E9), // Light Green
+                                    Theme.of(context).colorScheme.onTertiaryContainer, // Enhanced for Default Theme
+                                    Theme.of(context).colorScheme.tertiaryContainer,
                                     Icons.check_circle_outline,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 0)
                                   ),
@@ -348,8 +348,8 @@ class _AdminHomeState extends State<AdminHome> {
                                   child: _buildInteractiveStat(
                                     "Due", 
                                     dueTotal, 
-                                    const Color(0xFFB71C1C), // Dark Red
-                                    const Color(0xFFFFEBEE), // Light Red
+                                    Theme.of(context).colorScheme.onErrorContainer, // Enhanced for Default Theme
+                                    Theme.of(context).colorScheme.errorContainer,
                                     Icons.pending_actions,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 1)
                                   ),
@@ -363,8 +363,8 @@ class _AdminHomeState extends State<AdminHome> {
                                   child: _buildInteractiveStat(
                                     "Rent", 
                                     rentTotal, 
-                                    const Color(0xFFE65100), // Dark Orange
-                                    const Color(0xFFFFF3E0), // Light Orange
+                                    Theme.of(context).colorScheme.onPrimaryContainer, // Enhanced for Default Theme
+                                    Theme.of(context).colorScheme.primaryContainer,
                                     Icons.home_work_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: true)
                                   ),
@@ -374,8 +374,8 @@ class _AdminHomeState extends State<AdminHome> {
                                   child: _buildInteractiveStat(
                                     "Utility", 
                                     utilityTotal, 
-                                    const Color(0xFF006064), // Dark Cyan
-                                    const Color(0xFFE0F7FA), // Light Cyan
+                                    Theme.of(context).colorScheme.onSecondaryContainer, // Enhanced for Default Theme
+                                    Theme.of(context).colorScheme.secondaryContainer,
                                     Icons.settings_suggest_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: false)
                                   ),
@@ -1122,7 +1122,7 @@ class _AdminHomeState extends State<AdminHome> {
                       const SizedBox(width: 8),
                       Text(
                         "$_selectedMonthStr Revenue Details",
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -1134,7 +1134,7 @@ class _AdminHomeState extends State<AdminHome> {
                   indicatorSize: TabBarIndicatorSize.tab,
                   tabs: const [
                     Tab(icon: Icon(Icons.check_circle_outline), text: "Received"),
-                    Tab(icon: Icon(Icons.pending_actions), text: "Due"),
+                    Tab(icon: Icon(Icons.pending_actions), text: "Due (Occupied)"),
                   ],
                 ),
                 Expanded(
@@ -1154,6 +1154,8 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   void _showRentUtilityPopup(BuildContext context, List<QueryDocumentSnapshot> receivedDocs, {required bool isRent}) {
+    final Color themeColor = isRent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1177,15 +1179,16 @@ class _AdminHomeState extends State<AdminHome> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(isRent ? Icons.home_work_outlined : Icons.settings_suggest_outlined, color: Theme.of(context).colorScheme.primary),
+                    Icon(isRent ? Icons.home_work_outlined : Icons.settings_suggest_outlined, color: themeColor),
                     const SizedBox(width: 8),
                     Text(
                       "$_selectedMonthStr ${isRent ? 'Rent' : 'Utility'} Details",
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: themeColor),
                     ),
                   ],
                 ),
               ),
+              const Divider(height: 1),
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(12),
@@ -1202,6 +1205,8 @@ class _AdminHomeState extends State<AdminHome> {
                       }
                     }
                     double amountToShow = isRent ? rent : (data['totalAmount'] as num).toDouble() - rent;
+
+                    if (amountToShow <= 0) return const SizedBox.shrink();
 
                     return FutureBuilder<DocumentSnapshot>(
                       future: FirebaseFirestore.instance.collection('sub_items').doc(subId).get(),
@@ -1225,7 +1230,7 @@ class _AdminHomeState extends State<AdminHome> {
                                 title: "$resolvedSubName ($tName)",
                                 subtitle: categoryName,
                                 amount: amountToShow,
-                                color: isRent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
+                                color: themeColor,
                                 icon: isRent ? Icons.home_work_outlined : Icons.settings_suggest_outlined,
                                 paidBy: data['paidBy'],
                                 paidAt: data['paidAt'],
@@ -1241,7 +1246,7 @@ class _AdminHomeState extends State<AdminHome> {
                           title: "$resolvedSubName ($tName)",
                           subtitle: categoryName,
                           amount: amountToShow,
-                          color: isRent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
+                          color: themeColor,
                           icon: isRent ? Icons.home_work_outlined : Icons.settings_suggest_outlined,
                         );
                       },
@@ -1288,7 +1293,7 @@ class _AdminHomeState extends State<AdminHome> {
                     title: "$resolvedSubName ($tName)",
                     subtitle: categoryName,
                     amount: (data['totalAmount'] as num).toDouble(),
-                    color: Theme.of(context).colorScheme.primary,
+                    color: Theme.of(context).colorScheme.tertiary,
                     icon: Icons.check_circle_outline,
                     paidBy: data['paidBy'],
                     paidAt: data['paidAt'],
@@ -1304,7 +1309,7 @@ class _AdminHomeState extends State<AdminHome> {
               title: "$resolvedSubName ($tName)",
               subtitle: categoryName,
               amount: (data['totalAmount'] as num).toDouble(),
-              color: Theme.of(context).colorScheme.primary,
+              color: Theme.of(context).colorScheme.tertiary,
               icon: Icons.check_circle_outline,
             );
           },
@@ -1319,14 +1324,18 @@ class _AdminHomeState extends State<AdminHome> {
     List<String> paidSubIds = receivedDocs.map((doc) => doc['subItemId'].toString()).toList();
     DateTime monthEnd = DateTime(_selectedDate.year, _selectedDate.month + 1, 0, 23, 59, 59);
 
+    // Strictly filter by Occupied status per instructions
     var dueItems = occupiedDocs.where((doc) {
       var data = doc.data() as Map<String, dynamic>;
+      String status = data['status'] ?? '';
       Timestamp? occupiedAt = data['occupiedAt'] as Timestamp?;
       bool wasOccupiedInOrBeforeSelectedMonth = occupiedAt != null && occupiedAt.toDate().isBefore(monthEnd);
-      return wasOccupiedInOrBeforeSelectedMonth && !paidSubIds.contains(doc.id);
+      return status == 'Occupied' && wasOccupiedInOrBeforeSelectedMonth && !paidSubIds.contains(doc.id);
     }).toList();
 
     if (dueItems.isEmpty) return _buildEmptyState("All units have paid for $_selectedMonthStr!");
+
+    final Color dueColor = Theme.of(context).colorScheme.error;
 
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -1356,7 +1365,7 @@ class _AdminHomeState extends State<AdminHome> {
                       title: "${data['subItemName']} ($tName)",
                       subtitle: categoryName,
                       amount: amount,
-                      color: Theme.of(context).colorScheme.error,
+                      color: dueColor,
                       icon: Icons.pending_actions,
                       onTap: () async {
                         var catDoc = await _dbService.getCategoryById(catId);
@@ -1400,44 +1409,55 @@ class _AdminHomeState extends State<AdminHome> {
     Timestamp? paidAt,
     String? notes,
   }) {
-    Color itemColor = ThemeManager.getCardContainerColor(index + 5, alpha: 0.7, isSubCard: true);
+    // Soft-coded, readable background based on theme
+    Color itemColor = ThemeManager.getCardContainerColor(index + 7, alpha: 0.8, isSubCard: true);
+    // Ensure readable text color by using the contrast/onContainer color from theme
+    Color textColor = ThemeManager.getCardOnContainerColor(index + 7, isSubCard: true);
 
     return Card(
-      elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
       color: itemColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide.none),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         leading: CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.5),
-          child: Icon(icon, color: color, size: 20),
+          backgroundColor: color.withOpacity(0.15),
+          child: Icon(icon, color: color, size: 22),
         ),
-        title: Text(title, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+        title: Text(title, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: textColor)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+            Text(subtitle.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: textColor.withOpacity(0.7), letterSpacing: 0.5)),
             if (paidBy != null)
               Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text("Paid by: $paidBy", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
+                  children: [
+                    Icon(Icons.person_pin_outlined, size: 10, color: color),
+                    const SizedBox(width: 4),
+                    Text("By: $paidBy", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             if (paidAt != null)
-              Text("Time: ${DatabaseService.formatFullDateTime(paidAt)}", style: Theme.of(context).textTheme.labelSmall),
-            if (notes != null && notes.isNotEmpty)
-              Text("Note: $notes", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(DatabaseService.formatFullDateTime(paidAt), style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10, color: textColor.withOpacity(0.6))),
+              ),
           ],
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "৳${amount.toStringAsFixed(2)}",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: color),
+              "৳${amount.toStringAsFixed(0)}",
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: color),
             ),
-            Icon(Icons.chevron_right, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(width: 4),
+            Icon(Icons.arrow_forward_ios, size: 12, color: color.withOpacity(0.5)),
           ],
         ),
       ),
@@ -1449,113 +1469,93 @@ class _AdminHomeState extends State<AdminHome> {
     List displayServices = [];
     double displayTotal = 0;
     bool showElec = false;
+    Color modeColor = Theme.of(context).colorScheme.primary;
     
     if (mode == 'rent') {
       displayServices = allServices.where((s) => s['name'].toString().toLowerCase().contains('rent')).toList();
       displayTotal = displayServices.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
+      modeColor = Theme.of(context).colorScheme.primary;
     } else if (mode == 'utility') {
       displayServices = allServices.where((s) => !s['name'].toString().toLowerCase().contains('rent')).toList();
       double elec = (data['electricityBill'] as num?)?.toDouble() ?? 0;
       displayTotal = displayServices.fold(elec, (acc, s) => acc + (s['amount'] as num).toDouble());
       showElec = true;
+      modeColor = Theme.of(context).colorScheme.secondary;
     } else {
       displayServices = allServices;
       displayTotal = (data['totalAmount'] as num).toDouble();
       showElec = true;
+      modeColor = Theme.of(context).colorScheme.tertiary; // Received mode
+      if (data['paidAt'] == null) modeColor = Theme.of(context).colorScheme.error; // Due mode
     }
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Column(
           children: [
-            Text(subName, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
-            Text("$tenantName | $catName", style: Theme.of(context).textTheme.bodyMedium),
-            const Divider(height: 24),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(color: modeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+              child: Text(mode.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: modeColor, letterSpacing: 2, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 12),
+            Text(subName, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: modeColor, fontWeight: FontWeight.w900)),
+            Text("$tenantName | $catName", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+            const Divider(height: 32),
           ],
         ),
         content: SizedBox(
-          width: MediaQuery.of(context).size.width * 0.9,
+          width: MediaQuery.of(context).size.width * 0.95,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (showElec && data['electricityDetails'] != null) ...[
-                  Row(
-                    children: [
-                      Icon(Icons.electric_bolt, color: context.electric, size: 16),
-                      const SizedBox(width: 8),
-                      Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleSmall),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  _buildDetailRow(context, "Meter No:", data['electricityDetails']['subMeterNo'] ?? 'N/A'),
-                  _buildDetailRow(context, "Reading:", "${data['electricityDetails']['lastReading']} -> ${data['electricityDetails']['presentReading']}"),
-                  _buildDetailRow(context, "Unit Rate:", "৳${(data['electricityDetails']['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2)}"),
-                  _buildDetailRow(context, "Bill Amount:", "৳${(data['electricityBill'] as num?)?.toDouble().toStringAsFixed(2)}", isBold: true, color: Theme.of(context).colorScheme.secondary),
-                  const Divider(height: 24),
+                if (showElec && data['electricityBill'] != null && (data['electricityBill'] as num).toDouble() > 0) ...[
+                  _buildSectionHeader(context, "Electricity", Icons.electric_bolt, context.electric),
+                  const SizedBox(height: 12),
+                  if (data['electricityDetails'] != null) ...[
+                    _buildDetailRow(context, "Meter No:", data['electricityDetails']['subMeterNo'] ?? 'N/A'),
+                    _buildDetailRow(context, "Reading Range:", "${data['electricityDetails']['lastReading']} ➔ ${data['electricityDetails']['presentReading']}"),
+                    _buildDetailRow(context, "Unit Rate:", "৳${(data['electricityDetails']['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2)}"),
+                  ],
+                  _buildDetailRow(context, "Total Usage Bill:", "৳${(data['electricityBill'] as num?)?.toDouble().toStringAsFixed(2)}", isBold: true, color: context.electric),
+                  const Divider(height: 32),
                 ],
                 if (displayServices.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary, size: 16),
-                      const SizedBox(width: 8),
-                      Text(mode == 'rent' ? "Rent Info" : "Services Info", style: Theme.of(context).textTheme.titleSmall),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                  _buildSectionHeader(context, mode == 'rent' ? "House Rent" : "Service Charges", mode == 'rent' ? Icons.home_work : Icons.list_alt, modeColor),
+                  const SizedBox(height: 12),
                   ...displayServices.map((s) {
                     String name = s['name'] ?? 'Service';
                     if (name.toLowerCase().contains('wifi') && s['deviceQuantity'] != null) {
-                      name = "$name (Devices: ${s['deviceQuantity']})";
+                      name = "$name (x${s['deviceQuantity']})";
                     }
                     return _buildDetailRow(context, name, "৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}");
                   }),
                 ],
                 const SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer, 
-                    borderRadius: BorderRadius.circular(12), 
+                    gradient: LinearGradient(colors: [modeColor, modeColor.withOpacity(0.8)]),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [BoxShadow(color: modeColor.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Total", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                      Text("৳${displayTotal.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                      Text("GRAND TOTAL", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                      Text("৳${displayTotal.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
                     ],
                   ),
                 ),
-                if (data['paidBy'] != null || data['paidAt'] != null || (data['paymentNotes'] ?? '').toString().isNotEmpty) ...[
+                if (data['paidBy'] != null || data['paidAt'] != null) ...[
                   const Divider(height: 32),
-                  Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 16),
-                      const SizedBox(width: 8),
-                      Text("Payment Meta", style: Theme.of(context).textTheme.titleSmall),
-                    ],
-                  ),
+                  _buildSectionHeader(context, "Payment Confirmation", Icons.verified_user_outlined, Colors.blueGrey),
                   const SizedBox(height: 8),
                   if (data['paidBy'] != null) _buildDetailRow(context, "Collected by:", data['paidBy']),
                   if (data['paidAt'] != null) _buildDetailRow(context, "Time:", DatabaseService.formatFullDateTime(data['paidAt'])),
-                  if ((data['paymentNotes'] ?? '').toString().isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          "Note: ${data['paymentNotes']}", 
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)
-                        ),
-                      ),
-                    ),
                 ],
               ],
             ),
@@ -1566,18 +1566,28 @@ class _AdminHomeState extends State<AdminHome> {
             actions: [
               AppButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Theme.of(context).colorScheme.onError,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: modeColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
                 ),
                 onPressed: () => Navigator.pop(context), 
-                child: const Text("OK")
+                child: const Text("CLOSE", style: TextStyle(fontWeight: FontWeight.bold))
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String label, IconData icon, Color color) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 8),
+        Text(label.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w900, letterSpacing: 1)),
+      ],
     );
   }
 
