@@ -421,7 +421,7 @@ class _UserDashboardState extends State<UserDashboard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- MODERN HEADER CARD ---
+                  // --- MODERN HEADER CARD (Updated Layout) ---
                   Container(
                     width: double.infinity,
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -447,43 +447,25 @@ class _UserDashboardState extends State<UserDashboard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _categoryName.toUpperCase(),
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  subName,
-                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
-                                ),
-                              ],
-                            ),
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundColor: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
-                              child: Icon(Icons.person_outline, color: Theme.of(context).colorScheme.onPrimary, size: 28),
-                            ),
-                          ],
+                        // Line 1: Category Name
+                        Text(
+                          _categoryName.toUpperCase(),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 20),
-                        if (TenantName.isNotEmpty) ...[
-                          Text(
-                            "Tenant: $TenantName",
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                        if (nidNumber.isNotEmpty)
+                        const SizedBox(height: 6),
+                        // Line 2: Unit Name (Tenant Name)
+                        Text(
+                          TenantName.isNotEmpty ? "$subName ($TenantName)" : subName,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
+                        ),
+                        // Line 3: NID Number
+                        if (nidNumber.isNotEmpty) ...[
+                          const SizedBox(height: 12),
                           Text(
                             "NID: $nidNumber",
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7)),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.bold),
                           ),
+                        ],
                       ],
                     ),
                   ),

@@ -714,7 +714,7 @@ class _AdminHomeState extends State<AdminHome> {
                         title: "Total Vacant",
                         count: vacantCount,
                         color: ThemeManager.getCardColor(1),
-                        countColor: ThemeManager.appThemeNotifier.value == "Normal Theme" ? Colors.red : null,
+                        countColor: Colors.red,
                         icon: Icons.meeting_room_outlined,
                         onTap: () {
                           DatabaseService.vibrate();
