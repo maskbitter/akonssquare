@@ -130,7 +130,8 @@ class AppVersionInfo extends StatelessWidget {
     final effectiveColor = color ?? Theme.of(context).colorScheme.tertiary;
     
     // Logic for status message color and text
-    Color effectiveSecondary = secondaryColor ?? Theme.of(context).colorScheme.secondary;
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    Color effectiveSecondary = secondaryColor ?? (isOutline ? Colors.black : Theme.of(context).colorScheme.secondary);
     String displayDBText = "DB V-$dbVersion";
     
     if (statusMessage != null && statusMessage!.isNotEmpty) {
@@ -149,7 +150,7 @@ class AppVersionInfo extends StatelessWidget {
               TextSpan(
                 text: "V: $version", 
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: effectiveColor, 
+                  color: isOutline ? Colors.black : effectiveColor, 
                   fontWeight: FontWeight.bold, 
                   fontSize: mainFontSize
                 )
@@ -158,7 +159,7 @@ class AppVersionInfo extends StatelessWidget {
                 TextSpan(
                   text: " | ", 
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline, 
+                    color: isOutline ? Colors.black : Theme.of(context).colorScheme.outline, 
                     fontSize: mainFontSize
                   )
                 ),
@@ -179,7 +180,7 @@ class AppVersionInfo extends StatelessWidget {
           displayDBText,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             fontSize: mainFontSize,
-            color: effectiveSecondary, 
+            color: (isOutline && !displayDBText.contains("BN")) ? Colors.black : effectiveSecondary, 
             fontWeight: FontWeight.bold, 
           ),
         ),

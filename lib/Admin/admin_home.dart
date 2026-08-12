@@ -634,6 +634,7 @@ class _AdminHomeState extends State<AdminHome> {
     required VoidCallback onAction,
     bool isHighlighted = false,
   }) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return Card(
       elevation: isHighlighted ? 2 : 1,
       shape: RoundedRectangleBorder(
@@ -649,7 +650,7 @@ class _AdminHomeState extends State<AdminHome> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : color.withOpacity(0.1), 
+                  backgroundColor: isOutline ? Colors.transparent : color.withOpacity(0.1), 
                   child: Icon(icon, color: color, size: 20),
                   foregroundColor: color,
                 ),
@@ -658,8 +659,8 @@ class _AdminHomeState extends State<AdminHome> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isHighlighted ? null : Colors.grey)),
-                      Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(isHighlighted ? 1.0 : 0.5))),
+                      Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : (isHighlighted ? null : Colors.grey))),
+                      Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(isHighlighted ? 1.0 : 0.5))),
                     ],
                   ),
                 ),
@@ -1163,11 +1164,13 @@ class _AdminHomeState extends State<AdminHome> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
         return Container(
           height: MediaQuery.of(context).size.height * 0.85,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: isOutline ? Colors.white : Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+            border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
           ),
           child: DefaultTabController(
             length: 2,
@@ -1227,11 +1230,13 @@ class _AdminHomeState extends State<AdminHome> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
         return Container(
           height: MediaQuery.of(context).size.height * 0.85,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: isOutline ? Colors.white : Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+            border: isOutline ? Border.all(color: themeColor, width: 2) : null,
           ),
           child: Column(
             children: [
@@ -1517,7 +1522,13 @@ class _AdminHomeState extends State<AdminHome> {
             if (paidAt != null)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text(DatabaseService.formatFullDateTime(paidAt), style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : textColor.withOpacity(0.6))),
+                child: Text(
+                  DatabaseService.formatFullDateTime(paidAt), 
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 10, 
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : textColor.withOpacity(0.6)
+                  )
+                ),
               ),
           ],
         ),

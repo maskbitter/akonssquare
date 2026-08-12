@@ -175,12 +175,13 @@ class ThemeManager {
         onTertiaryContainer: Colors.black,
         errorContainer: Colors.transparent,
         onErrorContainer: Colors.black,
-        surfaceContainerLow: Colors.white,
-        surfaceContainerLowest: Colors.white,
-        surfaceContainer: Colors.white,
-        surfaceContainerHigh: Colors.white,
-        surfaceContainerHighest: Colors.white,
+        surfaceContainerLow: Colors.transparent,
+        surfaceContainerLowest: Colors.transparent,
+        surfaceContainer: Colors.transparent,
+        surfaceContainerHigh: Colors.transparent,
+        surfaceContainerHighest: Colors.transparent,
         outlineVariant: Colors.black,
+        shadow: Colors.transparent,
       );
     } else if (themeName == "Black & White Theme") {
       colorScheme = const ColorScheme.light(
@@ -349,16 +350,19 @@ class ThemeManager {
         titleTextStyle: baseTextTheme.titleLarge,
       ),
       tabBarTheme: TabBarThemeData(
-        labelColor: colorScheme.primary,
-        unselectedLabelColor: colorScheme.onSurface.withOpacity(0.6),
-        indicatorColor: colorScheme.primary,
+        labelColor: themeName == "Outline Theme" ? Colors.black : colorScheme.primary,
+        unselectedLabelColor: themeName == "Outline Theme" ? Colors.black : colorScheme.onSurface.withOpacity(0.6),
+        indicatorColor: themeName == "Outline Theme" ? Colors.black : colorScheme.primary,
         indicatorSize: TabBarIndicatorSize.tab,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: themeName == "Outline Theme" ? Colors.white : colorScheme.primary,
+        foregroundColor: themeName == "Outline Theme" ? colorScheme.primary : colorScheme.onPrimary,
+        elevation: themeName == "Outline Theme" ? 0 : 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: themeName == "Outline Theme" ? BorderSide(color: colorScheme.primary, width: 2) : BorderSide.none,
+        ),
       ),
     );
   }

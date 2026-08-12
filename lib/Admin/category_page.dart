@@ -245,7 +245,8 @@ class _CategoryPageState extends State<CategoryPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: Theme.of(context).colorScheme.surface,
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface,
+                    border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Colors.black, width: 1.5) : null,
                   ),
                   child: Row(
                     children: [
@@ -360,14 +361,18 @@ class _CategoryPageState extends State<CategoryPage> {
                       final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
 
                       return Card(
-                        elevation: 2,
-                        color: bgColor,
+                        elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : bgColor,
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16), 
-                          side: BorderSide.none,
+                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                              ? BorderSide(color: accentColor, width: 1.5) 
+                              : BorderSide.none,
                         ),
                         child: ExpansionTile(
+                          backgroundColor: Colors.transparent,
+                          collapsedBackgroundColor: Colors.transparent,
                           shape: const Border(),
                           collapsedShape: const Border(),
                           tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -383,8 +388,9 @@ class _CategoryPageState extends State<CategoryPage> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.surface,
+                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface,
                                       borderRadius: BorderRadius.circular(6),
+                                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: onBgColor, width: 1) : null,
                                     ),
                                     child: Text(
                                       catName.toUpperCase(),
@@ -494,13 +500,17 @@ class _CategoryPageState extends State<CategoryPage> {
                                   },
                                   child: Card(
                                     margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    color: itemBgColor,
-                                    elevation: 2,
+                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : itemBgColor,
+                                    elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12), 
-                                      side: BorderSide.none,
+                                      side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                          ? BorderSide(color: itemAccentColor, width: 1.5) 
+                                          : BorderSide.none,
                                     ),
                                     child: ExpansionTile(
+                                      backgroundColor: Colors.transparent,
+                                      collapsedBackgroundColor: Colors.transparent,
                                       shape: const Border(),
                                       collapsedShape: const Border(),
                                       tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
@@ -516,8 +526,9 @@ class _CategoryPageState extends State<CategoryPage> {
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: Theme.of(context).colorScheme.surface,
+                                                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface,
                                                   borderRadius: BorderRadius.circular(6),
+                                                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: itemAccentColor, width: 1) : null,
                                                 ),
                                                 child: Text(
                                                   subName,
@@ -696,13 +707,19 @@ class _CategoryPageState extends State<CategoryPage> {
                                     },
                                     child: Card(
                                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      color: isPaid ? Theme.of(context).colorScheme.tertiaryContainer : itemBgColor,
-                                      elevation: 2,
+                                      color: isPaid 
+                                          ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.tertiaryContainer) 
+                                          : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : itemBgColor),
+                                      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                                         shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
-                                        side: BorderSide.none,
+                                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                            ? BorderSide(color: isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor, width: 1.5) 
+                                            : BorderSide.none,
                                       ),
                                       child: ExpansionTile(
+                                      backgroundColor: Colors.transparent,
+                                      collapsedBackgroundColor: Colors.transparent,
                                       shape: const Border(),
                                       collapsedShape: const Border(),
                                       tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
@@ -722,8 +739,11 @@ class _CategoryPageState extends State<CategoryPage> {
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: Theme.of(context).colorScheme.surface,
+                                                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface,
                                                   borderRadius: BorderRadius.circular(6),
+                                                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                                      ? Border.all(color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error, width: 1) 
+                                                      : null,
                                                 ),
                                                 child: Text(
                                                   subName,
@@ -942,8 +962,9 @@ class _CategoryPageState extends State<CategoryPage> {
       margin: const EdgeInsets.symmetric(vertical: 2),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow, 
+        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerLow, 
         borderRadius: BorderRadius.circular(12), 
+        border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: effectiveColor, width: 1) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -339,11 +339,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   builder: (context, snapshot) {
                     bool isEnabled = snapshot.data?.exists == true ? snapshot.data!['isPopupEnabled'] ?? true : true;
                     return Card(
-                      elevation: 3,
+                      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 3,
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      color: ThemeManager.getCardContainerColor(1, isSubCard: true),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(1, isSubCard: true),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(1, isSubCard: true), width: 1.5) : BorderSide.none,
+                      ),
                       child: ExpansionTile(
+                        backgroundColor: Colors.transparent,
+                        collapsedBackgroundColor: Colors.transparent,
                         leading: Icon(Icons.settings_suggest_outlined, color: ThemeManager.getCardColor(1, isSubCard: true)),
                         iconColor: ThemeManager.getCardColor(1, isSubCard: true),
                         collapsedIconColor: ThemeManager.getCardColor(1, isSubCard: true),
@@ -397,19 +402,25 @@ class _SettingsPageState extends State<SettingsPage> {
                     }
                     return Column(children: [
                       Card(
-                        elevation: 2,
+                        elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: ThemeManager.getCardContainerColor(0, isSubCard: true),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(0, isSubCard: true),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(0, isSubCard: true), width: 1.5) : BorderSide.none,
+                        ),
                         child: _buildVisibilitySwitch("Show Accounts Section", s['showAccounts']!, (val) { s['showAccounts'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.account_balance_wallet_outlined),
                       ),
                       
                       // Electricity Nested
                       Card(
-                        elevation: 2,
+                        elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: ThemeManager.getCardContainerColor(1, isSubCard: true),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(1, isSubCard: true),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(1, isSubCard: true), width: 1.5) : BorderSide.none,
+                        ),
                         child: Column(
                           children: [
                             _buildVisibilitySwitch("Show Electricity Section", s['showElectricity']!, (val) { s['showElectricity'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.electric_bolt_outlined),
@@ -424,10 +435,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
                       // Category Nested
                       Card(
-                        elevation: 2,
+                        elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: ThemeManager.getCardContainerColor(2, isSubCard: true),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(2, isSubCard: true),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(2, isSubCard: true), width: 1.5) : BorderSide.none,
+                        ),
                         child: Column(
                           children: [
                             _buildVisibilitySwitch("Show Category Section", s['showCategory']!, (val) { s['showCategory'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.category_outlined),
@@ -622,17 +636,23 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildSettingsCard(BuildContext context, {required IconData icon, required String title, required String subtitle, required Color color, required Color accentColor, required List<Widget> children}) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return Card(
-      elevation: 2,
+      elevation: isOutline ? 0 : 2,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),
+      color: isOutline ? Colors.transparent : color,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), 
+        side: isOutline ? BorderSide(color: accentColor, width: 1.5) : BorderSide.none
+      ),
       child: ExpansionTile(
+        backgroundColor: Colors.transparent,
+        collapsedBackgroundColor: Colors.transparent,
         leading: Icon(icon, color: accentColor),
         iconColor: accentColor,
         collapsedIconColor: accentColor,
-        title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: accentColor, fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+        title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: isOutline ? Colors.black : accentColor, fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : null)),
         children: children,
       ),
     );
@@ -658,12 +678,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
           roleColor = ThemeManager.getCardContainerColor(colorIdx, isSubCard: true);
           final accent = ThemeManager.getCardColor(colorIdx, isSubCard: true);
+          bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
 
           return Card(
-            elevation: 2,
+            elevation: isOutline ? 0 : 2,
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            color: roleColor,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide.none),
+            color: isOutline ? Colors.transparent : roleColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12), 
+              side: isOutline ? BorderSide(color: accent, width: 1.5) : BorderSide.none
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
@@ -674,12 +698,12 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(data['username'] ?? '', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.getCardOnContainerColor(colorIdx, isSubCard: true))),
+                        Text(data['username'] ?? '', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(colorIdx, isSubCard: true))),
                         Text(role.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: accent, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
-                  Text(data['password'] ?? '', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: ThemeManager.getCardOnContainerColor(colorIdx, isSubCard: true).withValues(alpha: 0.7))),
+                  Text(data['password'] ?? '', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(colorIdx, isSubCard: true).withValues(alpha: 0.7))),
                   const SizedBox(width: 8),
                   IconButton(icon: Icon(Icons.edit_outlined, size: 18, color: accent), onPressed: () => _showUserDialog(context, docId: doc.id, currentData: data)),
                   IconButton(icon: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error), onPressed: () => _confirmRemove(doc.id, data['username'])),
