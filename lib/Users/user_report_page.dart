@@ -345,13 +345,28 @@ class UserReportPage extends StatelessWidget {
                                           ],
                                         ),
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(30),
-                                        ),
-                                        child: Text("PAID", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.w900)),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(30),
+                                            ),
+                                            child: Text("PAID", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.w900)),
+                                          ),
+                                          if ((data['paymentNotes'] ?? '').toString().isNotEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 2),
+                                              child: Text(
+                                                data['paymentNotes'],
+                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                                textAlign: TextAlign.right,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ],
                                   ),
