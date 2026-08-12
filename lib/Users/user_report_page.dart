@@ -24,110 +24,133 @@ class UserReportPage extends StatelessWidget {
     return parts.isEmpty ? "Joined today" : parts.join(", ");
   }
 
-  String _formatDateTime(Timestamp? timestamp) {
-    if (timestamp == null) return "N/A";
-    DateTime dt = timestamp.toDate();
-    return "${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
-  }
-
   void _showDetailsDialog(BuildContext context, Map<String, dynamic> data) {
     List services = data['services'] ?? [];
     Map<String, dynamic>? ed = data['electricityDetails'];
-    double houseRentTotal = (data['houseRentTotal'] as num?)?.toDouble() ?? 0;
+    double totalAmount = (data['totalAmount'] as num?)?.toDouble() ?? 0;
+    double electricityBill = (data['electricityBill'] as num?)?.toDouble() ?? 0;
+    
+    double rentAmount = 0;
+    List<Map<String, dynamic>> otherServices = [];
+    for (var s in services) {
+      if (s['name'].toString().toLowerCase().contains('rent')) {
+        rentAmount += (s['amount'] as num?)?.toDouble() ?? 0;
+      } else {
+        otherServices.add(Map<String, dynamic>.from(s));
+      }
+    }
+    double rentAndServicesSubtotal = rentAmount + otherServices.fold(0.0, (sum, s) => sum + (s['amount'] as num).toDouble());
+
+    String paidTime = "N/A";
+    if (data['paidAt'] != null) {
+      paidTime = DatabaseService.formatFullDateTime(data['paidAt'] as Timestamp);
+    }
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Center(child: Text("Details for ${data['monthYear']}", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Column(
+          children: [
+            Text("Payment Details", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(data['monthYear'] ?? '', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+            const Divider(height: 24),
+          ],
+        ),
         content: SizedBox(
-          width: double.maxFinite,
+          width: MediaQuery.of(context).size.width * 0.9,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildDetailRow(context, "Payment Time:", paidTime, isBold: true),
                 if (data['TenantName'] != null && data['TenantName'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: Text("Tenant: ${data['TenantName']}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
-                  ),
-                if (data['nidNumber'] != null && data['nidNumber'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text("NID: ${data['nidNumber']}", style: Theme.of(context).textTheme.bodySmall),
-                  ),
-                if (data['paymentNotes'] != null && data['paymentNotes'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text("Note: ${data['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 12, bottom: 8),
-                  child: Text("Rent & Services", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+                  _buildDetailRow(context, "Tenant:", data['TenantName']),
+                const SizedBox(height: 16),
+                
+                Row(
+                  children: [
+                    Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Text("Rent & Services", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  ],
                 ),
-                ...services.map((s) {
+                const SizedBox(height: 8),
+                _buildDetailRow(context, "House Rent", "৳${rentAmount.toStringAsFixed(2)}"),
+                ...otherServices.map((s) {
                   String name = s['name'] ?? 'Service';
-                  String? subtitle;
-                  
-                  if (name.toLowerCase().contains("wifi")) {
-                    int qty = s['deviceQuantity'] ?? 1;
-                    num total = s['amount'] ?? 0;
-                    num costPerDevice = s['wifiCost'] ?? (qty > 0 ? (total / qty) : total);
-                    
-                    name = "$name (Devices: $qty)";
-                    subtitle = "৳${costPerDevice.toStringAsFixed(2)} (per Device)";
-                  }
-
-                  return _buildDetailRow(
-                    context,
-                    name,
-                    "৳${s['amount']}",
-                    subtitle: subtitle,
-                  );
+                  return _buildDetailRow(context, name, "৳${(s['amount'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'}");
                 }),
                 const Divider(),
                 _buildDetailRow(
                   context,
                   "Subtotal (Rent & Services)",
-                  "৳$houseRentTotal",
+                  "৳${rentAndServicesSubtotal.toStringAsFixed(2)}",
                   isBold: true,
                 ),
-                const Divider(),
-                if (ed != null) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12, bottom: 8),
-                    child: Text("Electricity Details", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
-                  ),
-                  _buildDetailRow(context, "Meter No:", ed['mainSubMeterNo'] ?? 'N/A'),
-                  _buildDetailRow(context, "Reading:", "${ed['lastReading']} -> ${ed['presentReading']}"),
-                  _buildDetailRow(context, "Units Used:", "${(ed['presentReading'] ?? 0) - (ed['lastReading'] ?? 0)}"),
-                  _buildDetailRow(context, "Price/Unit:", "৳${ed['pricePerUnit']}"),
-                  const Divider(),
-                  _buildDetailRow(
-                    context,
-                    "Electricity Total",
-                    "৳${data['electricityBill']}",
-                    valueColor: context.electric,
-                    isBold: true,
+
+                if (ed != null || electricityBill > 0) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: context.electric.withValues(alpha: 0.1)),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.electric_bolt, color: context.electric, size: 20),
+                            const SizedBox(width: 8),
+                            Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: context.electric)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (ed != null) ...[
+                          _buildDetailRow(context, "Meter No:", ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'),
+                          _buildDetailRow(context, "Last Units:", "${ed['lastReading'] ?? 0}"),
+                          _buildDetailRow(context, "Present Units:", "${ed['presentReading'] ?? 0}"),
+                          _buildDetailRow(context, "Used Units:", "${(ed['presentReading'] ?? 0) - (ed['lastReading'] ?? 0)}", isBold: true),
+                          _buildDetailRow(context, "Price per Unit:", "৳${ed['pricePerUnit'] ?? 0}"),
+                        ] else ...[
+                           const Center(child: Text("(Detailed readings not available)", style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic))),
+                        ],
+                        const Divider(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("Electric Bill", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+                            Text("৳${electricityBill.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: context.electric)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Grand Total", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
-                      Text("৳${data['totalAmount']}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900)),
+                      Text("Grand Total", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                      Text("৳${totalAmount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
                     ],
                   ),
                 ),
+                if ((data['paymentNotes'] ?? '').toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Text("Note: ${data['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+                  ),
               ],
             ),
           ),
@@ -137,11 +160,11 @@ class UserReportPage extends StatelessWidget {
             actions: [
               AppButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.tertiary,
-                  foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Colors.white,
                 ),
                 onPressed: () => Navigator.pop(ctx), 
-                child: const Text("OK")
+                child: const Text("Close")
               ),
             ],
           ),
@@ -198,6 +221,7 @@ class UserReportPage extends StatelessWidget {
             children: [
               Container(
                 width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -208,6 +232,14 @@ class UserReportPage extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -249,12 +281,33 @@ class UserReportPage extends StatelessWidget {
                     }
 
                     return ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       itemCount: docs.length,
                       itemBuilder: (context, index) {
                         var data = docs[index].data() as Map<String, dynamic>;
+                        
+                        // Extract Rent, Electricity and calculate Utility
+                        List services = data['services'] ?? [];
+                        double totalAmount = (data['totalAmount'] as num?)?.toDouble() ?? 0;
+                        double electricityBill = (data['electricityBill'] as num?)?.toDouble() ?? 0;
+                        
+                        double rentAmount = 0;
+                        for (var s in services) {
+                          if (s['name'].toString().toLowerCase().contains('rent')) {
+                            rentAmount += (s['amount'] as num?)?.toDouble() ?? 0;
+                          }
+                        }
+                        
+                        double utilityAmount = totalAmount - rentAmount - electricityBill;
+                        if (utilityAmount < 0) utilityAmount = 0;
+
+                        String paidTime = "N/A";
+                        if (data['paidAt'] != null) {
+                          paidTime = DatabaseService.formatFullDateTime(data['paidAt'] as Timestamp);
+                        }
+
                         return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             color: ThemeManager.getCardContainerColor(index + 2, alpha: 0.5, isSubCard: true),
                             borderRadius: BorderRadius.circular(20),
@@ -289,7 +342,7 @@ class UserReportPage extends StatelessWidget {
                                               data['monthYear'] ?? 'N/A',
                                               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                                             ),
-                                            Text("Payment received", style: Theme.of(context).textTheme.bodySmall),
+                                            Text("Paid on: $paidTime", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10)),
                                           ],
                                         ),
                                       ),
@@ -313,11 +366,19 @@ class UserReportPage extends StatelessWidget {
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                                       children: [
-                                        _buildCompactSummary(context, "Rent", "৳${data['houseRentTotal']}", Theme.of(context).colorScheme.onSurface),
+                                        _buildCompactSummary(context, "Rent", "৳${rentAmount.toStringAsFixed(0)}", Theme.of(context).colorScheme.onSurface),
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
-                                        _buildCompactSummary(context, "Electric", "৳${data['electricityBill']}", context.electric),
+                                        InkWell(
+                                          onTap: () {
+                                            DatabaseService.vibrate();
+                                            _showDetailsDialog(context, data);
+                                          },
+                                          child: _buildCompactSummary(context, "Electricity Bills", "৳${electricityBill.toStringAsFixed(0)}", context.electric),
+                                        ),
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
-                                        _buildCompactSummary(context, "Total", "৳${data['totalAmount']}", ThemeManager.getCardColor(index + 2, isSubCard: true), isBold: true),
+                                        _buildCompactSummary(context, "Utility", "৳${utilityAmount.toStringAsFixed(0)}", Theme.of(context).colorScheme.secondary),
+                                        Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
+                                        _buildCompactSummary(context, "Total", "৳${totalAmount.toStringAsFixed(0)}", ThemeManager.getCardColor(index + 2, isSubCard: true), isBold: true),
                                       ],
                                     ),
                                   ),

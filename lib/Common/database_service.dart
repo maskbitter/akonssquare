@@ -50,6 +50,10 @@ class DatabaseService {
     return await _db.collection('categories').doc(categoryId).get();
   }
 
+  Stream<DocumentSnapshot> getCategoryStream(String categoryId) {
+    return _db.collection('categories').doc(categoryId).snapshots();
+  }
+
   Future<bool> checkCategoryExists(String name) async {
     String normalized = _normalize(name);
     var existingDocs = await _db.collection('categories').where('categoryNameNormalized', isEqualTo: normalized).get();

@@ -548,7 +548,7 @@ class _LoginPageState extends State<LoginPage> {
                                       ),
                                     ),
                                     const SizedBox(height: 48),
-                                    StreamBuilder<QuerySnapshot>(
+                                      StreamBuilder<QuerySnapshot>(
                                       stream: FirebaseFirestore.instance.collection('sub_items').snapshots(),
                                       builder: (context, snapshot) {
                                         List<Map<String, dynamic>> items = [];
@@ -557,6 +557,11 @@ class _LoginPageState extends State<LoginPage> {
                                             var data = doc.data() as Map<String, dynamic>;
                                             data['id'] = doc.id;
                                             return data;
+                                          }).where((d) {
+                                            // Only show units that are 'Occupied' OR have a valid tenant name
+                                            String status = d['status'] ?? '';
+                                            String tenant = (d['TenantName'] ?? '').toString();
+                                            return status == 'Occupied' || (tenant.isNotEmpty && tenant != 'No Name' && tenant != 'No Tenant');
                                           }).toList();
                                           items.sort((a, b) => (a['subItemName'] ?? '').compareTo(b['subItemName'] ?? ''));
                                         }

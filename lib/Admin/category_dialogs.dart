@@ -1080,6 +1080,7 @@ class CategoryDialogs {
     required String mainCategoryName
   }) {
     final noteController = TextEditingController(); 
+    final presentUnitsController = TextEditingController(text: (electricityDetails?['presentReading'] ?? 0).toString());
     DateTime now = DateTime.now(); 
     DateTime selectedDate = DateTime(now.year, now.month);
     final List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -1092,9 +1093,15 @@ class CategoryDialogs {
         bool isFuture = selectedDate.year > now.year || (selectedDate.year == now.year && selectedDate.month > now.month);
         int wordCount = _getWordCount(noteController.text);
 
+        double lastRead = (electricityDetails?['lastReading'] ?? 0).toDouble();
+        double currentRead = double.tryParse(presentUnitsController.text) ?? lastRead;
+        double unitRate = (electricityDetails?['pricePerUnit'] ?? 0).toDouble();
+        double dynamicElecBill = (currentRead - lastRead) * unitRate;
+        if (dynamicElecBill < 0) dynamicElecBill = 0;
+
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Center(child: Text("Payment: $subItemName", style: Theme.of(context).textTheme.titleLarge)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Center(child: Text("Payment: $subItemName", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min, 
@@ -1119,10 +1126,43 @@ class CategoryDialogs {
                 ),
                 const Divider(height: 24),
                 _buildRow(context, "$mainCategoryName Rent:", "৳${houseRentTotal.toStringAsFixed(1)}"),
-                const SizedBox(height: 4),
-                _buildRow(context, "Electric Bill:", "৳${electricityBill.toStringAsFixed(1)}"),
-                const Divider(height: 24),
-                _buildRow(context, "Total:", "৳${(houseRentTotal + electricityBill).toStringAsFixed(1)}", isBold: true),
+                const SizedBox(height: 12),
+                
+                if (electricityDetails != null && electricityDetails['isStopped'] != true) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: context.electric.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.electric.withValues(alpha: 0.2)),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.bolt, color: context.electric, size: 18),
+                            const SizedBox(width: 8),
+                            Text("Electricity Readings", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: context.electric, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _buildRow(context, "Last Reading:", lastRead.toStringAsFixed(1)),
+                        _buildRow(context, "Present Reading:", currentRead.toStringAsFixed(1), isBold: true),
+                        const SizedBox(height: 4),
+                        Text(
+                          "(To edit reading, use the Electric icon in the room list)", 
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildRow(context, "Electric Bill:", "৳${dynamicElecBill.toStringAsFixed(1)}"),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                
+                const Divider(height: 12),
+                _buildRow(context, "Total:", "৳${(houseRentTotal + dynamicElecBill).toStringAsFixed(1)}", isBold: true),
                 const SizedBox(height: 12),
                 if (!isFuture) ...[
                    TextField(
@@ -1215,32 +1255,41 @@ class CategoryDialogs {
                       String actor = prefs.getString('username') ?? "Unknown";
                       String note = noteController.text.trim().isEmpty ? "In cash" : noteController.text.trim();
                       
-                      await _dbService.addBillingRecord({
-                        'subItemId': subItemId, 
-                        'subItemName': subItemName, 
-                        'TenantName': TenantName, 
-                        'monthYear': monthYear, 
-                        'totalAmount': houseRentTotal + electricityBill, 
-                        'services': services, 
-                        'paymentNotes': note, 
-                        'paidAt': FieldValue.serverTimestamp()
-                      }, actor);
-                      
+                      Map<String, dynamic>? finalElecDetails;
                       if (electricityDetails != null) {
-                        double last = (electricityDetails['lastReading'] ?? 0).toDouble();
-                        double pres = (electricityDetails['presentReading'] ?? 0).toDouble();
-                        double used = pres - last;
-                        String? meterNo = electricityDetails['mainMeterNo'];
-                        String? subMeterNo = electricityDetails['subMeterNo'];
+                         finalElecDetails = Map<String, dynamic>.from(electricityDetails);
+                         finalElecDetails['presentReading'] = currentRead;
+                      }
 
+                        await _dbService.addBillingRecord({
+                          'subItemId': subItemId, 
+                          'subItemName': subItemName, 
+                          'TenantName': TenantName, 
+                          'nidNumber': nidNumber,
+                          'monthYear': monthYear, 
+                          'houseRentTotal': houseRentTotal,
+                          'electricityBill': dynamicElecBill,
+                          'electricityDetails': finalElecDetails,
+                          'totalAmount': houseRentTotal + dynamicElecBill, 
+                          'services': services, 
+                          'paymentNotes': note, 
+                          'paidAt': FieldValue.serverTimestamp()
+                        }, actor);
+                      
+                      if (finalElecDetails != null) {
+                        double used = currentRead - lastRead;
+                        String? meterNo = finalElecDetails['mainMeterNo'];
+                        String? subMeterNo = finalElecDetails['subMeterNo'];
+
+                        // IMPORTANT: Finalize the reading cycle. Present becomes Last.
                         await _dbService.updateSubItemElectricity(subItemId, {
-                          ...electricityDetails, 
-                          'lastReading': pres, 
+                          ...finalElecDetails, 
+                          'lastReading': currentRead, 
                           'updatedAt': FieldValue.serverTimestamp()
                         }, actor);
 
                         if (subMeterNo != null) {
-                          await _dbService.syncSubMeterReading(subMeterNo, pres, actor);
+                          await _dbService.syncSubMeterReading(subMeterNo, currentRead, actor);
                         }
 
                         if (meterNo != null && used > 0) {

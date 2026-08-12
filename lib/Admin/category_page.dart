@@ -613,10 +613,13 @@ class _CategoryPageState extends State<CategoryPage> {
                                 stream: FirebaseFirestore.instance.collection('billing_history').where('subItemId', isEqualTo: subId).where('monthYear', isEqualTo: _selectedMonthStr).snapshots(),
                                 builder: (context, paySnap) {
                                   bool isPaid = paySnap.hasData && paySnap.data!.docs.isNotEmpty;
-                                  double displayTotal = total;
-                                  if (isPaid) {
-                                    displayTotal = (paySnap.data!.docs.first['totalAmount'] as num).toDouble();
-                                  }
+                                  
+                                  // displayTotal is the balance. If paid, we subtract the paid amount.
+                                  // If new services are added or reading moves, total increases, 
+                                  // so balance reflects correctly.
+                                  double paidAmount = isPaid ? (paySnap.data!.docs.first['totalAmount'] as num).toDouble() : 0.0;
+                                  double displayTotal = total - paidAmount;
+                                  if (displayTotal < 0) displayTotal = 0;
 
                                   bool isOccupied = status == 'Occupied';
 
@@ -791,10 +794,10 @@ class _CategoryPageState extends State<CategoryPage> {
                                             padding: const EdgeInsets.only(left: 30, top: 1),
                                             child: Text(
                                               isOccupied 
-                                                ? (isPaid ? "Payment Clear • $_selectedMonthStr" : "${active.length} Services | Due") 
+                                                ? ((isPaid && displayTotal <= 0) ? "Payment Clear • $_selectedMonthStr" : "${active.length} Services | Due") 
                                                 : "Ready for new tenant",
                                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
+                                                color: isOccupied ? ((isPaid && displayTotal <= 0) ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
                                               ),
                                             ),
                                           ),
