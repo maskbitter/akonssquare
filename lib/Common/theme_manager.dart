@@ -124,8 +124,7 @@ class ThemeManager {
 
   static Color getCardOnContainerColor(int index, {bool isSubCard = false}) {
     if (appThemeNotifier.value == "Outline Theme") {
-      if (sessionColorPool.isEmpty) return Colors.black;
-      return sessionColorPool[(index + 1) % sessionColorPool.length];
+      return Colors.black;
     }
     if (appThemeNotifier.value == "Black & White Theme") {
       return isSubCard ? Colors.black : Colors.black;
@@ -164,16 +163,16 @@ class ThemeManager {
         brightness: Brightness.light,
       ).copyWith(
         primary: _sessionSeedColor,
-        onPrimary: _sessionSeedColor,
+        onPrimary: Colors.black, // Default text on primary surface
         surface: Colors.white,
         onSurface: Colors.black,
         outline: _sessionSeedColor,
         primaryContainer: Colors.transparent,
-        onPrimaryContainer: _sessionSeedColor,
+        onPrimaryContainer: Colors.black,
         secondaryContainer: Colors.transparent,
-        onSecondaryContainer: _sessionSeedColor,
+        onSecondaryContainer: Colors.black,
         tertiaryContainer: Colors.transparent,
-        onTertiaryContainer: _sessionSeedColor,
+        onTertiaryContainer: Colors.black,
         errorContainer: Colors.transparent,
         onErrorContainer: Colors.black,
         surfaceContainerLow: Colors.white,

@@ -108,28 +108,35 @@ class _AdminHomeState extends State<AdminHome> {
                                   children: [
                                     Row(
                                       children: [
-                                        Icon(Icons.account_balance_wallet_outlined, size: 22, color: Theme.of(context).colorScheme.primary),
+                                        Icon(Icons.account_balance_wallet_outlined, size: 22, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary),
                                         const SizedBox(width: 8),
                                         Text(
                                           "Accounts",
-                                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                            fontWeight: FontWeight.bold, 
+                                            letterSpacing: 0.8,
+                                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null,
+                                          ),
                                         ),
                                       ],
                                     ),
                                     Row(
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.chevron_left, size: 20),
+                                          icon: Icon(Icons.chevron_left, size: 20, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
                                           onPressed: () => _moveMonth(-1),
                                           visualDensity: VisualDensity.compact,
                                           padding: EdgeInsets.zero,
                                         ),
                                         Text(
                                           _selectedMonthStr,
-                                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                            fontWeight: FontWeight.bold, 
+                                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary
+                                          ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.chevron_right, size: 20),
+                                          icon: Icon(Icons.chevron_right, size: 20, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
                                           onPressed: () => _moveMonth(1),
                                           visualDensity: VisualDensity.compact,
                                           padding: EdgeInsets.zero,
@@ -300,11 +307,11 @@ class _AdminHomeState extends State<AdminHome> {
                               children: [
                                 Row(
                                   children: [
-                                    Icon(Icons.analytics_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary, size: 14),
+                                    Icon(Icons.analytics_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary, size: 14),
                                     const SizedBox(width: 8),
                                     Text(
                                       "$_selectedMonthStr Total Revenue",
-                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
@@ -322,7 +329,7 @@ class _AdminHomeState extends State<AdminHome> {
                               "৳${grandTotal.toStringAsFixed(2)}",
                               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w900, 
-                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary, 
+                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary, 
                                 letterSpacing: -0.5
                               ),
                             ),
@@ -435,8 +442,9 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildPieChart(double received, double due) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     double total = received + due;
-    if (total == 0) return Center(child: Text("No Data", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary)));
+    if (total == 0) return Center(child: Text("No Data", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary)));
     
     return PieChart(
       PieChartData(
@@ -444,20 +452,20 @@ class _AdminHomeState extends State<AdminHome> {
         centerSpaceRadius: 20,
         sections: [
           PieChartSectionData(
-            color: Colors.greenAccent,
+            color: isOutline ? Colors.transparent : Colors.greenAccent,
             value: received,
             title: '${((received/total)*100).toStringAsFixed(0)}%',
             radius: 35,
-            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.black87, fontWeight: FontWeight.bold),
-            borderSide: BorderSide.none,
+            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Colors.black87, fontWeight: FontWeight.bold),
+            borderSide: isOutline ? const BorderSide(color: Colors.green, width: 2) : BorderSide.none,
           ),
           PieChartSectionData(
-            color: Colors.redAccent,
+            color: isOutline ? Colors.transparent : Colors.redAccent,
             value: due,
             title: '${((due/total)*100).toStringAsFixed(0)}%',
             radius: 30,
-            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-            borderSide: BorderSide.none,
+            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.bold),
+            borderSide: isOutline ? const BorderSide(color: Colors.red, width: 2) : BorderSide.none,
           ),
         ],
       ),
@@ -475,9 +483,9 @@ class _AdminHomeState extends State<AdminHome> {
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) => Theme.of(context).colorScheme.secondary,
+            getTooltipColor: (_) => ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.secondary,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              return BarTooltipItem(rod.toY.toInt().toString(), Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onSecondary));
+              return BarTooltipItem(rod.toY.toInt().toString(), Theme.of(context).textTheme.labelSmall!.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSecondary));
             },
           ),
         ),
@@ -500,17 +508,18 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   BarChartGroupData _makeGroupData(int x, double y, Color color) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return BarChartGroupData(
       x: x,
       barRods: [
         BarChartRodData(
           toY: y,
-          color: color,
+          color: isOutline ? Colors.transparent : color,
           width: 14,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-          borderSide: BorderSide.none,
+          borderSide: isOutline ? BorderSide(color: color, width: 1.5) : BorderSide.none,
           backDrawRodData: BackgroundBarChartRodData(
-            show: true,
+            show: !isOutline,
             toY: y,
             color: Theme.of(context).colorScheme.outlineVariant,
           ),
@@ -697,7 +706,10 @@ class _AdminHomeState extends State<AdminHome> {
             Center(
               child: Text(
                 "Total Units: $totalDocs (In System)",
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold, 
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -766,16 +778,20 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildNestedStatItem(String label, int count, Color color, {VoidCallback? onTap}) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return InkWell(
       onTap: onTap,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: Theme.of(context).textTheme.labelSmall),
+          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : null)),
           const SizedBox(width: 4),
           Text(
             count.toString(),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: color),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900, 
+              color: (isOutline && color != Colors.red) ? Colors.black : color
+            ),
           ),
         ],
       ),
@@ -802,11 +818,14 @@ class _AdminHomeState extends State<AdminHome> {
             children: [
               Icon(icon, color: color, size: 28),
               const SizedBox(height: 8),
-              Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: color)),
+              Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : color)),
               const SizedBox(height: 4),
               Text(
                 count.toString(),
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: countColor ?? color),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w900, 
+                  color: (ThemeManager.appThemeNotifier.value == "Outline Theme" && countColor != Colors.red) ? Colors.black : (countColor ?? color)
+                ),
               ),
             ],
           ),
@@ -841,13 +860,13 @@ class _AdminHomeState extends State<AdminHome> {
                 children: [
                   Icon(icon, size: 14, color: color),
                   const SizedBox(width: 4),
-                  Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color.withValues(alpha: 0.8))),
+                  Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : color.withValues(alpha: 0.8))),
                 ],
               ),
               const SizedBox(height: 2),
               Text(
                 "৳${amount.toStringAsFixed(0)}",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: color, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : color, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -931,7 +950,9 @@ class _AdminHomeState extends State<AdminHome> {
                         
                         return TableRow(
                           decoration: BoxDecoration(
-                            color: index % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent,
+                            color: (ThemeManager.appThemeNotifier.value == "Outline Theme") 
+                                ? Colors.transparent 
+                                : (index % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent),
                           ),
                           children: rows.map((cell) => Padding(
                             padding: const EdgeInsets.all(12),
