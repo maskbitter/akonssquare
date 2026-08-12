@@ -184,9 +184,32 @@ class _AdminHomeState extends State<AdminHome> {
             ),
           ),
         ),
-        _buildElectricitySummary(context, 
-          showMainVsSub: settings['showMainVsSub'] ?? true, 
-          showMainVsGovt: settings['showMainVsGovt'] ?? true),
+        StreamBuilder<QuerySnapshot>(
+          stream: _dbService.getBillingHistoryByMonth(_selectedMonthStr),
+          builder: (context, billingSnapshot) {
+            Map<String, double> paidUnitsMap = {};
+            if (billingSnapshot.hasData) {
+              for (var doc in billingSnapshot.data!.docs) {
+                var data = doc.data() as Map<String, dynamic>;
+                var ed = data['electricityDetails'];
+                if (ed != null) {
+                  String? meterNo = ed['mainMeterNo'];
+                  if (meterNo != null) {
+                    double used = ((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble();
+                    if (used > 0) {
+                      paidUnitsMap[meterNo] = (paidUnitsMap[meterNo] ?? 0) + used;
+                    }
+                  }
+                }
+              }
+            }
+            return _buildElectricitySummary(context, 
+              showMainVsSub: settings['showMainVsSub'] ?? true, 
+              showMainVsGovt: settings['showMainVsGovt'] ?? true,
+              paidUnitsMap: paidUnitsMap,
+            );
+          }
+        ),
       ],
     );
   }
@@ -901,7 +924,7 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _buildElectricitySummary(BuildContext context, {bool showMainVsSub = true, bool showMainVsGovt = true}) {
+  Widget _buildElectricitySummary(BuildContext context, {bool showMainVsSub = true, bool showMainVsGovt = true, Map<String, double>? paidUnitsMap}) {
     return StreamBuilder<QuerySnapshot>(
       stream: _dbService.getMainMetersStream(),
       builder: (context, snapshot) {
@@ -930,13 +953,14 @@ class _AdminHomeState extends State<AdminHome> {
                   double last = (data['lastReading'] as num?)?.toDouble() ?? 0;
                   double present = (data['presentReading'] ?? last).toDouble();
                   double mainUsed = present - last;
-                  double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
+                  String meterNo = data['meterNo'] ?? 'N/A';
+                  double totalSubPaid = (paidUnitsMap != null) ? (paidUnitsMap[meterNo] ?? 0) : 0;
                   double unitRate = (data['unitRate'] as num?)?.toDouble() ?? 0;
                   double balance = mainUsed - totalSubPaid;
                   
                   return [
                     Text("${index + 1}", style: Theme.of(context).textTheme.bodyMedium),
-                    Text(data['meterNo'] ?? 'N/A', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(meterNo, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
                     Text(mainUsed.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
                     Text(totalSubPaid.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium),
                     Text("৳${unitRate.toStringAsFixed(2)}", style: Theme.of(context).textTheme.bodyMedium),
