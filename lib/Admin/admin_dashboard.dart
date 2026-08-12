@@ -338,23 +338,37 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     builder: (context, dbInfoSnap) {
                       return FutureBuilder<PackageInfo>(
                         future: PackageInfo.fromPlatform(),
-                        builder: (context, pSnap) {
+                        builder: (context, pSnap)                        {
                           String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
                           String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
                           String dbVersion = "...";
-                          String bnText = "BN$buildNumber";
                           if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
                             var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
                             dbVersion = (data?['dbVersion'] ?? 26.0).toDouble().toStringAsFixed(1);
-                            int firestoreBN = data?['buildNumber']?.toInt() ?? 0;
-                            if (firestoreBN > buildNumber) bnText = "BN$firestoreBN";
+                          }
+                          
+                          bool isOutdated = false;
+                          if (remote != null && remote != local) {
+                            try {
+                              List<String> localParts = local.split('+');
+                              List<String> serverParts = remote.split('+');
+                              int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                              int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                              if (serverMain > localMain) {
+                                isOutdated = true;
+                              } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                                int localBuild = int.tryParse(localParts[1]) ?? 0;
+                                int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                                if (serverBuild > localBuild) isOutdated = true;
+                              }
+                            } catch (e) { isOutdated = remote != local; }
                           }
                           
                           return Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text("${local}_$bnText", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, fontWeight: FontWeight.bold)),
-                              if (remote != null && remote != local)
+                              Text(local, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, fontWeight: FontWeight.bold)),
+                              if (isOutdated)
                                 Text("Latest: $remote", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontSize: 8)),
                               Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 18),
                               Text("DB V-$dbVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold)),

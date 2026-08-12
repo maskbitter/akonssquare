@@ -477,8 +477,29 @@ class _LoginPageState extends State<LoginPage> {
                 if (configSnap.hasData && configSnap.data!.exists) {
                   latestV = configSnap.data!['requiredVersion'] ?? "";
                 }
-                // RED NOTIFICATION logic: Only if App Version (1.0.0+5) is outdated
-                bool isOutdated = latestV.isNotEmpty && latestV != _currentVersion;
+                // SMART COMPARISON: Only show RED Latest V if server version is actually newer
+                bool isOutdated = false;
+                if (latestV.isNotEmpty && latestV != _currentVersion) {
+                  try {
+                    // Simple semantic check for "1.0.0+7" vs "1.0.0+6"
+                    List<String> localParts = _currentVersion.split('+');
+                    List<String> serverParts = latestV.split('+');
+                    
+                    int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                    int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                    
+                    if (serverMain > localMain) {
+                      isOutdated = true;
+                    } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                      int localBuild = int.tryParse(localParts[1]) ?? 0;
+                      int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                      if (serverBuild > localBuild) isOutdated = true;
+                    }
+                  } catch (e) {
+                    // Fallback to basic inequality if parsing fails
+                    isOutdated = latestV != _currentVersion;
+                  }
+                }
 
                 return Column(
                   children: [
@@ -501,11 +522,10 @@ class _LoginPageState extends State<LoginPage> {
                           RichText(
                             text: TextSpan(
                               children: [
-                                // Always show the local version + Global BN (max of local vs server)
+                                // Header ONLY shows App Version (V: 1.0.0+7)
                                 TextSpan(text: "V: $_currentVersion", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold)),
-                                TextSpan(text: "_$bnText", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold)),
                                 
-                                // Show RED Latest V only if Version is outdated
+                                // Show RED Latest V only if Server Version > Local Version
                                 if (isOutdated) ...[
                                   TextSpan(text: " | ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline)),
                                   TextSpan(text: "Latest V: $latestV", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
@@ -644,6 +664,16 @@ class _LoginPageState extends State<LoginPage> {
                               color: Theme.of(context).colorScheme.primary, 
                               letterSpacing: 0.5, 
                               fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          // BN Displayed lively at the bottom
+                          Text(
+                            bnText,
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.bold, 
+                              color: Theme.of(context).colorScheme.tertiary,
+                              fontSize: 10,
                             ),
                           ),
                         ],
