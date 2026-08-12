@@ -603,6 +603,10 @@ class DatabaseService {
     return _db.collection('billing_history').where('subItemId', isEqualTo: subItemId).orderBy('createdAt', descending: true).limit(limit).snapshots();
   }
 
+  Stream<QuerySnapshot> getBillingHistoryByMonth(String monthYear) {
+    return _db.collection('billing_history').where('monthYear', isEqualTo: monthYear).snapshots();
+  }
+
   Stream<QuerySnapshot> getUsersStream() {
     return _db.collection('users').snapshots();
   }

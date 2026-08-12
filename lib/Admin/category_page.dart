@@ -998,64 +998,117 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Widget _buildMainMeterTab() {
     return StreamBuilder<QuerySnapshot>(
-      stream: _dbService.getMainMetersStream(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        var meters = snapshot.data!.docs.toList();
-        meters.sort((a, b) => ((a.data() as Map)['meterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['meterNo'] ?? '').toString().toLowerCase()));
-        
-        var resMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Residential').toList();
-        var comMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Commercial').toList();
+      stream: _dbService.getBillingHistoryByMonth(_selectedMonthStr),
+      builder: (context, billingSnapshot) {
+        Map<String, double> paidUnitsMap = {};
+        if (billingSnapshot.hasData) {
+          for (var doc in billingSnapshot.data!.docs) {
+            var data = doc.data() as Map<String, dynamic>;
+            var ed = data['electricityDetails'];
+            if (ed != null) {
+              String? meterNo = ed['mainMeterNo'];
+              if (meterNo != null) {
+                double used = ((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble();
+                if (used > 0) {
+                  paidUnitsMap[meterNo] = (paidUnitsMap[meterNo] ?? 0) + used;
+                }
+              }
+            }
+          }
+        }
 
-        return ListView(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          children: [
-            Card(
-              elevation: 2,
-              color: Theme.of(context).colorScheme.primaryContainer,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16), 
-                side: BorderSide.none,
-              ),
-              child: ExpansionTile(
-                leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.onPrimary, 
-                  child: Icon(Icons.settings_input_component, color: Theme.of(context).colorScheme.primary, size: 20)
-                ),
-                title: Text(
-                  "Main Meters List", 
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)
-                ),
-                subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall),
-                children: [
-                  _buildMeterExpandableSection(
-                    "Residential Meter", 
-                    resMeters, 
-                    Icons.home_outlined, 
-                    Theme.of(context).colorScheme.primary,
-                    bgColor: Theme.of(context).colorScheme.tertiaryContainer,
-                    accentColor: Theme.of(context).colorScheme.tertiary,
+        return StreamBuilder<QuerySnapshot>(
+          stream: _dbService.getMainMetersStream(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            var meters = snapshot.data!.docs.toList();
+            meters.sort((a, b) => ((a.data() as Map)['meterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['meterNo'] ?? '').toString().toLowerCase()));
+            
+            var resMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Residential').toList();
+            var comMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Commercial').toList();
+
+            return ListView(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_month, color: Theme.of(context).colorScheme.primary, size: 18),
+                      const SizedBox(width: 8),
+                      Text("Stats for:", style: Theme.of(context).textTheme.labelSmall),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Theme.of(context).colorScheme.surface,
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(icon: const Icon(Icons.chevron_left, size: 18), onPressed: () => _moveMonth(-1), constraints: const BoxConstraints(), padding: EdgeInsets.zero),
+                            Text(
+                              _selectedMonthStr, 
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                            ),
+                            IconButton(icon: const Icon(Icons.chevron_right, size: 18), onPressed: () => _moveMonth(1), constraints: const BoxConstraints(), padding: EdgeInsets.zero),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  _buildMeterExpandableSection(
-                    "Commercial Meter", 
-                    comMeters, 
-                    Icons.business_outlined, 
-                    Theme.of(context).colorScheme.secondary,
-                    bgColor: Theme.of(context).colorScheme.secondaryContainer,
-                    accentColor: Theme.of(context).colorScheme.secondary,
+                ),
+                Card(
+                  elevation: 2,
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16), 
+                    side: BorderSide.none,
                   ),
-                ],
-              ),
-            ),
-            _buildSubMeterExpandableSection(),
-          ],
+                  child: ExpansionTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.onPrimary, 
+                      child: Icon(Icons.settings_input_component, color: Theme.of(context).colorScheme.primary, size: 20)
+                    ),
+                    title: Text(
+                      "Main Meters List", 
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)
+                    ),
+                    subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall),
+                    children: [
+                      _buildMeterExpandableSection(
+                        "Residential Meter", 
+                        resMeters, 
+                        Icons.home_outlined, 
+                        Theme.of(context).colorScheme.primary,
+                        paidUnitsMap,
+                        bgColor: Theme.of(context).colorScheme.tertiaryContainer,
+                        accentColor: Theme.of(context).colorScheme.tertiary,
+                      ),
+                      _buildMeterExpandableSection(
+                        "Commercial Meter", 
+                        comMeters, 
+                        Icons.business_outlined, 
+                        Theme.of(context).colorScheme.secondary,
+                        paidUnitsMap,
+                        bgColor: Theme.of(context).colorScheme.secondaryContainer,
+                        accentColor: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ],
+                  ),
+                ),
+                _buildSubMeterExpandableSection(),
+              ],
+            );
+          },
         );
-      },
+      }
     );
   }
 
-  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color, {Color? bgColor, Color? accentColor}) {
+  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color, Map<String, double> paidUnitsMap, {Color? bgColor, Color? accentColor}) {
     bool isOp = widget.isOperator;
     final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
@@ -1100,7 +1153,7 @@ class _CategoryPageState extends State<CategoryPage> {
                         color: effectiveAccentColor,
                       ),
                       children: [
-                        "#", "Meter Number", "Last Readings", "Present Readings", "Govt. Last\n Bill Readings", "Govt. New\nBill Readings", "Govt. Bill\nAmounts", "Govt. Bill\nUnits", "Last Month\nUnit Rate", "This Month\nUnit Rate", "Govt.\nDue/Adv Units", "Main Meter\nUsed Units", "Sub Units", "Balance", "Action"
+                        "#", "Meter Number", "Last Readings", "Present Readings", "Govt. Last\n Bill Readings", "Govt. New\nBill Readings", "Govt. Bill\nAmounts", "Govt. Bill\nUnits", "Last Month\nUnit Rate", "This Month\nUnit Rate", "Govt.\nDue/Adv Units", "Main Meter\nUsed Units", "Sub-Meter\nUsed Units", "Balance", "Action"
                       ].map((h) => Padding(
                         padding: const EdgeInsets.all(12), 
                         child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle))
@@ -1121,7 +1174,7 @@ class _CategoryPageState extends State<CategoryPage> {
                       double lastRate = (data['lastMonthUnitRate'] ?? 0).toDouble();
                       double thisRate = (data['unitRate'] ?? 0).toDouble();
                       double govtDueAdv = newGovt - pres;
-                      double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
+                      double totalSubPaid = paidUnitsMap[meterNo] ?? 0;
                       double balance = mainUsed - totalSubPaid;
 
                       Widget wrapCell(Widget child) {
