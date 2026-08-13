@@ -5,11 +5,12 @@ import 'package:google_fonts/google_fonts.dart';
 class ThemeManager {
   static final ValueNotifier<String> appThemeNotifier = ValueNotifier<String>("Random Color Theme");
   static final ValueNotifier<String> appFontNotifier = ValueNotifier<String>("Poppins");
+  static final ValueNotifier<Color> appOutlineBgNotifier = ValueNotifier<Color>(const Color(0xFFFAF9F6)); // Default Off-white
   static Color _sessionSeedColor = Colors.indigo;
   static List<Color> sessionColorPool = [];
   
-  // MASTER BACKGROUND FOR OUTLINE THEME
-  static const Color outlineBackground = Colors.white;
+  // MASTER BACKGROUND FOR OUTLINE THEME (Can be updated via code or UI)
+  static Color get outlineBackground => appOutlineBgNotifier.value;
 
   static final List<Color> _niceSeeds = [
     const Color(0xFF2C3E50), // Midnight Blue
@@ -51,6 +52,7 @@ class ThemeManager {
     final prefs = await SharedPreferences.getInstance();
     String? savedTheme = prefs.getString('app_theme');
     String? savedFont = prefs.getString('app_font');
+    int? savedOutlineBg = prefs.getInt('app_outline_bg');
     
     // Choose random pool for this session
     var pool = List<Color>.from(_niceSeeds)..shuffle();
@@ -59,6 +61,9 @@ class ThemeManager {
 
     appThemeNotifier.value = savedTheme ?? "Random Color Theme"; 
     appFontNotifier.value = savedFont ?? "Poppins";
+    if (savedOutlineBg != null) {
+      appOutlineBgNotifier.value = Color(savedOutlineBg);
+    }
   }
 
   static Future<void> setTheme(String themeName) async {
@@ -71,6 +76,12 @@ class ThemeManager {
     appFontNotifier.value = fontName;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('app_font', fontName);
+  }
+
+  static Future<void> setOutlineBgColor(Color color) async {
+    appOutlineBgNotifier.value = color;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('app_outline_bg', color.value);
   }
 
   static Color getCardColor(int index, {double alpha = 1.0, bool isSubCard = false}) {
@@ -173,21 +184,21 @@ class ThemeManager {
         error: _sessionSeedColor,
         onError: Colors.black,
         outline: _sessionSeedColor,
-        surface: Colors.white,
+        surface: outlineBackground,
         onSurface: Colors.black,
-        primaryContainer: Colors.white,
+        primaryContainer: outlineBackground,
         onPrimaryContainer: Colors.black,
-        secondaryContainer: Colors.white,
+        secondaryContainer: outlineBackground,
         onSecondaryContainer: Colors.black,
-        tertiaryContainer: Colors.white,
+        tertiaryContainer: outlineBackground,
         onTertiaryContainer: Colors.black,
-        errorContainer: Colors.white,
+        errorContainer: outlineBackground,
         onErrorContainer: Colors.black,
-        surfaceContainerLow: Colors.white,
-        surfaceContainerLowest: Colors.white,
-        surfaceContainer: Colors.white,
-        surfaceContainerHigh: Colors.white,
-        surfaceContainerHighest: Colors.white,
+        surfaceContainerLow: outlineBackground,
+        surfaceContainerLowest: outlineBackground,
+        surfaceContainer: outlineBackground,
+        surfaceContainerHigh: outlineBackground,
+        surfaceContainerHighest: outlineBackground,
         outlineVariant: _sessionSeedColor,
         shadow: Colors.transparent,
         scrim: Colors.transparent,
@@ -271,7 +282,7 @@ class ThemeManager {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: themeName == "Outline Theme" ? Colors.white : colorScheme.surfaceContainerLow,
+      scaffoldBackgroundColor: themeName == "Outline Theme" ? outlineBackground : colorScheme.surfaceContainerLow,
       textTheme: baseTextTheme,
       extensions: [
         AppColors(
@@ -344,7 +355,7 @@ class ThemeManager {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: Colors.white,
+        backgroundColor: themeName == "Outline Theme" ? outlineBackground : Colors.white,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20), 

@@ -748,6 +748,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 onPressed: () async {
                   await ThemeManager.setTheme(local);
                   if (ctx.mounted) Navigator.pop(ctx);
+                  if (local == "Outline Theme" && context.mounted) {
+                    _showOutlineColorPickerDialog(context);
+                  }
                 }, 
                 child: const Text("Apply")
               ),
@@ -756,6 +759,79 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       );
     }));
+  }
+
+  void _showOutlineColorPickerDialog(BuildContext context) {
+    Color selected = ThemeManager.appOutlineBgNotifier.value;
+    final List<Color> presets = [
+      const Color(0xFFFAF9F6), // Off-white
+      Colors.white,
+      const Color(0xFFF5F5F5), // Light Gray
+      const Color(0xFFFFFDD0), // Cream
+      const Color(0xFFFDF5E6), // Old Lace
+      const Color(0xFFE6E6FA), // Lavender Mist
+      const Color(0xFFF0FFF0), // Honeydew
+      const Color(0xFFF0F8FF), // Alice Blue
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setST) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Center(child: Text("Custom Background", style: TextStyle(fontWeight: FontWeight.bold))),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Select a background color for Outline Theme:", textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: presets.map((c) => GestureDetector(
+                  onTap: () => setST(() => selected = c),
+                  child: Container(
+                    width: 45, height: 45,
+                    decoration: BoxDecoration(
+                      color: c,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: selected == c ? Colors.black : Colors.grey, width: selected == c ? 3 : 1),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+                    ),
+                  ),
+                )).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.pop(ctx), 
+                  child: const Text("Keep Current")
+                ),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary, 
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary
+                  ),
+                  onPressed: () async {
+                    await ThemeManager.setOutlineBgColor(selected);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  child: const Text("Apply Color"),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showUserDialog(BuildContext context, {String? docId, Map<String, dynamic>? currentData}) {
