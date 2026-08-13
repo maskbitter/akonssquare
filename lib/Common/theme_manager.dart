@@ -75,7 +75,8 @@ class ThemeManager {
 
   static Color getCardColor(int index, {double alpha = 1.0, bool isSubCard = false}) {
     if (appThemeNotifier.value == "Outline Theme") {
-      return _sessionSeedColor;
+      if (sessionColorPool.isEmpty) return _sessionSeedColor.withValues(alpha: alpha);
+      return sessionColorPool[index % sessionColorPool.length].withValues(alpha: alpha);
     }
     if (appThemeNotifier.value == "Black & White Theme") {
       return (isSubCard ? Colors.grey.shade700 : Colors.black).withValues(alpha: alpha);
@@ -338,7 +339,7 @@ class ThemeManager {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: themeName == "Outline Theme" ? Colors.white : colorScheme.surface,
         elevation: themeName == "Outline Theme" ? 0 : 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20), 

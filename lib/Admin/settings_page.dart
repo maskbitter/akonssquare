@@ -281,19 +281,19 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               if (icon != null) Icon(icon, size: 16, color: Theme.of(context).colorScheme.secondary),
               if (icon != null) const SizedBox(width: 8),
-              Expanded(child: Text(title, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.secondary))),
+              Expanded(child: Text(title, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.secondary))),
               Radio<bool>(
                 value: true,
                 groupValue: isVisible,
                 visualDensity: VisualDensity.compact,
-                activeColor: Theme.of(context).colorScheme.secondary,
+                activeColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.secondary,
                 onChanged: (v) => onChanged(true),
               ),
               Radio<bool>(
                 value: false,
                 groupValue: isVisible,
                 visualDensity: VisualDensity.compact,
-                activeColor: Theme.of(context).colorScheme.error,
+                activeColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.red : Theme.of(context).colorScheme.error,
                 onChanged: (v) => onChanged(false),
               ),
             ],
