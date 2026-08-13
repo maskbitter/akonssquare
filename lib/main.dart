@@ -535,145 +535,150 @@ class _LoginPageState extends State<LoginPage> {
                       child: Center(
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Card(
-                            elevation: 2,
-                            margin: EdgeInsets.zero,
-                            color: Theme.of(context).colorScheme.surface,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                            child: Padding(
-                              padding: const EdgeInsets.all(1),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceContainerLow,
-                                  borderRadius: BorderRadius.circular(23),
-                                ),
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      "Welcome",
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        color: Theme.of(context).colorScheme.primary, 
-                                        fontWeight: FontWeight.bold, 
-                                      ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Card(
+                                elevation: 2,
+                                margin: EdgeInsets.zero,
+                                color: Theme.of(context).colorScheme.surface,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(1),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                                      borderRadius: BorderRadius.circular(23),
                                     ),
-                                    const SizedBox(height: 48),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                                      child: StreamBuilder<QuerySnapshot>(
-                                        stream: FirebaseFirestore.instance.collection('sub_items').snapshots(),
-                                        builder: (context, snapshot) {
-                                          List<Map<String, dynamic>> items = [];
-                                          if (snapshot.hasData) {
-                                            items = snapshot.data!.docs.map((doc) {
-                                              var data = doc.data() as Map<String, dynamic>;
-                                              data['id'] = doc.id;
-                                              return data;
-                                            }).where((d) {
-                                              // Only show units that are strictly 'Occupied'
-                                              String status = d['status'] ?? 'Vacant';
-                                              return status == 'Occupied';
-                                            }).toList();
-                                            items.sort((a, b) => (a['subItemName'] ?? '').compareTo(b['subItemName'] ?? ''));
-                                          }
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          "Welcome",
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            color: Theme.of(context).colorScheme.primary, 
+                                            fontWeight: FontWeight.bold, 
+                                          ),
+                                        ),
+                                        const SizedBox(height: 48),
+                                        StreamBuilder<QuerySnapshot>(
+                                          stream: FirebaseFirestore.instance.collection('sub_items').snapshots(),
+                                          builder: (context, snapshot) {
+                                            List<Map<String, dynamic>> items = [];
+                                            if (snapshot.hasData) {
+                                              items = snapshot.data!.docs.map((doc) {
+                                                var data = doc.data() as Map<String, dynamic>;
+                                                data['id'] = doc.id;
+                                                return data;
+                                              }).where((d) {
+                                                // Only show units that are strictly 'Occupied'
+                                                String status = d['status'] ?? 'Vacant';
+                                                return status == 'Occupied';
+                                              }).toList();
+                                              items.sort((a, b) => (a['subItemName'] ?? '').compareTo(b['subItemName'] ?? ''));
+                                            }
 
-                                          // Safety check: if selected ID is not in items, clear it
-                                          if (_selectedSubItemId != null && !items.any((i) => i['id'] == _selectedSubItemId)) {
-                                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                                              if (mounted) setState(() { _selectedSubItemId = null; });
-                                            });
-                                          }
+                                            // Safety check: if selected ID is not in items, clear it
+                                            if (_selectedSubItemId != null && !items.any((i) => i['id'] == _selectedSubItemId)) {
+                                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                                if (mounted) setState(() { _selectedSubItemId = null; });
+                                              });
+                                            }
 
-                                          return DropdownButtonFormField<String>(
-                                            isExpanded: true,
-                                            alignment: Alignment.center,
-                                            decoration: InputDecoration(
-                                              labelText: "Select User Name",
-                                              labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                              prefixIcon: Icon(Icons.meeting_room_outlined, color: Theme.of(context).colorScheme.onSurface),
-                                              suffixIcon: const SizedBox(width: 48), // Balancing prefixIcon
-                                              contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-                                            ),
-                                            icon: const Icon(Icons.arrow_drop_down),
-                                            value: _selectedSubItemId,
-                                            selectedItemBuilder: (BuildContext context) {
-                                              return items.map<Widget>((data) {
+                                            return DropdownButtonFormField<String>(
+                                              isExpanded: true,
+                                              alignment: Alignment.center,
+                                              decoration: InputDecoration(
+                                                labelText: "Select User Name",
+                                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                                prefixIcon: Icon(Icons.meeting_room_outlined, color: Theme.of(context).colorScheme.onSurface),
+                                                suffixIcon: const SizedBox(width: 48), // Balancing prefixIcon
+                                                contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+                                              ),
+                                              icon: const Icon(Icons.arrow_drop_down),
+                                              value: _selectedSubItemId,
+                                              selectedItemBuilder: (BuildContext context) {
+                                                return items.map<Widget>((data) {
+                                                  String tName = data['TenantName'] ?? 'No Name';
+                                                  String unit = data['subItemName'] ?? 'Unit';
+                                                  return Center(
+                                                    child: Text(
+                                                      "$unit ($tName)", 
+                                                      textAlign: TextAlign.center,
+                                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                                      overflow: TextOverflow.ellipsis
+                                                    ),
+                                                  );
+                                                }).toList();
+                                              },
+                                              items: items.map((data) {
                                                 String tName = data['TenantName'] ?? 'No Name';
                                                 String unit = data['subItemName'] ?? 'Unit';
-                                                return Center(
+                                                return DropdownMenuItem<String>(
+                                                  value: data['id'], 
+                                                  alignment: Alignment.center,
                                                   child: Text(
                                                     "$unit ($tName)", 
                                                     textAlign: TextAlign.center,
-                                                    style: const TextStyle(fontWeight: FontWeight.bold),
                                                     overflow: TextOverflow.ellipsis
                                                   ),
                                                 );
-                                              }).toList();
+                                              }).toList(),
+                                              onChanged: (v) => setState(() => _selectedSubItemId = v),
+                                              hint: const Center(child: Text("Select User Name")),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(height: 32),
+                                        SizedBox(
+                                          width: double.infinity, height: 65, 
+                                          child: AppButton.icon(
+                                            onLongPress: _isLoading ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
+                                            onPressed: _isLoading ? null : () { 
+                                              HapticFeedback.mediumImpact(); 
+                                              setState(() => _isLoading = true);
+                                              _loginBasicUser().then((_) {
+                                                if (mounted) setState(() => _isLoading = false);
+                                              }).catchError((_) {
+                                                if (mounted) setState(() => _isLoading = false);
+                                              });
                                             },
-                                            items: items.map((data) {
-                                              String tName = data['TenantName'] ?? 'No Name';
-                                              String unit = data['subItemName'] ?? 'Unit';
-                                              return DropdownMenuItem<String>(
-                                                value: data['id'], 
-                                                alignment: Alignment.center,
-                                                child: Text(
-                                                  "$unit ($tName)", 
-                                                  textAlign: TextAlign.center,
-                                                  overflow: TextOverflow.ellipsis
-                                                ),
-                                              );
-                                            }).toList(),
-                                            onChanged: (v) => setState(() => _selectedSubItemId = v),
-                                            hint: const Center(child: Text("Select User Name")),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(height: 32),
-                                    SizedBox(
-                                      width: double.infinity, height: 65, 
-                                      child: AppButton.icon(
-                                        onLongPress: _isLoading ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
-                                        onPressed: _isLoading ? null : () { 
-                                          HapticFeedback.mediumImpact(); 
-                                          setState(() => _isLoading = true);
-                                          _loginBasicUser().then((_) {
-                                            if (mounted) setState(() => _isLoading = false);
-                                          }).catchError((_) {
-                                            if (mounted) setState(() => _isLoading = false);
-                                          });
-                                        },
-                                        icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.dashboard_outlined),
-                                        child: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary), maxLines: 1),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Theme.of(context).colorScheme.tertiary,
-                                          foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                          elevation: 2,
+                                            icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.dashboard_outlined),
+                                            child: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary), maxLines: 1),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Theme.of(context).colorScheme.tertiary,
+                                              foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                              elevation: 2,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      width: double.infinity, height: 50,
-                                      child: OutlinedButton.icon(
-                                        onPressed: () {
-                                          HapticFeedback.lightImpact();
-                                          Navigator.push(context, MaterialPageRoute(builder: (context) => const GameZonePage()));
-                                        },
-                                        icon: const Icon(Icons.videogame_asset_outlined, size: 20),
-                                        label: const Text("Enter GameZone", style: TextStyle(fontWeight: FontWeight.bold)),
-                                        style: OutlinedButton.styleFrom(
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                          side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ),
+                              const SizedBox(height: 16),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: SizedBox(
+                                  width: double.infinity, height: 50,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const GameZonePage()));
+                                    },
+                                    icon: const Icon(Icons.videogame_asset_outlined, size: 20),
+                                    label: const Text("Enter GameZone", style: TextStyle(fontWeight: FontWeight.bold)),
+                                    style: OutlinedButton.styleFrom(
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
