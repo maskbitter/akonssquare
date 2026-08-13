@@ -341,7 +341,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     return Card(
                       elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 3,
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : ThemeManager.getCardContainerColor(1, isSubCard: true),
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(1, isSubCard: true),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(1, isSubCard: true), width: 1.5) : BorderSide.none,
@@ -404,7 +404,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       Card(
                         elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : ThemeManager.getCardContainerColor(0, isSubCard: true),
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(0, isSubCard: true),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(0, isSubCard: true), width: 1.5) : BorderSide.none,
@@ -416,7 +416,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       Card(
                         elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : ThemeManager.getCardContainerColor(1, isSubCard: true),
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(1, isSubCard: true),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(1, isSubCard: true), width: 1.5) : BorderSide.none,
@@ -437,7 +437,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       Card(
                         elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : ThemeManager.getCardContainerColor(2, isSubCard: true),
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(2, isSubCard: true),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(2, isSubCard: true), width: 1.5) : BorderSide.none,

@@ -162,11 +162,11 @@ class _CategoryPageState extends State<CategoryPage> {
       child: Column(
         children: [
           Material(
-            color: Theme.of(context).colorScheme.surface,
+            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
             child: TabBar(
-              labelColor: Theme.of(context).colorScheme.primary,
-              unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-              indicatorColor: Theme.of(context).colorScheme.primary,
+              labelColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary,
+              unselectedLabelColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black.withOpacity(0.6) : Theme.of(context).colorScheme.onSurfaceVariant,
+              indicatorColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary,
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Theme.of(context).colorScheme.outlineVariant,
               tabs: const [

@@ -9,7 +9,7 @@ class ThemeManager {
   static List<Color> sessionColorPool = [];
   
   // MASTER BACKGROUND FOR OUTLINE THEME
-  static const Color outlineBackground = Colors.white;
+  static const Color outlineBackground = Colors.transparent;
 
   static final List<Color> _niceSeeds = [
     const Color(0xFF2C3E50), // Midnight Blue
@@ -166,24 +166,25 @@ class ThemeManager {
       ).copyWith(
         primary: _sessionSeedColor,
         onPrimary: Colors.black, 
-        surface: outlineBackground,
+        surface: Colors.transparent,
         onSurface: Colors.black,
         outline: _sessionSeedColor,
-        primaryContainer: outlineBackground,
+        primaryContainer: Colors.transparent,
         onPrimaryContainer: Colors.black,
-        secondaryContainer: outlineBackground,
+        secondaryContainer: Colors.transparent,
         onSecondaryContainer: Colors.black,
-        tertiaryContainer: outlineBackground,
+        tertiaryContainer: Colors.transparent,
         onTertiaryContainer: Colors.black,
-        errorContainer: outlineBackground,
+        errorContainer: Colors.transparent,
         onErrorContainer: Colors.black,
-        surfaceContainerLow: outlineBackground,
-        surfaceContainerLowest: outlineBackground,
-        surfaceContainer: outlineBackground,
-        surfaceContainerHigh: outlineBackground,
-        surfaceContainerHighest: outlineBackground,
+        surfaceContainerLow: Colors.transparent,
+        surfaceContainerLowest: Colors.transparent,
+        surfaceContainer: Colors.transparent,
+        surfaceContainerHigh: Colors.transparent,
+        surfaceContainerHighest: Colors.transparent,
         outlineVariant: Colors.black,
         shadow: Colors.transparent,
+        scrim: Colors.transparent,
       );
     } else if (themeName == "Black & White Theme") {
       colorScheme = const ColorScheme.light(
@@ -264,7 +265,7 @@ class ThemeManager {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.surfaceContainerLow,
+      scaffoldBackgroundColor: themeName == "Outline Theme" ? Colors.white : colorScheme.surfaceContainerLow,
       textTheme: baseTextTheme,
       extensions: [
         AppColors(
