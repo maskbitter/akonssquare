@@ -108,7 +108,7 @@ class _AdminHomeState extends State<AdminHome> {
                                   children: [
                                     Row(
                                       children: [
-                                        Icon(Icons.account_balance_wallet_outlined, size: 22, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.indigo : Theme.of(context).colorScheme.primary),
+                                        Icon(Icons.account_balance_wallet_outlined, size: 22, color: Theme.of(context).colorScheme.primary),
                                         const SizedBox(width: 8),
                                         Text(
                                           "Accounts",
@@ -181,11 +181,15 @@ class _AdminHomeState extends State<AdminHome> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.electric_bolt, size: 20, color: context.electric),
+                Icon(Icons.electric_bolt, size: 20, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
                   "Electricity",
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.8),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold, 
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary, 
+                    letterSpacing: 0.8
+                  ),
                 ),
               ],
             ),
@@ -1194,17 +1198,28 @@ class _AdminHomeState extends State<AdminHome> {
                   decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2)),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        "$_selectedMonthStr Revenue Details",
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: isOutline
+                        ? BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                          )
+                        : null,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.analytics_outlined, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          "$_selectedMonthStr Revenue Details",
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 TabBar(
@@ -1247,7 +1262,7 @@ class _AdminHomeState extends State<AdminHome> {
           decoration: BoxDecoration(
             color: isOutline ? Colors.white : Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-            border: isOutline ? Border.all(color: themeColor, width: 2) : null,
+            border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
           ),
           child: Column(
             children: [
@@ -1495,15 +1510,16 @@ class _AdminHomeState extends State<AdminHome> {
     Color itemColor = ThemeManager.getCardContainerColor(index + 7, alpha: 0.8, isSubCard: true);
     // Ensure readable text color by using the contrast/onContainer color from theme
     Color textColor = ThemeManager.getCardOnContainerColor(index + 7, isSubCard: true);
+    final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
 
     return Card(
-      elevation: 2,
+      elevation: isOutline ? 0 : 2,
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-      color: itemColor,
+      color: isOutline ? Colors.white : itemColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16), 
-        side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-            ? BorderSide(color: color, width: 1.5) 
+        side: isOutline 
+            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
             : BorderSide.none
       ),
       child: ListTile(

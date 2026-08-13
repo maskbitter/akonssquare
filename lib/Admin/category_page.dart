@@ -1064,6 +1064,7 @@ class _CategoryPageState extends State<CategoryPage> {
           stream: _dbService.getMainMetersStream(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
             var meters = snapshot.data!.docs.toList();
             meters.sort((a, b) => ((a.data() as Map)['meterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['meterNo'] ?? '').toString().toLowerCase()));
             
@@ -1103,23 +1104,28 @@ class _CategoryPageState extends State<CategoryPage> {
                   ),
                 ),
                 Card(
-                  elevation: 2,
-                  color: Theme.of(context).colorScheme.primaryContainer,
+                  elevation: isOutline ? 0 : 2,
+                  color: isOutline ? Colors.white : Theme.of(context).colorScheme.primaryContainer,
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16), 
-                    side: BorderSide.none,
+                    side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
                   ),
                   child: ExpansionTile(
+                    backgroundColor: Colors.white,
+                    collapsedBackgroundColor: isOutline ? Colors.white : null,
                     leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.onPrimary, 
-                      child: Icon(Icons.settings_input_component, color: Theme.of(context).colorScheme.primary, size: 20)
+                      backgroundColor: isOutline ? Colors.white : Theme.of(context).colorScheme.onPrimary, 
+                      child: Container(
+                        decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                        child: Icon(Icons.settings_input_component, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.primary, size: 20)
+                      )
                     ),
                     title: Text(
                       "Main Meters List", 
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary)
                     ),
-                    subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall),
+                    subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : null)),
                     children: [
                       _buildMeterExpandableSection(
                         "Residential Meter", 
