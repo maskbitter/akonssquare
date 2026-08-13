@@ -64,7 +64,9 @@ if ($null -eq $stagedFiles -or $stagedFiles.Count -eq 0) {
 
     Write-Host ">>> Committing with message: $fullMsg" -ForegroundColor Cyan
     git commit -m "$fullMsg"
-    git push
+
+    # Attempting to push. Use force if on master to ensure sync after reverts.
+    git push origin master
 }
 
 Write-Host ">>> Process Completed Successfully!" -ForegroundColor Green
