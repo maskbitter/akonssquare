@@ -282,8 +282,17 @@ class ThemeManager {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
       scaffoldBackgroundColor: themeName == "Outline Theme" ? outlineBackground : colorScheme.surfaceContainerLow,
       textTheme: baseTextTheme,
+      expansionTileTheme: const ExpansionTileThemeData(
+        backgroundColor: Colors.transparent,
+        collapsedBackgroundColor: Colors.transparent,
+        shape: Border(),
+        collapsedShape: Border(),
+      ),
       extensions: [
         AppColors(
           success: themeName == "Black & White Theme" ? Colors.black : const Color(0xFF2E7D32),

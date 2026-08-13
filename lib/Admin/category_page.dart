@@ -719,8 +719,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                             : BorderSide.none,
                                       ),
                                       child: ExpansionTile(
-                                      backgroundColor: ThemeManager.outlineBackground,
-                                      collapsedBackgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : null,
+                                      backgroundColor: Colors.transparent,
+                                      collapsedBackgroundColor: Colors.transparent,
                                       shape: const Border(),
                                       collapsedShape: const Border(),
                                       tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
@@ -1106,27 +1106,27 @@ class _CategoryPageState extends State<CategoryPage> {
                 ),
                 Card(
                   elevation: isOutline ? 0 : 2,
-                  color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primaryContainer,
+                  color: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardContainerColor(10),
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16), 
                     side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
                   ),
                   child: ExpansionTile(
-                    backgroundColor: ThemeManager.outlineBackground,
-                    collapsedBackgroundColor: isOutline ? ThemeManager.outlineBackground : null,
+                    backgroundColor: Colors.transparent,
+                    collapsedBackgroundColor: Colors.transparent,
                     leading: CircleAvatar(
-                      backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.onPrimary, 
+                      backgroundColor: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardColor(10), 
                       child: Container(
                         decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
-                        child: Icon(Icons.settings_input_component, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.primary, size: 20)
+                        child: Icon(Icons.settings_input_component, color: isOutline ? Theme.of(context).colorScheme.primary : Colors.white, size: 20)
                       )
                     ),
                     title: Text(
                       "Main Meters List", 
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary)
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(10))
                     ),
-                    subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : null)),
+                    subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(10).withValues(alpha: 0.7))),
                     children: [
                       _buildMeterExpandableSection(
                         "Residential Meter", 
@@ -1134,8 +1134,7 @@ class _CategoryPageState extends State<CategoryPage> {
                         Icons.home_outlined, 
                         Theme.of(context).colorScheme.primary,
                         paidUnitsMap,
-                        bgColor: Theme.of(context).colorScheme.tertiaryContainer,
-                        accentColor: Theme.of(context).colorScheme.tertiary,
+                        colorIndex: 11,
                       ),
                       _buildMeterExpandableSection(
                         "Commercial Meter", 
@@ -1143,8 +1142,7 @@ class _CategoryPageState extends State<CategoryPage> {
                         Icons.business_outlined, 
                         Theme.of(context).colorScheme.secondary,
                         paidUnitsMap,
-                        bgColor: Theme.of(context).colorScheme.secondaryContainer,
-                        accentColor: Theme.of(context).colorScheme.secondary,
+                        colorIndex: 12,
                       ),
                     ],
                   ),
@@ -1158,13 +1156,14 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color, Map<String, double> paidUnitsMap, {Color? bgColor, Color? accentColor}) {
+  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color, Map<String, double> paidUnitsMap, {int colorIndex = 0}) {
     bool isOp = widget.isOperator;
-    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold);
+    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
-    final Color effectiveBgColor = (ThemeManager.appThemeNotifier.value == "Outline Theme") ? ThemeManager.outlineBackground : (bgColor ?? Theme.of(context).colorScheme.surface);
-    final Color effectiveAccentColor = accentColor ?? color;
     final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    final Color effectiveBgColor = isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardContainerColor(colorIndex, isSubCard: true);
+    final Color effectiveAccentColor = isOutline ? Theme.of(context).colorScheme.primary : ThemeManager.getCardColor(colorIndex, isSubCard: true);
+    final Color onBgColor = isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(colorIndex, isSubCard: true);
 
     return Card(
       elevation: isOutline ? 0 : 1,
@@ -1175,20 +1174,20 @@ class _CategoryPageState extends State<CategoryPage> {
         side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
       ),
       child: ExpansionTile(
-        backgroundColor: ThemeManager.outlineBackground,
-        collapsedBackgroundColor: isOutline ? ThemeManager.outlineBackground : null,
+        backgroundColor: Colors.transparent,
+        collapsedBackgroundColor: Colors.transparent,
         leading: CircleAvatar(
           backgroundColor: isOutline ? ThemeManager.outlineBackground : effectiveAccentColor, 
           child: Container(
             decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
-            child: Icon(icon, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary, size: 20)
+            child: Icon(icon, color: Colors.white, size: 20)
           )
         ),
         title: Text(
           title, 
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: isOutline ? Colors.black : effectiveAccentColor)
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: isOutline ? Colors.black : onBgColor)
         ),
-        subtitle: Text("${meters.length} meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : effectiveAccentColor.withOpacity(0.7))),
+        subtitle: Text("${meters.length} meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : onBgColor.withValues(alpha: 0.7))),
         children: [
           if (meters.isEmpty) 
             Padding(
@@ -1296,7 +1295,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Widget _buildSubMeterExpandableSection() {
     bool isOp = widget.isOperator;
-    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSecondary, fontWeight: FontWeight.bold);
+    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
 
     return StreamBuilder<QuerySnapshot>(
@@ -1309,27 +1308,27 @@ class _CategoryPageState extends State<CategoryPage> {
 
         return Card(
           elevation: isOutline ? 0 : 2,
-          color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.secondaryContainer,
+          color: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardContainerColor(13),
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16), 
             side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
           ),
           child: ExpansionTile(
-            backgroundColor: ThemeManager.outlineBackground,
-            collapsedBackgroundColor: isOutline ? ThemeManager.outlineBackground : null,
+            backgroundColor: Colors.transparent,
+            collapsedBackgroundColor: Colors.transparent,
             leading: CircleAvatar(
-              backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.onSecondary, 
+              backgroundColor: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardColor(13), 
               child: Container(
                 decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
-                child: Icon(Icons.cable, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary, size: 20)
+                child: Icon(Icons.cable, color: isOutline ? Theme.of(context).colorScheme.primary : Colors.white, size: 20)
               )
             ),
             title: Text(
               "Sub-Meters List", 
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: isOutline ? Colors.black : Theme.of(context).colorScheme.secondary)
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(13))
             ),
-            subtitle: Text("${subMeters.length} sub-meters registered", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : null)),
+            subtitle: Text("${subMeters.length} sub-meters registered", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(13).withValues(alpha: 0.7))),
             children: [
               if (subMeters.isEmpty) 
                 Padding(
