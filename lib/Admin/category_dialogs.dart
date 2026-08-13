@@ -61,8 +61,9 @@ class CategoryDialogs {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
+                border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) : null,
               ),
               child: Icon(Icons.copy_all_rounded, color: Theme.of(context).colorScheme.error, size: 40),
             ),
@@ -1168,9 +1169,9 @@ class CategoryDialogs {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: context.electric.withValues(alpha: 0.05),
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : context.electric.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: context.electric.withValues(alpha: 0.2)),
+                      border: Border.all(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? context.electric : context.electric.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       children: [

@@ -9,7 +9,7 @@ class ThemeManager {
   static List<Color> sessionColorPool = [];
   
   // MASTER BACKGROUND FOR OUTLINE THEME
-  static const Color outlineBackground = Colors.transparent;
+  static const Color outlineBackground = Colors.white;
 
   static final List<Color> _niceSeeds = [
     const Color(0xFF2C3E50), // Midnight Blue
@@ -167,22 +167,22 @@ class ThemeManager {
       ).copyWith(
         primary: _sessionSeedColor,
         onPrimary: Colors.black, 
-        surface: Colors.transparent,
+        surface: Colors.white,
         onSurface: Colors.black,
         outline: _sessionSeedColor,
-        primaryContainer: Colors.transparent,
+        primaryContainer: Colors.white,
         onPrimaryContainer: Colors.black,
-        secondaryContainer: Colors.transparent,
+        secondaryContainer: Colors.white,
         onSecondaryContainer: Colors.black,
-        tertiaryContainer: Colors.transparent,
+        tertiaryContainer: Colors.white,
         onTertiaryContainer: Colors.black,
-        errorContainer: Colors.transparent,
+        errorContainer: Colors.white,
         onErrorContainer: Colors.black,
-        surfaceContainerLow: Colors.transparent,
-        surfaceContainerLowest: Colors.transparent,
-        surfaceContainer: Colors.transparent,
-        surfaceContainerHigh: Colors.transparent,
-        surfaceContainerHighest: Colors.transparent,
+        surfaceContainerLow: Colors.white,
+        surfaceContainerLowest: Colors.white,
+        surfaceContainer: Colors.white,
+        surfaceContainerHigh: Colors.white,
+        surfaceContainerHighest: Colors.white,
         outlineVariant: Colors.black,
         shadow: Colors.transparent,
         scrim: Colors.transparent,
@@ -339,8 +339,8 @@ class ThemeManager {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: themeName == "Outline Theme" ? Colors.white : colorScheme.surface,
-        elevation: themeName == "Outline Theme" ? 0 : 8,
+        backgroundColor: Colors.white,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20), 
           side: themeName == "Outline Theme" ? BorderSide(color: colorScheme.primary, width: 1.5) : BorderSide.none,

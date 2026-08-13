@@ -477,8 +477,8 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: Icons.storage_outlined,
               title: "Data Management",
               subtitle: "Backup and restore database records",
-              color: Theme.of(context).colorScheme.tertiaryContainer,
-              accentColor: Theme.of(context).colorScheme.tertiary,
+              color: ThemeManager.getCardContainerColor(2),
+              accentColor: ThemeManager.getCardColor(2),
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16),

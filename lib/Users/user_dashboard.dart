@@ -202,112 +202,109 @@ class _UserDashboardState extends State<UserDashboard> {
           UserReportPage(subItemId: widget.subItemId),
         ];
 
-        return Theme(
-          data: ThemeManager.getThemeByName("Normal Theme"),
-          child: Scaffold(
-            appBar: AppBar(
-              automaticallyImplyLeading: false,
-              centerTitle: false,
-              title: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 1),
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _appName.isEmpty ? "Loading..." : _appName,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _currentIndex == 0 ? "Home" : "History",
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+        return Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            centerTitle: false,
+            title: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 1),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _appName.isEmpty ? "Loading..." : _appName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _currentIndex == 0 ? "Home" : "History",
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary),
+                        ),
+                        Text(
+                          " | ", 
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
+                        ),
+                        Text(
+                          _tenantName.isEmpty ? _username.toUpperCase() : "${_username.toUpperCase()}($_tenantName)",
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.secondary, 
                           ),
-                          Text(
-                            " | ", 
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
-                          ),
-                          Text(
-                            _tenantName.isEmpty ? _username.toUpperCase() : "${_username.toUpperCase()}($_tenantName)",
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.secondary, 
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              actions: [
-                InkWell(
-                  onTap: _showLogoutConfirmationDialog,
-                  child: StreamBuilder<DocumentSnapshot>(
-                    stream: _dbService.getAppConfigStream(),
-                    builder: (context, configSnap) {
-                      return StreamBuilder<DocumentSnapshot>(
-                        stream: _dbService.getDatabaseInfoStream(),
-                        builder: (context, dbInfoSnap) {
-                          String local = appVersion; // Instant update from build_config.dart
-                          String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
-                          String dbVersion = "...";
-                          if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
-                            var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                            dbVersion = (data?['dbVersion'] ?? 26.0).toDouble().toStringAsFixed(1);
-                          }
-                          
-                          bool isOutdated = false;
-                          if (remote != null && remote != local) {
-                            try {
-                              List<String> localParts = local.split('+');
-                              List<String> serverParts = remote.split('+');
-                              int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
-                              int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
-                              if (serverMain > localMain) {
-                                isOutdated = true;
-                              } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
-                                int localBuild = int.tryParse(localParts[1]) ?? 0;
-                                int serverBuild = int.tryParse(serverParts[1]) ?? 0;
-                                if (serverBuild > localBuild) isOutdated = true;
-                              }
-                            } catch (e) { isOutdated = remote != local; }
-                          }
-                          
-                          return AppVersionInfo(
-                            version: local,
-                            dbVersion: dbVersion,
-                            latestVersion: remote,
-                            isOutdated: isOutdated,
-                            color: Theme.of(context).colorScheme.primary,
-                            secondaryColor: Theme.of(context).colorScheme.primary,
-                            showLogoutIcon: true,
-                          );
+            ),
+            actions: [
+              InkWell(
+                onTap: _showLogoutConfirmationDialog,
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: _dbService.getAppConfigStream(),
+                  builder: (context, configSnap) {
+                    return StreamBuilder<DocumentSnapshot>(
+                      stream: _dbService.getDatabaseInfoStream(),
+                      builder: (context, dbInfoSnap) {
+                        String local = appVersion; // Instant update from build_config.dart
+                        String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
+                        String dbVersion = "...";
+                        if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                          var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                          dbVersion = (data?['dbVersion'] ?? 26.0).toDouble().toStringAsFixed(1);
                         }
-                      );
-                    }
-                  ),
+                        
+                        bool isOutdated = false;
+                        if (remote != null && remote != local) {
+                          try {
+                            List<String> localParts = local.split('+');
+                            List<String> serverParts = remote.split('+');
+                            int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                            int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                            if (serverMain > localMain) {
+                              isOutdated = true;
+                            } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                              int localBuild = int.tryParse(localParts[1]) ?? 0;
+                              int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                              if (serverBuild > localBuild) isOutdated = true;
+                            }
+                          } catch (e) { isOutdated = remote != local; }
+                        }
+                        
+                        return AppVersionInfo(
+                          version: local,
+                          dbVersion: dbVersion,
+                          latestVersion: remote,
+                          isOutdated: isOutdated,
+                          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary,
+                          secondaryColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary,
+                          showLogoutIcon: true,
+                        );
+                      }
+                    );
+                  }
                 ),
-                const SizedBox(width: 16),
-              ],
-            ),
-            body: UpdateGuard(child: pages[_currentIndex]),
-            bottomNavigationBar: BottomNavigationBar(
-              currentIndex: _currentIndex,
-              selectedItemColor: Theme.of(context).colorScheme.primary,
-              unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
-              onTap: (index) => setState(() => _currentIndex = index),
-              items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: "Home"),
-                BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), activeIcon: Icon(Icons.analytics), label: "History"),
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+            ],
+          ),
+          body: UpdateGuard(child: pages[_currentIndex]),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            selectedItemColor: Theme.of(context).colorScheme.primary,
+            unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            onTap: (index) => setState(() => _currentIndex = index),
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: "Home"),
+              BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), activeIcon: Icon(Icons.analytics), label: "History"),
+            ],
           ),
         );
       },
@@ -416,7 +413,8 @@ class _UserDashboardState extends State<UserDashboard> {
                     width: double.infinity,
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : null,
+                      gradient: ThemeManager.appThemeNotifier.value == "Outline Theme" ? null : LinearGradient(
                         colors: [
                           Theme.of(context).colorScheme.primary,
                           Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
@@ -425,7 +423,8 @@ class _UserDashboardState extends State<UserDashboard> {
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
+                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+                      boxShadow: ThemeManager.appThemeNotifier.value == "Outline Theme" ? null : [
                         BoxShadow(
                           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                           blurRadius: 15,
@@ -441,14 +440,14 @@ class _UserDashboardState extends State<UserDashboard> {
                         Text(
                           _categoryName.toUpperCase(),
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 6),
                         // Line 2: Unit Name (Tenant Name)
                         Text(
                           TenantName.isNotEmpty ? "$subName ($TenantName)" : subName,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
                         ),
                         // Line 3: NID Number
                         if (nidNumber.isNotEmpty) ...[
@@ -456,7 +455,7 @@ class _UserDashboardState extends State<UserDashboard> {
                           Text(
                             "NID: $nidNumber",
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.bold),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.bold),
                           ),
                         ],
                       ],
@@ -468,10 +467,11 @@ class _UserDashboardState extends State<UserDashboard> {
                     width: double.infinity,
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
+                      decoration: BoxDecoration(
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
+                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+                      boxShadow: ThemeManager.appThemeNotifier.value == "Outline Theme" ? null : [
                         BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
                       ],
                     ),
@@ -538,14 +538,15 @@ class _UserDashboardState extends State<UserDashboard> {
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(16),
+                    border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary, size: 20),
                       const SizedBox(width: 12),
-                      Expanded(child: Text(notes, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic))),
+                      Expanded(child: Text(notes, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null))),
                     ],
                   ),
                 ),

@@ -515,7 +515,7 @@ class _LoginPageState extends State<LoginPage> {
                           Text(
                             "AkonsSquare",
                             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.primary, 
+                              color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary, 
                               letterSpacing: 0.5
                             ),
                           ),
@@ -526,7 +526,7 @@ class _LoginPageState extends State<LoginPage> {
                             latestVersion: latestV,
                             statusMessage: _temporaryMessage,
                             isOutdated: isOutdated,
-                            color: Theme.of(context).colorScheme.tertiary,
+                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.tertiary,
                           ),
                         ],
                       ),
@@ -539,15 +539,18 @@ class _LoginPageState extends State<LoginPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Card(
-                                elevation: 2,
+                                elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                                 margin: EdgeInsets.zero,
-                                color: Theme.of(context).colorScheme.surface,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
+                                ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(1),
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surfaceContainerLow,
                                       borderRadius: BorderRadius.circular(23),
                                     ),
                                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -557,7 +560,7 @@ class _LoginPageState extends State<LoginPage> {
                                         Text(
                                           "Welcome",
                                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            color: Theme.of(context).colorScheme.primary, 
+                                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary, 
                                             fontWeight: FontWeight.bold, 
                                           ),
                                         ),
@@ -591,8 +594,8 @@ class _LoginPageState extends State<LoginPage> {
                                               alignment: Alignment.center,
                                               decoration: InputDecoration(
                                                 labelText: "Select User Name",
-                                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                                prefixIcon: Icon(Icons.meeting_room_outlined, color: Theme.of(context).colorScheme.onSurface),
+                                                labelStyle: TextStyle(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant),
+                                                prefixIcon: Icon(Icons.meeting_room_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSurface),
                                                 suffixIcon: const SizedBox(width: 48), // Balancing prefixIcon
                                                 contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
                                               ),
@@ -606,7 +609,7 @@ class _LoginPageState extends State<LoginPage> {
                                                     child: Text(
                                                       "$unit ($tName)", 
                                                       textAlign: TextAlign.center,
-                                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                                      style: TextStyle(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
                                                       overflow: TextOverflow.ellipsis
                                                     ),
                                                   );
@@ -621,12 +624,13 @@ class _LoginPageState extends State<LoginPage> {
                                                   child: Text(
                                                     "$unit ($tName)", 
                                                     textAlign: TextAlign.center,
+                                                    style: TextStyle(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
                                                     overflow: TextOverflow.ellipsis
                                                   ),
                                                 );
                                               }).toList(),
                                               onChanged: (v) => setState(() => _selectedSubItemId = v),
-                                              hint: const Center(child: Text("Select User Name")),
+                                              hint: Center(child: Text("Select User Name", style: TextStyle(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null))),
                                             );
                                           },
                                         ),
@@ -644,13 +648,16 @@ class _LoginPageState extends State<LoginPage> {
                                                 if (mounted) setState(() => _isLoading = false);
                                               });
                                             },
-                                            icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.dashboard_outlined),
-                                            child: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary), maxLines: 1),
+                                            icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.dashboard_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                                            child: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary), maxLines: 1),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Theme.of(context).colorScheme.tertiary,
-                                              foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                              elevation: 2,
+                                              backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.tertiary,
+                                              foregroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(16),
+                                                side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
+                                              ),
+                                              elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                                             ),
                                           ),
                                         ),

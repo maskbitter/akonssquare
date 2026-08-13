@@ -658,9 +658,12 @@ class _AdminHomeState extends State<AdminHome> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: isOutline ? Colors.transparent : color.withOpacity(0.1), 
-                  child: Icon(icon, color: color, size: 20),
-                  foregroundColor: color,
+                  backgroundColor: isOutline ? Colors.white : color.withOpacity(0.1), 
+                  child: Container(
+                    decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: color, width: 1)) : null,
+                    alignment: Alignment.center,
+                    child: Icon(icon, color: color, size: 20)
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1538,7 +1541,7 @@ class _AdminHomeState extends State<AdminHome> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(subtitle.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: textColor.withOpacity(0.7), letterSpacing: 0.5)),
+            Text(subtitle.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : textColor.withOpacity(0.7), letterSpacing: 0.5)),
             if (paidBy != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
@@ -1612,12 +1615,12 @@ class _AdminHomeState extends State<AdminHome> {
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(color: modeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(color: isOutline ? Colors.white : modeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: isOutline ? Border.all(color: modeColor, width: 1.5) : null),
               child: Text(mode.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: modeColor, letterSpacing: 2, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 12),
             Text(subName, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: modeColor, fontWeight: FontWeight.w900)),
-            Text("$tenantName | $catName", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+            Text("$tenantName | $catName", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
             const Divider(height: 32),
           ],
         ),
@@ -1653,7 +1656,7 @@ class _AdminHomeState extends State<AdminHome> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: isOutline ? Colors.transparent : null,
+                    color: isOutline ? Colors.white : null,
                     gradient: isOutline ? null : LinearGradient(colors: [modeColor, modeColor.withOpacity(0.8)]),
                     borderRadius: BorderRadius.circular(20),
                     border: isOutline ? Border.all(color: modeColor, width: 2) : null,
