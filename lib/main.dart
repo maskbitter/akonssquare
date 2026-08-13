@@ -587,24 +587,45 @@ class _LoginPageState extends State<LoginPage> {
 
                                           return DropdownButtonFormField<String>(
                                             isExpanded: true,
+                                            alignment: Alignment.center,
                                             decoration: InputDecoration(
                                               labelText: "Select User Name",
                                               labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                               prefixIcon: Icon(Icons.meeting_room_outlined, color: Theme.of(context).colorScheme.onSurface),
-                                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+                                              suffixIcon: const SizedBox(width: 48), // Balancing prefixIcon
+                                              contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
                                             ),
                                             icon: const Icon(Icons.arrow_drop_down),
                                             value: _selectedSubItemId,
+                                            selectedItemBuilder: (BuildContext context) {
+                                              return items.map<Widget>((data) {
+                                                String tName = data['TenantName'] ?? 'No Name';
+                                                String unit = data['subItemName'] ?? 'Unit';
+                                                return Center(
+                                                  child: Text(
+                                                    "$unit ($tName)", 
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                                    overflow: TextOverflow.ellipsis
+                                                  ),
+                                                );
+                                              }).toList();
+                                            },
                                             items: items.map((data) {
                                               String tName = data['TenantName'] ?? 'No Name';
                                               String unit = data['subItemName'] ?? 'Unit';
                                               return DropdownMenuItem<String>(
                                                 value: data['id'], 
-                                                child: Text("$unit ($tName)", overflow: TextOverflow.ellipsis)
+                                                alignment: Alignment.center,
+                                                child: Text(
+                                                  "$unit ($tName)", 
+                                                  textAlign: TextAlign.center,
+                                                  overflow: TextOverflow.ellipsis
+                                                ),
                                               );
                                             }).toList(),
                                             onChanged: (v) => setState(() => _selectedSubItemId = v),
-                                            hint: const Text("Select User Name"),
+                                            hint: const Center(child: Text("Select User Name")),
                                           );
                                         },
                                       ),
