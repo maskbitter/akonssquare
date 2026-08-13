@@ -42,14 +42,29 @@ if (Test-Path $sourceApk) {
     exit 1
 }
 
-# 5. GitHub Sync
-Write-Host ">>> Enter extra commit message details (optional): " -NoNewline
-$extraMsg = Read-Host
-$fullMsg = "app build no ${newBN}: $extraMsg"
-
+# 5. GitHub Sync (Automatic Commit Message)
 Write-Host ">>> Syncing with GitHub..." -ForegroundColor Yellow
 git add .
-git commit -m "$fullMsg"
-git push
+
+# Get list of staged files for a relevant commit message
+$stagedFiles = git diff --name-only --cached
+if ($null -eq $stagedFiles -or $stagedFiles.Count -eq 0) {
+    Write-Host ">>> No changes to commit." -ForegroundColor Yellow
+} else {
+    # Extract only filenames and join them
+    $fileNames = $stagedFiles | ForEach-Object { [System.IO.Path]::GetFileName($_) }
+    $fileSummary = $fileNames -join ", "
+
+    # Trim if too long
+    if ($fileSummary.Length -gt 120) {
+        $fileSummary = $fileSummary.Substring(0, 117) + "..."
+    }
+
+    $fullMsg = "app build no ${newBN}: updated $fileSummary"
+
+    Write-Host ">>> Committing with message: $fullMsg" -ForegroundColor Cyan
+    git commit -m "$fullMsg"
+    git push
+}
 
 Write-Host ">>> Process Completed Successfully!" -ForegroundColor Green
