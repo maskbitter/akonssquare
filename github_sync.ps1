@@ -1,3 +1,5 @@
+param([string]$customMsg)
+
 # akonssquare Build & Sync Script
 
 # 1. Increment Build Number
@@ -51,16 +53,20 @@ $stagedFiles = git diff --name-only --cached
 if ($null -eq $stagedFiles -or $stagedFiles.Count -eq 0) {
     Write-Host ">>> No changes to commit." -ForegroundColor Yellow
 } else {
-    # Extract only filenames and join them
-    $fileNames = $stagedFiles | ForEach-Object { [System.IO.Path]::GetFileName($_) }
-    $fileSummary = $fileNames -join ", "
+    # Determine the commit message
+    if ($customMsg) {
+        $fullMsg = "app build no ${newBN}: $customMsg"
+    } else {
+        # Extract only filenames and join them
+        $fileNames = $stagedFiles | ForEach-Object { [System.IO.Path]::GetFileName($_) }
+        $fileSummary = $fileNames -join ", "
 
-    # Trim if too long
-    if ($fileSummary.Length -gt 120) {
-        $fileSummary = $fileSummary.Substring(0, 117) + "..."
+        # Trim if too long
+        if ($fileSummary.Length -gt 120) {
+            $fileSummary = $fileSummary.Substring(0, 117) + "..."
+        }
+        $fullMsg = "app build no ${newBN}: updated $fileSummary"
     }
-
-    $fullMsg = "app build no ${newBN}: updated $fileSummary"
 
     Write-Host ">>> Committing with message: $fullMsg" -ForegroundColor Cyan
     git commit -m "$fullMsg"
