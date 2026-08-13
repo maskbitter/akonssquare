@@ -143,58 +143,61 @@ class AppVersionInfo extends StatelessWidget {
       }
     }
 
-    return Column(
-      crossAxisAlignment: crossAxisAlignment,
-      children: [
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: "V: $version", 
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: isOutline ? Colors.black : effectiveColor, 
-                  fontWeight: FontWeight.bold, 
-                  fontSize: mainFontSize
-                )
-              ),
-              if (isOutdated && latestVersion != null) ...[
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: crossAxisAlignment,
+        children: [
+          RichText(
+            text: TextSpan(
+              children: [
                 TextSpan(
-                  text: " | ", 
+                  text: "V: $version", 
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isOutline ? Colors.black : Theme.of(context).colorScheme.outline, 
-                    fontSize: mainFontSize
-                  )
-                ),
-                TextSpan(
-                  text: "Latest V: $latestVersion", 
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error, 
+                    color: isOutline ? Colors.black : effectiveColor, 
                     fontWeight: FontWeight.bold, 
                     fontSize: mainFontSize
                   )
                 ),
+                if (isOutdated && latestVersion != null) ...[
+                  TextSpan(
+                    text: " | ", 
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: isOutline ? Colors.black : Theme.of(context).colorScheme.outline, 
+                      fontSize: mainFontSize
+                    )
+                  ),
+                  TextSpan(
+                    text: "Latest V: $latestVersion", 
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error, 
+                      fontWeight: FontWeight.bold, 
+                      fontSize: mainFontSize
+                    )
+                  ),
+                ]
               ]
-            ]
+            ),
           ),
-        ),
-        if (showLogoutIcon) ...[
+          if (showLogoutIcon) ...[
+            const SizedBox(height: 1),
+            const Icon(
+              Icons.logout, 
+              size: 18, 
+              color: Colors.red,
+            ),
+          ],
           const SizedBox(height: 1),
-          const Icon(
-            Icons.logout, 
-            size: 18, 
-            color: Colors.red,
+          Text(
+            displayDBText,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontSize: mainFontSize,
+              color: (isOutline && !displayDBText.contains("BN")) ? Colors.black : effectiveSecondary, 
+              fontWeight: FontWeight.bold, 
+            ),
           ),
         ],
-        const SizedBox(height: 1),
-        Text(
-          displayDBText,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            fontSize: mainFontSize,
-            color: (isOutline && !displayDBText.contains("BN")) ? Colors.black : effectiveSecondary, 
-            fontWeight: FontWeight.bold, 
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
