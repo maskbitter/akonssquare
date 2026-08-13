@@ -675,18 +675,23 @@ class _LoginPageState extends State<LoginPage> {
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 4),
                                 child: SizedBox(
-                                  width: double.infinity, height: 50,
-                                  child: OutlinedButton.icon(
+                                  width: double.infinity, height: 60,
+                                  child: AppButton.icon(
                                     onPressed: () {
                                       HapticFeedback.lightImpact();
                                       Navigator.push(context, MaterialPageRoute(builder: (context) => const GameZonePage()));
                                     },
-                                    icon: const Icon(Icons.videogame_asset_outlined, size: 20),
-                                    label: const Text("Enter GameZone", style: TextStyle(fontWeight: FontWeight.bold)),
-                                    style: OutlinedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                      side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                                    icon: Icon(Icons.videogame_asset_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.secondary,
+                                      foregroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSecondary,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
+                                      ),
+                                      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                                     ),
+                                    child: Text("Enter GameZone", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSecondary)),
                                   ),
                                 ),
                               ),

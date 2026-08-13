@@ -341,19 +341,19 @@ class _SettingsPageState extends State<SettingsPage> {
                     return Card(
                       elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 3,
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(1, isSubCard: true),
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(5, isSubCard: true),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(1, isSubCard: true), width: 1.5) : BorderSide.none,
+                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(5, isSubCard: true), width: 1.5) : BorderSide.none,
                       ),
                       child: ExpansionTile(
                         backgroundColor: Colors.transparent,
                         collapsedBackgroundColor: Colors.transparent,
-                        leading: Icon(Icons.settings_suggest_outlined, color: ThemeManager.getCardColor(1, isSubCard: true)),
-                        iconColor: ThemeManager.getCardColor(1, isSubCard: true),
-                        collapsedIconColor: ThemeManager.getCardColor(1, isSubCard: true),
-                        title: Text("System Configuration", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.getCardOnContainerColor(1, isSubCard: true))),
-                        subtitle: Text("System behavior & Experience", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ThemeManager.getCardOnContainerColor(1, isSubCard: true).withValues(alpha: 0.7))),
+                        leading: Icon(Icons.settings_suggest_outlined, color: ThemeManager.getCardColor(5, isSubCard: true)),
+                        iconColor: ThemeManager.getCardColor(5, isSubCard: true),
+                        collapsedIconColor: ThemeManager.getCardColor(5, isSubCard: true),
+                        title: Text("System Configuration", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.getCardOnContainerColor(5, isSubCard: true))),
+                        subtitle: Text("System behavior & Experience", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ThemeManager.getCardOnContainerColor(5, isSubCard: true).withValues(alpha: 0.7))),
                         children: [
                           _buildVisibilitySwitch("Enable Update Notifications", isEnabled, (val) => _dbService.updatePopupStatus(val)),
                           FutureBuilder<SharedPreferences>(
@@ -404,10 +404,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       Card(
                         elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(0, isSubCard: true),
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(6, isSubCard: true),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(0, isSubCard: true), width: 1.5) : BorderSide.none,
+                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(6, isSubCard: true), width: 1.5) : BorderSide.none,
                         ),
                         child: _buildVisibilitySwitch("Show Accounts Section", s['showAccounts']!, (val) { s['showAccounts'] = val; _dbService.updateDashboardVisibility(_selectedRoleForVisibility, s); }, icon: Icons.account_balance_wallet_outlined),
                       ),
@@ -416,10 +416,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       Card(
                         elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(1, isSubCard: true),
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(7, isSubCard: true),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(1, isSubCard: true), width: 1.5) : BorderSide.none,
+                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(7, isSubCard: true), width: 1.5) : BorderSide.none,
                         ),
                         child: Column(
                           children: [
@@ -437,10 +437,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       Card(
                         elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(2, isSubCard: true),
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : ThemeManager.getCardContainerColor(8, isSubCard: true),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(2, isSubCard: true), width: 1.5) : BorderSide.none,
+                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: ThemeManager.getCardColor(8, isSubCard: true), width: 1.5) : BorderSide.none,
                         ),
                         child: Column(
                           children: [
@@ -562,8 +562,8 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: Icons.manage_accounts_outlined,
               title: "Account Management",
               subtitle: "Create and manage system access",
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              accentColor: Theme.of(context).colorScheme.primary,
+              color: ThemeManager.getCardContainerColor(3),
+              accentColor: ThemeManager.getCardColor(3),
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -594,8 +594,8 @@ class _SettingsPageState extends State<SettingsPage> {
       icon: Icons.palette_outlined,
       title: "Theme & Appearance",
       subtitle: "Customize look and feel of your app",
-      color: Theme.of(context).colorScheme.surfaceContainer,
-      accentColor: Theme.of(context).colorScheme.primary,
+      color: ThemeManager.getCardContainerColor(4),
+      accentColor: ThemeManager.getCardColor(4),
       children: [
         Padding(
           padding: const EdgeInsets.all(16),
