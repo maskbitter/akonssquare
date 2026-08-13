@@ -763,6 +763,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _showOutlineColorPickerDialog(BuildContext context) {
     Color selected = ThemeManager.appOutlineBgNotifier.value;
+    final hexController = TextEditingController(text: '#${selected.value.toRadixString(16).substring(2).toUpperCase()}');
     final List<Color> presets = [
       const Color(0xFFFAF9F6), // Off-white
       Colors.white,
@@ -778,6 +779,8 @@ class _SettingsPageState extends State<SettingsPage> {
       const Color(0xFFFFFFF0), // Ivory
       const Color(0xFFFFFAF0), // Floral White
       const Color(0xFFFFF0F5), // Lavender Blush
+      const Color(0xFFFFE4E1), // Misty Rose
+      const Color(0xFFFAF0E6), // Linen
     ];
 
     showDialog(
@@ -786,31 +789,57 @@ class _SettingsPageState extends State<SettingsPage> {
         builder: (context, setST) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Center(child: Text("Custom Background", style: TextStyle(fontWeight: FontWeight.bold))),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Select a background color for Outline Theme (Updates Live!):", textAlign: TextAlign.center),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: presets.map((c) => GestureDetector(
-                  onTap: () async {
-                    setST(() => selected = c);
-                    await ThemeManager.setOutlineBgColor(c);
-                  },
-                  child: Container(
-                    width: 45, height: 45,
-                    decoration: BoxDecoration(
-                      color: c,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: selected == c ? Colors.black : Colors.grey, width: selected == c ? 3 : 1),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Select or enter a background color (Updates Live!):", textAlign: TextAlign.center),
+                const SizedBox(height: 20),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: presets.map((c) => GestureDetector(
+                    onTap: () async {
+                      setST(() {
+                        selected = c;
+                        hexController.text = '#${c.value.toRadixString(16).substring(2).toUpperCase()}';
+                      });
+                      await ThemeManager.setOutlineBgColor(c);
+                    },
+                    child: Container(
+                      width: 45, height: 45,
+                      decoration: BoxDecoration(
+                        color: c,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: selected.value == c.value ? Colors.black : Colors.grey, width: selected.value == c.value ? 3 : 1),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+                      ),
                     ),
+                  )).toList(),
+                ),
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: hexController,
+                  decoration: const InputDecoration(
+                    labelText: "Custom HEX Color",
+                    hintText: "#RRGGBB",
+                    prefixIcon: Icon(Icons.colorize_outlined),
+                    isDense: true,
                   ),
-                )).toList(),
-              ),
-            ],
+                  onChanged: (val) async {
+                    if (val.length == 7 && val.startsWith('#')) {
+                      try {
+                        final c = Color(int.parse("FF${val.substring(1)}", radix: 16));
+                        setST(() => selected = c);
+                        await ThemeManager.setOutlineBgColor(c);
+                      } catch (e) { /* Invalid HEX */ }
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
           actions: [
             AppDialogActions(

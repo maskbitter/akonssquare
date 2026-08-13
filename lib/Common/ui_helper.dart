@@ -33,7 +33,7 @@ class AppButton extends StatelessWidget {
     ButtonStyle? effectiveStyle;
     if (ThemeManager.appThemeNotifier.value == "Outline Theme") {
       effectiveStyle = themeStyle?.copyWith(
-        backgroundColor: WidgetStateProperty.all(Colors.white),
+        backgroundColor: WidgetStateProperty.all(Colors.transparent),
         shadowColor: WidgetStateProperty.all(Colors.transparent),
         foregroundColor: WidgetStateProperty.all(Colors.black),
         elevation: WidgetStateProperty.all(0),

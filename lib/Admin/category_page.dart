@@ -709,8 +709,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                     child: Card(
                                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       color: isPaid 
-                                          ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.tertiaryContainer) 
-                                          : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : itemBgColor),
+                                          ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiaryContainer) 
+                                          : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : itemBgColor),
                                       elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                                         shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),

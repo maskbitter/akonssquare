@@ -25,6 +25,7 @@ class UserReportPage extends StatelessWidget {
   }
 
   void _showDetailsDialog(BuildContext context, Map<String, dynamic> data) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     List services = data['services'] ?? [];
     Map<String, dynamic>? ed = data['electricityDetails'];
     double totalAmount = (data['totalAmount'] as num?)?.toDouble() ?? 0;
@@ -49,12 +50,16 @@ class UserReportPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: isOutline ? ThemeManager.outlineBackground : null,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
+        ),
         title: Column(
           children: [
-            Text("Payment: ${data['monthYear'] ?? ''}", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text("Payment: ${data['monthYear'] ?? ''}", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)),
             const SizedBox(height: 4),
-            Text("${data['subItemName'] ?? 'Unit'} (${data['TenantName'] ?? 'No Name'})", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+            Text("${data['subItemName'] ?? 'Unit'} (${data['TenantName'] ?? 'No Name'})", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary)),
             const Divider(height: 24),
           ],
         ),
@@ -72,7 +77,7 @@ class UserReportPage extends StatelessWidget {
                   children: [
                     Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary, size: 18),
                     const SizedBox(width: 8),
-                    Text("Rent & Services", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    Text("Rent & Services", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -94,9 +99,9 @@ class UserReportPage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                      color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: context.electric.withValues(alpha: 0.1)),
+                      border: Border.all(color: isOutline ? Theme.of(context).colorScheme.primary : context.electric.withValues(alpha: 0.1)),
                     ),
                     child: Column(
                       children: [
@@ -104,7 +109,7 @@ class UserReportPage extends StatelessWidget {
                           children: [
                             Icon(Icons.electric_bolt, color: context.electric, size: 20),
                             const SizedBox(width: 8),
-                            Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: context.electric)),
+                            Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : context.electric)),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -121,7 +126,7 @@ class UserReportPage extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Electric Bill", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+                            Text("Electric Bill", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)),
                             Text("৳${electricityBill.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: context.electric)),
                           ],
                         ),
@@ -133,21 +138,22 @@ class UserReportPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(16),
+                    border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Grand Total", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Text("৳${totalAmount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
+                      Text("Grand Total", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.bold)),
+                      Text("৳${totalAmount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.w900)),
                     ],
                   ),
                 ),
                 if ((data['paymentNotes'] ?? '').toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
-                    child: Text("Note: ${data['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+                    child: Text("Note: ${data['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: isOutline ? Colors.black : null)),
                   ),
               ],
             ),
@@ -158,8 +164,9 @@ class UserReportPage extends StatelessWidget {
             actions: [
               AppButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Colors.white,
+                  backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.error,
+                  foregroundColor: isOutline ? Colors.black : Colors.white,
+                  side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
                 ),
                 onPressed: () => Navigator.pop(ctx), 
                 child: const Text("Close")
@@ -172,6 +179,7 @@ class UserReportPage extends StatelessWidget {
   }
 
   Widget _buildDetailRow(BuildContext context, String label, String value, {String? subtitle, Color? valueColor, bool isBold = false}) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: Row(
@@ -183,9 +191,9 @@ class UserReportPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant)),
                 if (subtitle != null)
-                  Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic)),
+                  Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic)),
               ],
             ),
           ),
@@ -193,7 +201,7 @@ class UserReportPage extends StatelessWidget {
             value,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-              color: valueColor,
+              color: isOutline ? Colors.black : valueColor,
             ),
           ),
         ],
@@ -203,9 +211,8 @@ class UserReportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: ThemeManager.getThemeByName("Normal Theme"),
-      child: StreamBuilder<DocumentSnapshot>(
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    return StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('sub_items').doc(subItemId).snapshots(),
         builder: (context, subSnapshot) {
           if (!subSnapshot.hasData) return const Center(child: CircularProgressIndicator());
@@ -223,7 +230,8 @@ class UserReportPage extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  color: isOutline ? ThemeManager.outlineBackground : null,
+                  gradient: isOutline ? null : LinearGradient(
                     colors: [
                       Theme.of(context).colorScheme.primary,
                       Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
@@ -232,7 +240,8 @@ class UserReportPage extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
+                  border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+                  boxShadow: isOutline ? null : [
                     BoxShadow(
                       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                       blurRadius: 15,
@@ -244,15 +253,15 @@ class UserReportPage extends StatelessWidget {
                   children: [
                     Text(
                       currentTenant.isNotEmpty ? "$subName ($currentTenant)" : subName,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 4),
-                    Text("PAYMENT HISTORY", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+                    Text("PAYMENT HISTORY", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 20),
                     Row(
                       children: [
                         _buildHeaderSummary(context, "Joined", createdAt != null ? "${createdAt.day}-${createdAt.month}-${createdAt.year}" : 'N/A'),
-                        Container(width: 1, height: 30, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)),
+                        Container(width: 1, height: 30, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)),
                         _buildHeaderSummary(context, "Total Duration", _formatDuration(createdAt)),
                       ],
                     ),
@@ -308,12 +317,12 @@ class UserReportPage extends StatelessWidget {
                         return Container(
                           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: ThemeManager.getCardContainerColor(index + 2, alpha: 0.5, isSubCard: true),
+                            color: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardContainerColor(index + 2, alpha: 0.5, isSubCard: true),
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
+                            boxShadow: isOutline ? null : [
                               BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
                             ],
-                            border: Border.all(color: ThemeManager.getCardColor(index + 2, isSubCard: true).withValues(alpha: 0.1)),
+                            border: Border.all(color: isOutline ? Theme.of(context).colorScheme.primary : ThemeManager.getCardColor(index + 2, isSubCard: true).withValues(alpha: 0.1), width: isOutline ? 1.5 : 1),
                           ),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(20),
@@ -327,10 +336,11 @@ class UserReportPage extends StatelessWidget {
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
-                                          color: ThemeManager.getCardColor(index + 2, isSubCard: true).withValues(alpha: 0.1),
+                                          color: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardColor(index + 2, isSubCard: true).withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(12),
+                                          border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
                                         ),
-                                        child: Icon(Icons.calendar_month_outlined, color: ThemeManager.getCardColor(index + 2, isSubCard: true), size: 20),
+                                        child: Icon(Icons.calendar_month_outlined, color: isOutline ? Theme.of(context).colorScheme.primary : ThemeManager.getCardColor(index + 2, isSubCard: true), size: 20),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -339,9 +349,9 @@ class UserReportPage extends StatelessWidget {
                                           children: [
                                             Text(
                                               "${data['monthYear'] ?? 'N/A'} - ${data['TenantName'] ?? 'No Name'}",
-                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: isOutline ? Colors.black : null),
                                             ),
-                                            Text("Paid on: $paidTime", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10)),
+                                            Text("Paid on: $paidTime", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, color: isOutline ? Colors.black : null)),
                                           ],
                                         ),
                                       ),
@@ -351,17 +361,18 @@ class UserReportPage extends StatelessWidget {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
+                                              color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
                                               borderRadius: BorderRadius.circular(30),
+                                              border: isOutline ? Border.all(color: Colors.green, width: 1.5) : null,
                                             ),
-                                            child: Text("PAID", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.w900)),
+                                            child: Text("PAID", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.green : Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.w900)),
                                           ),
                                           if ((data['paymentNotes'] ?? '').toString().isNotEmpty)
                                             Padding(
                                               padding: const EdgeInsets.only(top: 2),
                                               child: Text(
                                                 data['paymentNotes'],
-                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontStyle: FontStyle.italic, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant),
                                                 textAlign: TextAlign.right,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -374,25 +385,26 @@ class UserReportPage extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                                      color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow,
                                       borderRadius: BorderRadius.circular(16),
+                                      border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
                                     ),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                                       children: [
-                                        _buildCompactSummary(context, "Rent", "৳${rentAmount.toStringAsFixed(0)}", Theme.of(context).colorScheme.onSurface),
+                                        _buildCompactSummary(context, "Rent", "৳${rentAmount.toStringAsFixed(0)}", isOutline ? Colors.black : Theme.of(context).colorScheme.onSurface),
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
                                         InkWell(
                                           onTap: () {
                                             DatabaseService.vibrate();
                                             _showDetailsDialog(context, data);
                                           },
-                                          child: _buildCompactSummary(context, "Electricity Bills", "৳${electricityBill.toStringAsFixed(0)}", context.electric),
+                                          child: _buildCompactSummary(context, "Electricity Bills", "৳${electricityBill.toStringAsFixed(0)}", isOutline ? Colors.black : context.electric),
                                         ),
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
-                                        _buildCompactSummary(context, "Utility", "৳${utilityAmount.toStringAsFixed(0)}", Theme.of(context).colorScheme.secondary),
+                                        _buildCompactSummary(context, "Utility", "৳${utilityAmount.toStringAsFixed(0)}", isOutline ? Colors.black : Theme.of(context).colorScheme.secondary),
                                         Container(width: 1, height: 20, color: Theme.of(context).colorScheme.outlineVariant),
-                                        _buildCompactSummary(context, "Total", "৳${totalAmount.toStringAsFixed(0)}", ThemeManager.getCardColor(index + 2, isSubCard: true), isBold: true),
+                                        _buildCompactSummary(context, "Total", "৳${totalAmount.toStringAsFixed(0)}", isOutline ? Colors.black : ThemeManager.getCardColor(index + 2, isSubCard: true), isBold: true),
                                       ],
                                     ),
                                   ),
@@ -409,17 +421,17 @@ class UserReportPage extends StatelessWidget {
             ],
           );
         },
-      ),
-    );
+      );
   }
 
   Widget _buildHeaderSummary(BuildContext context, String label, String value) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return Expanded(
       child: Column(
         children: [
-          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), fontWeight: FontWeight.bold)),
+          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(value, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900)),
+          Text(value, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900)),
         ],
       ),
     );

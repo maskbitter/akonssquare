@@ -317,8 +317,8 @@ class ThemeManager {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: themeName == "Outline Theme" ? 0 : 2,
-          backgroundColor: themeName == "Outline Theme" ? outlineBackground : null,
-          foregroundColor: themeName == "Outline Theme" ? colorScheme.primary : null,
+          backgroundColor: themeName == "Outline Theme" ? Colors.transparent : null,
+          foregroundColor: themeName == "Outline Theme" ? Colors.black : null,
           side: themeName == "Outline Theme" ? BorderSide(color: colorScheme.primary, width: 1.5) : null,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -327,6 +327,8 @@ class ThemeManager {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           elevation: themeName == "Outline Theme" ? 0 : 2,
+          backgroundColor: themeName == "Outline Theme" ? Colors.transparent : null,
+          foregroundColor: themeName == "Outline Theme" ? Colors.black : colorScheme.primary,
           side: BorderSide(color: colorScheme.primary, width: 1.5),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

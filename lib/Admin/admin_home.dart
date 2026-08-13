@@ -683,7 +683,7 @@ class _AdminHomeState extends State<AdminHome> {
                 AppButton(
                   onPressed: onAction,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isHighlighted ? color : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Colors.grey.shade300),
+                    backgroundColor: isHighlighted ? color : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Colors.grey.shade300),
                     foregroundColor: isHighlighted ? Colors.white : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Colors.grey),
                     side: (ThemeManager.appThemeNotifier.value == "Outline Theme") ? BorderSide(color: isHighlighted ? color : Colors.black, width: 1.5) : null,
                     elevation: isHighlighted ? 2 : 0,
