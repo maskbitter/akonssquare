@@ -246,7 +246,7 @@ class _SettingsPageState extends State<SettingsPage> {
               AppButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.tertiary, 
-                  foregroundColor: Colors.white,
+                  foregroundColor: ThemeManager.outlineBackground,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ), 
                 onPressed: () => Navigator.pop(ctx, true), 
@@ -486,18 +486,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     AppDialogActions(
                       actions: [
                         AppButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), 
+                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: ThemeManager.outlineBackground), 
                           onPressed: _isProcessing ? null : () => _handleBackup(context), 
                           icon: (_isProcessing && _activeAction == 'backup') 
-                            ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                            ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
                             : const Icon(Icons.cloud_upload_outlined), 
                           child: const Text("Backup")
                         ),
                         AppButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), 
+                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: ThemeManager.outlineBackground), 
                           onPressed: _isProcessing ? null : () => _handleRestore(context), 
                           icon: (_isProcessing && _activeAction == 'restore') 
-                            ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                            ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
                             : const Icon(Icons.cloud_download_outlined), 
                           child: const Text("Restore")
                         ),
@@ -507,10 +507,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     AppDialogActions(
                       actions: [
                         AppButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white), 
+                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: ThemeManager.outlineBackground), 
                           onPressed: _isProcessing ? null : () => _handleLocalSave(context), 
                           icon: (_isProcessing && _activeAction == 'localSave') 
-                            ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                            ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
                             : const Icon(Icons.save_alt), 
                           child: const Text("Save Locally")
                         ),
@@ -537,10 +537,10 @@ class _SettingsPageState extends State<SettingsPage> {
                             AppDialogActions(
                               actions: [
                                 AppButton.icon(
-                                  style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white), 
+                                  style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: ThemeManager.outlineBackground), 
                                   onPressed: _isProcessing ? null : () => _handleWipe(context), 
                                   icon: (_isProcessing && _activeAction == 'wipe') 
-                                    ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                                    ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
                                     : const Icon(Icons.delete_forever), 
                                   child: const Text("Wipe All Data")
                                 ),
@@ -570,7 +570,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: Column(children: [
                     AppDialogActions(
                       actions: [
-                        AppButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _showUserDialog(context), icon: const Icon(Icons.person_add_alt_1_outlined), child: const Text("Add New Account")),
+                        AppButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: ThemeManager.outlineBackground), onPressed: _isProcessing ? null : () => _showUserDialog(context), icon: const Icon(Icons.person_add_alt_1_outlined), child: const Text("Add New Account")),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -603,7 +603,7 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               AppDialogActions(
                 actions: [
-                  AppButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Colors.white), onPressed: _isProcessing ? null : () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), child: const Text("Change App Theme")),
+                  AppButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: ThemeManager.outlineBackground), onPressed: _isProcessing ? null : () => _showThemeSelectionDialog(context), icon: const Icon(Icons.color_lens_outlined), child: const Text("Change App Theme")),
                 ],
               ),
               const SizedBox(height: 16),
@@ -742,7 +742,7 @@ class _SettingsPageState extends State<SettingsPage> {
               AppButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.tertiary, 
-                  foregroundColor: Colors.white,
+                  foregroundColor: ThemeManager.outlineBackground,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ), 
                 onPressed: () async {
@@ -889,7 +889,7 @@ class _SettingsPageState extends State<SettingsPage> {
               AppButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary, 
-                  foregroundColor: Colors.white,
+                  foregroundColor: ThemeManager.outlineBackground,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ), 
                 onPressed: (uC.text == (currentData?['username'] ?? '') && pC.text == (currentData?['password'] ?? '') && role == (currentData?['role'] ?? 'operator')) ? null : () async {

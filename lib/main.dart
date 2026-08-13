@@ -361,7 +361,7 @@ class _LoginPageState extends State<LoginPage> {
                       if (context.mounted) DatabaseService.showToast(context, "Incorrect details!", backgroundColor: Theme.of(context).colorScheme.error);
                     } catch (e) { /* ignore */ } finally { if (ctx.mounted) setST(() => isVerifying = false); }
                   }, 
-                  child: isVerifying ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Login")
+                  child: isVerifying ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground)) : const Text("Login")
                 ),
               ],
             ),
@@ -541,7 +541,7 @@ class _LoginPageState extends State<LoginPage> {
                               Card(
                                 elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                                 margin: EdgeInsets.zero,
-                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
+                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(24),
                                   side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
@@ -550,7 +550,7 @@ class _LoginPageState extends State<LoginPage> {
                                   padding: const EdgeInsets.all(1),
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surfaceContainerLow,
+                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow,
                                       borderRadius: BorderRadius.circular(23),
                                     ),
                                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -651,7 +651,7 @@ class _LoginPageState extends State<LoginPage> {
                                             icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.dashboard_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
                                             child: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary), maxLines: 1),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.tertiary,
+                                              backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiary,
                                               foregroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: BorderRadius.circular(16),

@@ -61,7 +61,7 @@ class CategoryDialogs {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
                 border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) : null,
               ),
@@ -890,7 +890,7 @@ class CategoryDialogs {
                     }
                   },
                   child: isLoading 
-                    ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
                     : const Text("Add"),
                 ),
               ],
@@ -1059,7 +1059,7 @@ class CategoryDialogs {
                           actions: [
                             TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No")),
                             ElevatedButton(
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: ThemeManager.outlineBackground),
                               onPressed: () => Navigator.pop(c, true), 
                               child: const Text("Yes, Proceed")
                             ),
@@ -1169,7 +1169,7 @@ class CategoryDialogs {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : context.electric.withValues(alpha: 0.05),
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : context.electric.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? context.electric : context.electric.withValues(alpha: 0.2)),
                     ),
@@ -1431,7 +1431,7 @@ class CategoryDialogs {
                    SharedPreferences prefs = await SharedPreferences.getInstance();
                    await _dbService.updateCategoryServices(categoryId, currentAssigned, prefs.getString('username') ?? "Admin");
                    if (context.mounted) Navigator.pop(ctx);
-                 }, child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Apply")),
+                 }, child: isLoading ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground)) : const Text("Apply")),
                ],
              ),
            ],
@@ -1537,7 +1537,7 @@ class CategoryDialogs {
                       }
                     }, 
                     child: isLoading 
-                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
                       : const Text("Update")
                   ),
                 ],
@@ -1663,7 +1663,7 @@ class CategoryDialogs {
                       if (context.mounted) Navigator.pop(ctx);
                     },
                     child: isLoading 
-                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
                       : const Text("Proceed"),
                   ),
                 ],
@@ -1831,7 +1831,7 @@ class CategoryDialogs {
                     }
                   }, 
                   child: isLoading 
-                    ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
                     : const Text("Update")
                 ),
               ],

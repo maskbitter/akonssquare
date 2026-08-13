@@ -413,7 +413,7 @@ class _UserDashboardState extends State<UserDashboard> {
                     width: double.infinity,
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : null,
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : null,
                       gradient: ThemeManager.appThemeNotifier.value == "Outline Theme" ? null : LinearGradient(
                         colors: [
                           Theme.of(context).colorScheme.primary,
@@ -468,7 +468,7 @@ class _UserDashboardState extends State<UserDashboard> {
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(20),
                       border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
                       boxShadow: ThemeManager.appThemeNotifier.value == "Outline Theme" ? null : [
@@ -538,7 +538,7 @@ class _UserDashboardState extends State<UserDashboard> {
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(16),
                     border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
                   ),
@@ -561,20 +561,20 @@ class _UserDashboardState extends State<UserDashboard> {
                 Card(
                   elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : null,
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : null,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
                   ),
                   child: ExpansionTile(
-                    backgroundColor: Colors.white,
-                    collapsedBackgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : null,
+                    backgroundColor: ThemeManager.outlineBackground,
+                    collapsedBackgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : null,
                     shape: const Border(),
                     collapsedShape: const Border(),
                     iconColor: context.electric,
                     collapsedIconColor: context.electric,
                     leading: CircleAvatar(
-                      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : context.electric.withValues(alpha: 0.1),
+                      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : context.electric.withValues(alpha: 0.1),
                       child: Container(
                         decoration: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
                         child: Icon(Icons.electric_bolt, color: context.electric, size: 20)
@@ -602,7 +602,7 @@ class _UserDashboardState extends State<UserDashboard> {
                 return Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isOutline ? Colors.white : Theme.of(context).colorScheme.surface,
+                    color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
                     border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
                     boxShadow: isOutline ? [] : [
@@ -614,7 +614,7 @@ class _UserDashboardState extends State<UserDashboard> {
                     visualDensity: VisualDensity.compact,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                     leading: CircleAvatar(
-                      backgroundColor: isOutline ? Colors.white : (isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary).withValues(alpha: 0.1),
+                      backgroundColor: isOutline ? ThemeManager.outlineBackground : (isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary).withValues(alpha: 0.1),
                       child: Container(
                         decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
                         child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary, size: 20)

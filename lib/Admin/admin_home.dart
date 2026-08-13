@@ -493,7 +493,7 @@ class _AdminHomeState extends State<AdminHome> {
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) => ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.secondary,
+            getTooltipColor: (_) => ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.secondary,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               return BarTooltipItem(rod.toY.toInt().toString(), Theme.of(context).textTheme.labelSmall!.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSecondary));
             },
@@ -658,7 +658,7 @@ class _AdminHomeState extends State<AdminHome> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: isOutline ? Colors.white : color.withOpacity(0.1), 
+                  backgroundColor: isOutline ? ThemeManager.outlineBackground : color.withOpacity(0.1), 
                   child: Container(
                     decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: color, width: 1)) : null,
                     alignment: Alignment.center,
@@ -820,7 +820,7 @@ class _AdminHomeState extends State<AdminHome> {
   Widget _buildSubOverviewCard({required String title, required int count, required Color color, required IconData icon, required VoidCallback onTap, Color? countColor}) {
     return Card(
       elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
+      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16), 
         side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
@@ -941,7 +941,7 @@ class _AdminHomeState extends State<AdminHome> {
           borderRadius: BorderRadius.circular(16),
           child: Card(
             elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : containerColor,
+            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : containerColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
@@ -965,7 +965,7 @@ class _AdminHomeState extends State<AdminHome> {
                     children: [
                       TableRow(
                         decoration: BoxDecoration(
-                          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : accentColor,
+                          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : accentColor,
                           border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
                         ),
                         children: headers.map((h) => Padding(
@@ -1190,7 +1190,7 @@ class _AdminHomeState extends State<AdminHome> {
         return Container(
           height: MediaQuery.of(context).size.height * 0.85,
           decoration: BoxDecoration(
-            color: isOutline ? Colors.transparent : Theme.of(context).colorScheme.surface,
+            color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
             border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
           ),
@@ -1210,7 +1210,7 @@ class _AdminHomeState extends State<AdminHome> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: isOutline
                         ? BoxDecoration(
-                            color: Colors.white,
+                            color: ThemeManager.outlineBackground,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5),
                           )
@@ -1267,7 +1267,7 @@ class _AdminHomeState extends State<AdminHome> {
         return Container(
           height: MediaQuery.of(context).size.height * 0.85,
           decoration: BoxDecoration(
-            color: isOutline ? Colors.transparent : Theme.of(context).colorScheme.surface,
+            color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
             border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
           ),
@@ -1615,7 +1615,7 @@ class _AdminHomeState extends State<AdminHome> {
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(color: isOutline ? Colors.white : modeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null),
+              decoration: BoxDecoration(color: isOutline ? ThemeManager.outlineBackground : modeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null),
               child: Text(mode.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : modeColor, letterSpacing: 2, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 12),
@@ -1656,7 +1656,7 @@ class _AdminHomeState extends State<AdminHome> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: isOutline ? Colors.white : null,
+                    color: isOutline ? ThemeManager.outlineBackground : null,
                     gradient: isOutline ? null : LinearGradient(colors: [modeColor, modeColor.withOpacity(0.8)]),
                     borderRadius: BorderRadius.circular(20),
                     border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
