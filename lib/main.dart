@@ -547,7 +547,7 @@ class _LoginPageState extends State<LoginPage> {
                                   color: Theme.of(context).colorScheme.surfaceContainerLow,
                                   borderRadius: BorderRadius.circular(23),
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 32),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -609,28 +609,31 @@ class _LoginPageState extends State<LoginPage> {
                                       },
                                     ),
                                     const SizedBox(height: 32),
-                                    SizedBox(
-                                      width: double.infinity, height: 65, 
-                                      child: AppButton.icon(
-                                        onLongPress: _isLoading ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
-                                        onPressed: _isLoading ? null : () { 
-                                          HapticFeedback.mediumImpact(); 
-                                          setState(() => _isLoading = true);
-                                          _loginBasicUser().then((_) {
-                                            if (mounted) setState(() => _isLoading = false);
-                                          }).catchError((_) {
-                                            if (mounted) setState(() => _isLoading = false);
-                                          });
-                                        },
-                                        icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.dashboard_outlined),
-                                        child: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary), maxLines: 1),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Theme.of(context).colorScheme.tertiary,
-                                          foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                          elevation: 2,
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                                      child: SizedBox(
+                                        width: double.infinity, height: 65, 
+                                        child: AppButton.icon(
+                                          onLongPress: _isLoading ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
+                                          onPressed: _isLoading ? null : () { 
+                                            HapticFeedback.mediumImpact(); 
+                                            setState(() => _isLoading = true);
+                                            _loginBasicUser().then((_) {
+                                              if (mounted) setState(() => _isLoading = false);
+                                            }).catchError((_) {
+                                              if (mounted) setState(() => _isLoading = false);
+                                            });
+                                          },
+                                          icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.dashboard_outlined),
+                                          child: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiary), maxLines: 1),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Theme.of(context).colorScheme.tertiary,
+                                            foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                            elevation: 2,
+                                          ),
                                         ),
-                                      )
+                                      ),
                                     ),
                                     const SizedBox(height: 12),
                                     SizedBox(
