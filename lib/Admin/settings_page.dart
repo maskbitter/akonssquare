@@ -723,7 +723,7 @@ class _SettingsPageState extends State<SettingsPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text("Select Theme", style: Theme.of(context).textTheme.titleLarge)),
         content: DropdownButton<String>(
-          value: local, isExpanded: true, items: ["Normal Theme", "Random Color Theme", "Black & White Theme", "Outline Theme"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+          value: local, isExpanded: true, items: ["Editor Choice", "Random Color Theme", "Black & White Theme", "Outline Theme"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
           onChanged: (val) { if (val != null) setST(() => local = val); },
         ),
         actions: [
@@ -763,7 +763,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _showOutlineColorPickerDialog(BuildContext context) {
     Color selected = ThemeManager.appOutlineBgNotifier.value;
-    final hexController = TextEditingController(text: '#${selected.value.toRadixString(16).substring(2).toUpperCase()}');
     final List<Color> presets = [
       const Color(0xFFFAF9F6), // Off-white
       Colors.white,
@@ -788,59 +787,38 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setST) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Center(child: Text("Custom Background", style: TextStyle(fontWeight: FontWeight.bold))),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text("Select or enter a background color (Updates Live!):", textAlign: TextAlign.center),
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: presets.map((c) => GestureDetector(
-                    onTap: () async {
-                      setST(() {
-                        selected = c;
-                        hexController.text = '#${c.value.toRadixString(16).substring(2).toUpperCase()}';
-                      });
-                      await ThemeManager.setOutlineBgColor(c);
-                    },
-                    child: Container(
-                      width: 45, height: 45,
-                      decoration: BoxDecoration(
-                        color: c,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: selected.value == c.value ? Colors.black : Colors.grey, width: selected.value == c.value ? 3 : 1),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
-                      ),
-                    ),
-                  )).toList(),
-                ),
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: hexController,
-                  decoration: const InputDecoration(
-                    labelText: "Custom HEX Color",
-                    hintText: "#RRGGBB",
-                    prefixIcon: Icon(Icons.colorize_outlined),
-                    isDense: true,
-                  ),
-                  onChanged: (val) async {
-                    if (val.length == 7 && val.startsWith('#')) {
-                      try {
-                        final c = Color(int.parse("FF${val.substring(1)}", radix: 16));
-                        setST(() => selected = c);
-                        await ThemeManager.setOutlineBgColor(c);
-                      } catch (e) { /* Invalid HEX */ }
-                    }
+          title: const Center(child: Text("Background Customizer", style: TextStyle(fontWeight: FontWeight.bold))),
+          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Select a background color:", textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: presets.map((c) => GestureDetector(
+                  onTap: () async {
+                    setST(() {
+                      selected = c;
+                    });
+                    await ThemeManager.setOutlineBgColor(c);
                   },
-                ),
-              ],
-            ),
+                  child: Container(
+                    width: 45, height: 45,
+                    decoration: BoxDecoration(
+                      color: c,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: selected.value == c.value ? Colors.black : Colors.grey, width: selected.value == c.value ? 3 : 1),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+                    ),
+                  ),
+                )).toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           actions: [
             AppDialogActions(
               actions: [

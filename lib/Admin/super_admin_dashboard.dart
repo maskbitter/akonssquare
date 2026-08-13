@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:akonssquare/Common/build_config.dart';
 import 'package:akonssquare/Common/update_guard.dart';
+import 'package:akonssquare/Common/theme_manager.dart';
 import 'package:akonssquare/Common/ui_helper.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
@@ -135,33 +136,35 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 70,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary,
+        foregroundColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
+        elevation: isOutline ? 0 : 2,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               _appName.isEmpty ? "Loading..." : _appName,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
             ),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   "System",
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
                 ),
                 Text(
                   " | ", 
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7)),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black.withValues(alpha: 0.5) : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7)),
                 ),
                 Text(
                   "Super Admin(Master Access Mode)",
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary, 
+                    color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, 
                   ),
                 ),
               ],
@@ -207,8 +210,8 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                         dbVersion: dbVersion,
                         latestVersion: remote,
                         isOutdated: isOutdated,
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        secondaryColor: Theme.of(context).colorScheme.onPrimary,
+                        color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
+                        secondaryColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
                         showLogoutIcon: true,
                       );
                   }

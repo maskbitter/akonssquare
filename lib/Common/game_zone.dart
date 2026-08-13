@@ -14,14 +14,10 @@ class GameZonePage extends StatefulWidget {
 class _GameZonePageState extends State<GameZonePage> {
   final List<Map<String, dynamic>> _games = [
     {'name': 'Tic Tac Toe', 'icon': Icons.grid_3x3, 'route': (context) => const TicTacToeGame()},
-    {'name': 'Slide Puzzle', 'icon': Icons.extension, 'route': (context) => const SlidePuzzleGame()},
+    {'name': 'Obstacle Runner', 'icon': Icons.directions_run, 'route': (context) => const ObstacleRunnerGame()},
     {'name': 'Memory Match', 'icon': Icons.style, 'route': (context) => const MemoryMatchGame()},
-    {'name': 'Snake', 'icon': Icons.gesture, 'route': (context) => const SnakeGame()},
     {'name': 'Tap Blitz', 'icon': Icons.touch_app, 'route': (context) => const TapBlitzGame()},
-    {'name': '2048 Lite', 'icon': Icons.looks_two, 'route': (context) => const Game2048()},
     {'name': 'Color Match', 'icon': Icons.palette, 'route': (context) => const ColorMatchGame()},
-    {'name': 'Higher Lower', 'icon': Icons.swap_vert, 'route': (context) => const HigherLowerGame()},
-    {'name': 'R-P-S', 'icon': Icons.front_hand, 'route': (context) => const RockPaperScissorsGame()},
     {'name': 'Whack-a-Mole', 'icon': Icons.sports_mma, 'route': (context) => const WhackAMoleGame()},
   ];
 
@@ -103,26 +99,190 @@ class _TicTacToeGameState extends State<TicTacToeGame> {
   }
 }
 
-// 2. SLIDE PUZZLE
-class SlidePuzzleGame extends StatefulWidget {
-  const SlidePuzzleGame({super.key});
+// 2. OBSTACLE RUNNER
+class ObstacleRunnerGame extends StatefulWidget {
+  const ObstacleRunnerGame({super.key});
   @override
-  State<SlidePuzzleGame> createState() => _SlidePuzzleGameState();
+  State<ObstacleRunnerGame> createState() => _ObstacleRunnerGameState();
 }
-class _SlidePuzzleGameState extends State<SlidePuzzleGame> {
-  List<int> numbers = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+class _ObstacleRunnerGameState extends State<ObstacleRunnerGame> {
+  double birdY = 0;
+  double initialPos = 0;
+  double height = 0;
+  double time = 0;
+  double gravity = -4.9;
+  double velocity = 3.5;
+  double birdWidth = 0.1;
+  double birdHeight = 0.1;
+
+  bool gameHasStarted = false;
+
+  static List<double> barrierX = [2, 2 + 1.5];
+  static double barrierWidth = 0.2;
+  List<List<double>> barrierHeight = [
+    [0.6, 0.4],
+    [0.4, 0.6],
+  ];
+
+  int score = 0;
+  int bestScore = 0;
+
   @override
-  void initState() { super.initState(); numbers.shuffle(); }
-  void _move(int i) {
-    int empty = numbers.indexOf(0);
-    if ((i - empty).abs() == 1 || (i - empty).abs() == 3) setState(() { numbers[empty] = numbers[i]; numbers[i] = 0; });
+  void initState() {
+    super.initState();
+    _loadBestScore();
   }
+
+  Future<void> _loadBestScore() async {
+    final p = await SharedPreferences.getInstance();
+    setState(() {
+      bestScore = p.getInt('runner_best') ?? 0;
+    });
+  }
+
+  void startGame() {
+    gameHasStarted = true;
+    score = 0;
+    Timer.periodic(const Duration(milliseconds: 10), (timer) {
+      height = gravity * time * time + velocity * time;
+      setState(() {
+        birdY = initialPos - height;
+      });
+
+      if (_checkGameOver()) {
+        timer.cancel();
+        _endGame();
+      }
+
+      _moveBarriers();
+      time += 0.01;
+    });
+  }
+
+  void _moveBarriers() {
+    setState(() {
+      for (int i = 0; i < barrierX.length; i++) {
+        barrierX[i] -= 0.01;
+        if (barrierX[i] < -1.5) {
+          barrierX[i] += 3;
+          score++;
+        }
+      }
+    });
+  }
+
+  void jump() {
+    setState(() {
+      time = 0;
+      initialPos = birdY;
+    });
+  }
+
+  bool _checkGameOver() {
+    if (birdY < -1 || birdY > 1) return true;
+    for (int i = 0; i < barrierX.length; i++) {
+      if (barrierX[i] <= birdWidth && barrierX[i] + barrierWidth >= -birdWidth && (birdY <= -1 + barrierHeight[i][0] || birdY + birdHeight >= 1 - barrierHeight[i][1])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _endGame() async {
+    gameHasStarted = false;
+    if (score > bestScore) {
+      bestScore = score;
+      final p = await SharedPreferences.getInstance();
+      p.setInt('runner_best', bestScore);
+    }
+    _showGameOverDialog();
+  }
+
+  void _showGameOverDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Game Over"),
+        content: Text("Score: $score\nBest Score: $bestScore"),
+        actions: [
+          TextButton(onPressed: () { Navigator.pop(ctx); _resetGame(); }, child: const Text("Play Again")),
+        ],
+      ),
+    );
+  }
+
+  void _resetGame() {
+    setState(() {
+      birdY = 0;
+      gameHasStarted = false;
+      time = 0;
+      initialPos = 0;
+      barrierX = [2, 2 + 1.5];
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text("Slide Puzzle")),
-      body: Center(child: GridView.builder(shrinkWrap: true, padding: const EdgeInsets.all(20), gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
-        itemCount: 9, itemBuilder: (c, i) => GestureDetector(onTap: () => _move(i), child: Card(color: numbers[i] == 0 ? Colors.grey : Colors.blue,
-        child: Center(child: Text(numbers[i] == 0 ? "" : "${numbers[i]}", style: const TextStyle(fontSize: 24, color: Colors.white))))))));
+    return GestureDetector(
+      onTap: gameHasStarted ? jump : startGame,
+      child: Scaffold(
+        backgroundColor: Colors.blue[100],
+        body: Column(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Container(
+                color: Colors.blue[100],
+                child: Center(
+                  child: Stack(
+                    children: [
+                      // Player
+                      Container(
+                        alignment: Alignment(0, birdY),
+                        child: Container(width: 30, height: 30, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                      ),
+                      // Barriers
+                      ...List.generate(barrierX.length, (i) {
+                        return Stack(
+                          children: [
+                            Container(
+                              alignment: Alignment(barrierX[i], 1.1),
+                              child: Container(width: 50, height: 150 * barrierHeight[i][1], color: Colors.green),
+                            ),
+                            Container(
+                              alignment: Alignment(barrierX[i], -1.1),
+                              child: Container(width: 50, height: 150 * barrierHeight[i][0], color: Colors.green),
+                            ),
+                          ],
+                        );
+                      }),
+                      Container(
+                        alignment: const Alignment(0, -0.3),
+                        child: Text(gameHasStarted ? "" : "TAP TO PLAY", style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Container(height: 15, color: Colors.green),
+            Expanded(
+              child: Container(
+                color: Colors.brown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text("SCORE", style: const TextStyle(color: Colors.white, fontSize: 20)), Text("$score", style: const TextStyle(color: Colors.white, fontSize: 35))]),
+                    Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text("BEST", style: const TextStyle(color: Colors.white, fontSize: 20)), Text("$bestScore", style: const TextStyle(color: Colors.white, fontSize: 35))]),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -155,42 +315,7 @@ class _MemoryMatchGameState extends State<MemoryMatchGame> {
   }
 }
 
-// 4. SNAKE
-class SnakeGame extends StatefulWidget {
-  const SnakeGame({super.key});
-  @override
-  State<SnakeGame> createState() => _SnakeGameState();
-}
-class _SnakeGameState extends State<SnakeGame> {
-  List<int> snake = [45, 65, 85]; int food = 100; String dir = "down"; Timer? timer;
-  void _start() {
-    timer?.cancel();
-    timer = Timer.periodic(const Duration(milliseconds: 300), (t) {
-      setState(() {
-        int next = snake.last + (dir == "down" ? 20 : dir == "up" ? -20 : dir == "left" ? -1 : 1);
-        if (snake.contains(next) || next < 0 || next >= 400) { t.cancel(); return; }
-        snake.add(next); if (next == food) { food = Random().nextInt(400); } else { snake.removeAt(0); }
-      });
-    });
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text("Snake")),
-      body: Column(children: [
-        Expanded(child: GridView.builder(itemCount: 400, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 20),
-          itemBuilder: (c, i) => Container(color: snake.contains(i) ? Colors.green : (i == food ? Colors.red : Colors.black12), margin: const EdgeInsets.all(1)))),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-          IconButton(onPressed: () => dir = "left", icon: const Icon(Icons.arrow_back)),
-          IconButton(onPressed: () => dir = "up", icon: const Icon(Icons.arrow_upward)),
-          IconButton(onPressed: () => dir = "down", icon: const Icon(Icons.arrow_downward)),
-          IconButton(onPressed: () => dir = "right", icon: const Icon(Icons.arrow_forward)),
-          ElevatedButton(onPressed: _start, child: const Text("Start"))
-        ])
-      ]));
-  }
-}
-
-// 5. TAP BLITZ
+// 4. TAP BLITZ
 class TapBlitzGame extends StatefulWidget {
   const TapBlitzGame({super.key});
   @override
@@ -220,30 +345,7 @@ class _TapBlitzGameState extends State<TapBlitzGame> {
   }
 }
 
-// 6. 2048 LITE (3x3)
-class Game2048 extends StatefulWidget {
-  const Game2048({super.key});
-  @override
-  State<Game2048> createState() => _Game2048State();
-}
-class _Game2048State extends State<Game2048> {
-  List<int> grid = List.filled(9, 0);
-  void _add() { var empty = []; for (var i=0; i<9; i++) if (grid[i] == 0) empty.add(i); if (empty.isNotEmpty) grid[empty[Random().nextInt(empty.length)]] = 2; }
-  void _move() { setState(() { _add(); }); } // Simplified for demo
-  @override
-  void initState() { super.initState(); _add(); _add(); }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text("2048 Lite")),
-      body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        GridView.builder(shrinkWrap: true, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
-          itemCount: 9, itemBuilder: (c, i) => Card(color: grid[i] == 0 ? Colors.grey[300] : Colors.orange, child: Center(child: Text(grid[i] == 0 ? "" : "${grid[i]}")))),
-        ElevatedButton(onPressed: _move, child: const Text("Random Move"))
-      ])));
-  }
-}
-
-// 7. COLOR MATCH
+// 5. COLOR MATCH
 class ColorMatchGame extends StatefulWidget {
   const ColorMatchGame({super.key});
   @override
@@ -270,65 +372,7 @@ class _ColorMatchGameState extends State<ColorMatchGame> {
   }
 }
 
-// 8. HIGHER LOWER
-class HigherLowerGame extends StatefulWidget {
-  const HigherLowerGame({super.key});
-  @override
-  State<HigherLowerGame> createState() => _HigherLowerGameState();
-}
-class _HigherLowerGameState extends State<HigherLowerGame> {
-  int current = 50; int next = 0; int score = 0;
-  void _check(bool higher) {
-    next = Random().nextInt(100);
-    if ((higher && next >= current) || (!higher && next <= current)) { score++; } else { score = 0; }
-    setState(() { current = next; });
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text("Higher Lower")),
-      body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text("Score: $score", style: const TextStyle(fontSize: 30)),
-        Text("$current", style: const TextStyle(fontSize: 100, fontWeight: FontWeight.bold)),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          ElevatedButton(onPressed: () => _check(true), child: const Text("Higher")),
-          const SizedBox(width: 20),
-          ElevatedButton(onPressed: () => _check(false), child: const Text("Lower")),
-        ])
-      ])));
-  }
-}
-
-// 9. ROCK PAPER SCISSORS
-class RockPaperScissorsGame extends StatefulWidget {
-  const RockPaperScissorsGame({super.key});
-  @override
-  State<RockPaperScissorsGame> createState() => _RockPaperScissorsGameState();
-}
-class _RockPaperScissorsGameState extends State<RockPaperScissorsGame> {
-  String msg = "Choose!"; List opts = ["Rock", "Paper", "Scissors"];
-  void _play(int i) {
-    int bot = Random().nextInt(3);
-    if (i == bot) msg = "Draw!";
-    else if ((i == 0 && bot == 2) || (i == 1 && bot == 0) || (i == 2 && bot == 1)) msg = "You Win! Bot: ${opts[bot]}";
-    else msg = "You Lose! Bot: ${opts[bot]}";
-    setState(() {});
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text("Rock Paper Scissors")),
-      body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text(msg, style: const TextStyle(fontSize: 24)),
-        const SizedBox(height: 40),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-          ElevatedButton(onPressed: () => _play(0), child: const Text("Rock")),
-          ElevatedButton(onPressed: () => _play(1), child: const Text("Paper")),
-          ElevatedButton(onPressed: () => _play(2), child: const Text("Scissors")),
-        ])
-      ])));
-  }
-}
-
-// 10. WHACK-A-MOLE
+// 6. WHACK-A-MOLE
 class WhackAMoleGame extends StatefulWidget {
   const WhackAMoleGame({super.key});
   @override

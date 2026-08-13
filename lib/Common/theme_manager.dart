@@ -91,7 +91,7 @@ class ThemeManager {
     if (appThemeNotifier.value == "Black & White Theme") {
       return (isSubCard ? Colors.grey.shade700 : Colors.black).withValues(alpha: alpha);
     }
-    if (appThemeNotifier.value == "Normal Theme") {
+    if (appThemeNotifier.value == "Editor Choice") {
       if (isSubCard) {
         final List<Color> colors = [
           Colors.blueGrey.shade700, 
@@ -116,7 +116,7 @@ class ThemeManager {
     if (appThemeNotifier.value == "Black & White Theme") {
       return (isSubCard ? Colors.grey.shade200 : Colors.white).withValues(alpha: alpha);
     }
-    if (appThemeNotifier.value == "Normal Theme") {
+    if (appThemeNotifier.value == "Editor Choice") {
       if (isSubCard) {
         final List<Color> colors = [
           const Color(0xFFECEFF1), // BlueGrey 50
@@ -142,7 +142,7 @@ class ThemeManager {
     if (appThemeNotifier.value == "Black & White Theme") {
       return isSubCard ? Colors.black : Colors.black;
     }
-    if (appThemeNotifier.value == "Normal Theme") {
+    if (appThemeNotifier.value == "Editor Choice") {
       if (isSubCard) {
         final List<Color> colors = [
           Colors.blueGrey.shade900, 
@@ -234,7 +234,7 @@ class ThemeManager {
         onInverseSurface: Colors.white,
         inversePrimary: Color(0xFFBDBDBD),
       );
-    } else if (themeName == "Normal Theme") {
+    } else if (themeName == "Editor Choice") {
       colorScheme = ColorScheme.fromSeed(
         seedColor: Colors.indigo,
         brightness: Brightness.light,
@@ -300,7 +300,7 @@ class ThemeManager {
           bronze: themeName == "Black & White Theme" ? const Color(0xFF757575) : const Color(0xFFCD7F32),
           premium: themeName == "Black & White Theme" ? Colors.black : const Color(0xFF673AB7),
           verified: themeName == "Black & White Theme" ? Colors.black : const Color(0xFF2196F3),
-          electric: themeName == "Normal Theme" ? const Color(0xFFE65100) : (themeName == "Black & White Theme" ? Colors.black : colorScheme.secondary),
+          electric: themeName == "Editor Choice" ? const Color(0xFFE65100) : (themeName == "Black & White Theme" ? Colors.black : colorScheme.secondary),
         ),
       ],
       cardTheme: CardThemeData(
