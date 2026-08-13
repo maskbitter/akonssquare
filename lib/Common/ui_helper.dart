@@ -109,6 +109,7 @@ class AppVersionInfo extends StatelessWidget {
   final Color? color;
   final Color? secondaryColor;
   final CrossAxisAlignment crossAxisAlignment;
+  final bool showLogoutIcon;
 
   const AppVersionInfo({
     super.key,
@@ -120,6 +121,7 @@ class AppVersionInfo extends StatelessWidget {
     this.color,
     this.secondaryColor,
     this.crossAxisAlignment = CrossAxisAlignment.center,
+    this.showLogoutIcon = false,
   });
 
   @override
@@ -144,48 +146,45 @@ class AppVersionInfo extends StatelessWidget {
     return Column(
       crossAxisAlignment: crossAxisAlignment,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: "V: $version", 
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: isOutline ? Colors.black : effectiveColor, 
-                      fontWeight: FontWeight.bold, 
-                      fontSize: mainFontSize
-                    )
-                  ),
-                  if (isOutdated && latestVersion != null) ...[
-                    TextSpan(
-                      text: " | ", 
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: isOutline ? Colors.black : Theme.of(context).colorScheme.outline, 
-                        fontSize: mainFontSize
-                      )
-                    ),
-                    TextSpan(
-                      text: "Latest V: $latestVersion", 
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error, 
-                        fontWeight: FontWeight.bold, 
-                        fontSize: mainFontSize
-                      )
-                    ),
-                  ]
-                ]
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: "V: $version", 
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: isOutline ? Colors.black : effectiveColor, 
+                  fontWeight: FontWeight.bold, 
+                  fontSize: mainFontSize
+                )
               ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.logout, 
-              size: 10, 
-              color: isOutline ? Colors.black : effectiveColor.withValues(alpha: 0.8)
-            ),
-          ],
+              if (isOutdated && latestVersion != null) ...[
+                TextSpan(
+                  text: " | ", 
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: isOutline ? Colors.black : Theme.of(context).colorScheme.outline, 
+                    fontSize: mainFontSize
+                  )
+                ),
+                TextSpan(
+                  text: "Latest V: $latestVersion", 
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error, 
+                    fontWeight: FontWeight.bold, 
+                    fontSize: mainFontSize
+                  )
+                ),
+              ]
+            ]
+          ),
         ),
+        if (showLogoutIcon) ...[
+          const SizedBox(height: 1),
+          Icon(
+            Icons.logout, 
+            size: 8, 
+            color: isOutline ? Colors.black : effectiveColor.withValues(alpha: 0.8)
+          ),
+        ],
         const SizedBox(height: 1),
         Text(
           displayDBText,

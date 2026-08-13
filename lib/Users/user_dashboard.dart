@@ -287,6 +287,7 @@ class _UserDashboardState extends State<UserDashboard> {
                             isOutdated: isOutdated,
                             color: Theme.of(context).colorScheme.primary,
                             secondaryColor: Theme.of(context).colorScheme.primary,
+                            showLogoutIcon: true,
                           );
                         }
                       );

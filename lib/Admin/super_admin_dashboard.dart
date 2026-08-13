@@ -209,6 +209,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                         isOutdated: isOutdated,
                         color: Theme.of(context).colorScheme.onPrimary,
                         secondaryColor: Theme.of(context).colorScheme.onPrimary,
+                        showLogoutIcon: true,
                       );
                   }
                 );

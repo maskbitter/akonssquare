@@ -362,6 +362,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         isOutdated: isOutdated,
                         color: Theme.of(context).colorScheme.primary,
                         secondaryColor: Theme.of(context).colorScheme.secondary,
+                        showLogoutIcon: true,
                       );
                     }
                   );
