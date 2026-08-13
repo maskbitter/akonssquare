@@ -899,16 +899,27 @@ class _AdminHomeState extends State<AdminHome> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(titleIcon, size: 18, color: context.electric),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
-              ),
-            ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: (ThemeManager.appThemeNotifier.value == "Outline Theme")
+                ? BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                  )
+                : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(titleIcon, size: 18, color: (ThemeManager.appThemeNotifier.value == "Outline Theme") ? Theme.of(context).colorScheme.primary : context.electric),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(color: (ThemeManager.appThemeNotifier.value == "Outline Theme") ? Colors.black : Theme.of(context).colorScheme.primary),
+                ),
+              ],
+            ),
           ),
         ),
         InkWell(
@@ -918,12 +929,12 @@ class _AdminHomeState extends State<AdminHome> {
           },
           borderRadius: BorderRadius.circular(16),
           child: Card(
-            elevation: 2,
-            color: containerColor,
+            elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : containerColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                  ? BorderSide(color: containerColor == Colors.transparent ? accentColor : containerColor, width: 1.5) 
+                  ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
                   : BorderSide.none,
             ),
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -944,11 +955,11 @@ class _AdminHomeState extends State<AdminHome> {
                       TableRow(
                         decoration: BoxDecoration(
                           color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : accentColor,
-                          border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border(bottom: BorderSide(color: accentColor, width: 1.5)) : null,
+                          border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
                         ),
                         children: headers.map((h) => Padding(
                           padding: const EdgeInsets.all(12),
-                          child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? accentColor : null))),
+                          child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null))),
                         )).toList(),
                       ),
                       ...List.generate(meters.length, (index) {
@@ -959,7 +970,7 @@ class _AdminHomeState extends State<AdminHome> {
                         return TableRow(
                           decoration: BoxDecoration(
                             color: (ThemeManager.appThemeNotifier.value == "Outline Theme") 
-                                ? Colors.transparent 
+                                ? Colors.white 
                                 : (index % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent),
                           ),
                           children: rows.map((cell) => Padding(

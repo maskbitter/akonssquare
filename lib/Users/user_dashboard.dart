@@ -558,23 +558,29 @@ class _UserDashboardState extends State<UserDashboard> {
 
               if (ed != null && !isElectricStopped)
                 Card(
-                  elevation: 2,
+                  elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : null,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
-                    side: BorderSide.none,
+                    side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
                   ),
                   child: ExpansionTile(
+                    backgroundColor: Colors.white,
+                    collapsedBackgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : null,
                     shape: const Border(),
                     collapsedShape: const Border(),
                     iconColor: context.electric,
                     collapsedIconColor: context.electric,
                     leading: CircleAvatar(
-                      backgroundColor: context.electric.withValues(alpha: 0.1),
-                      child: Icon(Icons.electric_bolt, color: context.electric, size: 20),
+                      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : context.electric.withValues(alpha: 0.1),
+                      child: Container(
+                        decoration: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                        child: Icon(Icons.electric_bolt, color: context.electric, size: 20)
+                      ),
                     ),
-                    title: Text("Electricity Bill", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                    subtitle: Text("Usage: ${((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)} units", style: Theme.of(context).textTheme.bodySmall),
+                    title: Text("Electricity Bill", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    subtitle: Text("Usage: ${((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)} units", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
                     trailing: Text("৳${electricityBill.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                     children: [
                       const Divider(height: 1),
@@ -591,12 +597,14 @@ class _UserDashboardState extends State<UserDashboard> {
 
               ...activeServices.map((s) {
                 bool isWifi = s['name'].toString().toLowerCase().contains("wifi");
+                bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
                 return Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
+                    color: isOutline ? Colors.white : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
+                    border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                    boxShadow: isOutline ? [] : [
                       BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2)),
                     ],
                   ),
@@ -605,14 +613,17 @@ class _UserDashboardState extends State<UserDashboard> {
                     visualDensity: VisualDensity.compact,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                     leading: CircleAvatar(
-                      backgroundColor: (isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary).withValues(alpha: 0.1),
-                      child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary, size: 20),
+                      backgroundColor: isOutline ? Colors.white : (isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary).withValues(alpha: 0.1),
+                      child: Container(
+                        decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                        child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary, size: 20)
+                      ),
                     ),
                     title: Text(
                       isWifi ? "${s['name']} (x${s['deviceQuantity'] ?? 1})" : s['name'],
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
                     ),
-                    subtitle: isWifi ? Text("৳${s['wifiCost'] ?? 0} per device", style: Theme.of(context).textTheme.bodySmall) : null,
+                    subtitle: isWifi ? Text("৳${s['wifiCost'] ?? 0} per device", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : null)) : null,
                     trailing: Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                   ),
                 );

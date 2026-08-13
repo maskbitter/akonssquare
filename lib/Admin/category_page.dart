@@ -714,12 +714,12 @@ class _CategoryPageState extends State<CategoryPage> {
                                         shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                         side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                                            ? BorderSide(color: isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor, width: 1.5) 
+                                            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
                                             : BorderSide.none,
                                       ),
                                       child: ExpansionTile(
-                                      backgroundColor: Colors.transparent,
-                                      collapsedBackgroundColor: Colors.transparent,
+                                      backgroundColor: Colors.white,
+                                      collapsedBackgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : null,
                                       shape: const Border(),
                                       collapsedShape: const Border(),
                                       tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
@@ -732,7 +732,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                             children: [
                                               Icon(
                                                 isOccupied ? (isPaid ? Icons.check_circle : Icons.door_front_door_outlined) : Icons.meeting_room_outlined,
-                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error,
+                                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? (isPaid ? Colors.green : (isOccupied ? Colors.black : Colors.red)) : (isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error),
                                                 size: 22,
                                               ),
                                               const SizedBox(width: 8),
@@ -742,14 +742,14 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
                                                   borderRadius: BorderRadius.circular(6),
                                                   border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                                                      ? Border.all(color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error, width: 1) 
+                                                      ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) 
                                                       : null,
                                                 ),
                                                 child: Text(
                                                   subName,
                                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                                     fontWeight: FontWeight.w900, 
-                                                    color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error, 
+                                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : (isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error), 
                                                   ),
                                                 ),
                                               ),
@@ -964,7 +964,7 @@ class _CategoryPageState extends State<CategoryPage> {
       decoration: BoxDecoration(
         color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surfaceContainerLow, 
         borderRadius: BorderRadius.circular(12), 
-        border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: effectiveColor, width: 1) : null,
+        border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1155,24 +1155,33 @@ class _CategoryPageState extends State<CategoryPage> {
     bool isOp = widget.isOperator;
     final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
-    final effectiveBgColor = bgColor ?? Theme.of(context).colorScheme.surface;
-    final effectiveAccentColor = accentColor ?? color;
+    final Color effectiveBgColor = (ThemeManager.appThemeNotifier.value == "Outline Theme") ? Colors.white : (bgColor ?? Theme.of(context).colorScheme.surface);
+    final Color effectiveAccentColor = accentColor ?? color;
+    final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
 
     return Card(
-      elevation: 1,
+      elevation: isOutline ? 0 : 1,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       color: effectiveBgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16), 
-        side: BorderSide.none,
+        side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
       ),
       child: ExpansionTile(
-        leading: CircleAvatar(backgroundColor: effectiveAccentColor, child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20)),
+        backgroundColor: Colors.white,
+        collapsedBackgroundColor: isOutline ? Colors.white : null,
+        leading: CircleAvatar(
+          backgroundColor: isOutline ? Colors.white : effectiveAccentColor, 
+          child: Container(
+            decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+            child: Icon(icon, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary, size: 20)
+          )
+        ),
         title: Text(
           title, 
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: effectiveAccentColor)
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: isOutline ? Colors.black : effectiveAccentColor)
         ),
-        subtitle: Text("${meters.length} meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: effectiveAccentColor.withOpacity(0.7))),
+        subtitle: Text("${meters.length} meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : effectiveAccentColor.withOpacity(0.7))),
         children: [
           if (meters.isEmpty) 
             Padding(
@@ -1193,13 +1202,14 @@ class _CategoryPageState extends State<CategoryPage> {
                   children: [
                     TableRow(
                       decoration: BoxDecoration(
-                        color: effectiveAccentColor,
+                        color: isOutline ? Colors.white : effectiveAccentColor,
+                        border: isOutline ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
                       ),
                       children: [
                         "#", "Meter Number", "Last Readings", "Present Readings", "Govt. Last\n Bill Readings", "Govt. New\nBill Readings", "Govt. Bill\nAmounts", "Govt. Bill\nUnits", "Last Month\nUnit Rate", "This Month\nUnit Rate", "Govt.\nDue/Adv Units", "Main Meter\nUsed Units", "Sub-Meter\nUsed Units", "Balance", "Action"
                       ].map((h) => Padding(
                         padding: const EdgeInsets.all(12), 
-                        child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle))
+                        child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: isOutline ? Colors.black : null)))
                       )).toList().sublist(0, isOp ? 14 : 15),
                     ),
                     ...meters.asMap().entries.map((entry) {
@@ -1233,21 +1243,21 @@ class _CategoryPageState extends State<CategoryPage> {
                       }
 
                       return TableRow(
-                        decoration: BoxDecoration(color: idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent),
+                        decoration: BoxDecoration(color: isOutline ? Colors.white : (idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent)),
                         children: [
-                          wrapCell(Text("${idx + 1}", style: dataStyle)),
-                          wrapCell(Text(meterNo, style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary))),
-                          wrapCell(Text(last.toStringAsFixed(0), style: dataStyle)),
-                          wrapCell(Text(pres.toStringAsFixed(0), style: dataStyle)),
-                          wrapCell(Text(lastGovt.toStringAsFixed(0), style: dataStyle)),
-                          wrapCell(Text(newGovt.toStringAsFixed(0), style: dataStyle)),
-                          wrapCell(Text(govtAmt.toStringAsFixed(0), style: dataStyle)),
-                          wrapCell(Text(govtUnit.toStringAsFixed(0), style: dataStyle)),
-                          wrapCell(Text(lastRate.toStringAsFixed(1), style: dataStyle)),
-                          wrapCell(Text(thisRate.toStringAsFixed(1), style: dataStyle)),
-                          wrapCell(Text("${govtDueAdv.toStringAsFixed(0)}$advDueSuffix", style: dataStyle?.copyWith(color: isAdvDueRed ? Theme.of(context).colorScheme.error : null, fontWeight: isAdvDueRed ? FontWeight.bold : null))),
-                          wrapCell(Text(mainUsed.toStringAsFixed(0), style: dataStyle?.copyWith(fontWeight: FontWeight.bold))),
-                          wrapCell(Text(totalSubPaid.toStringAsFixed(0), style: dataStyle)),
+                          wrapCell(Text("${idx + 1}", style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(meterNo, style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary))),
+                          wrapCell(Text(last.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(pres.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(lastGovt.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(newGovt.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(govtAmt.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(govtUnit.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(lastRate.toStringAsFixed(1), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(thisRate.toStringAsFixed(1), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text("${govtDueAdv.toStringAsFixed(0)}$advDueSuffix", style: dataStyle?.copyWith(color: isAdvDueRed ? Theme.of(context).colorScheme.error : (isOutline ? Colors.black : null), fontWeight: isAdvDueRed ? FontWeight.bold : null))),
+                          wrapCell(Text(mainUsed.toStringAsFixed(0), style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(totalSubPaid.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
                           wrapCell(Text(balance.toStringAsFixed(0), style: dataStyle?.copyWith(color: balance > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold))),
                           if (!isOp)
                             Padding(
@@ -1286,27 +1296,33 @@ class _CategoryPageState extends State<CategoryPage> {
       stream: _dbService.getSubMetersStream(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const LinearProgressIndicator();
+        final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
         var subMeters = snapshot.data!.docs.toList();
         subMeters.sort((a, b) => ((a.data() as Map)['subMeterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['subMeterNo'] ?? '').toString().toLowerCase()));
 
         return Card(
-          elevation: 2,
-          color: Theme.of(context).colorScheme.secondaryContainer,
+          elevation: isOutline ? 0 : 2,
+          color: isOutline ? Colors.white : Theme.of(context).colorScheme.secondaryContainer,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16), 
-            side: BorderSide.none,
+            side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
           ),
           child: ExpansionTile(
+            backgroundColor: Colors.white,
+            collapsedBackgroundColor: isOutline ? Colors.white : null,
             leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.onSecondary, 
-              child: Icon(Icons.cable, color: Theme.of(context).colorScheme.secondary, size: 20)
+              backgroundColor: isOutline ? Colors.white : Theme.of(context).colorScheme.onSecondary, 
+              child: Container(
+                decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                child: Icon(Icons.cable, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary, size: 20)
+              )
             ),
             title: Text(
               "Sub-Meters List", 
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.secondary)
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: isOutline ? Colors.black : Theme.of(context).colorScheme.secondary)
             ),
-            subtitle: Text("${subMeters.length} sub-meters registered", style: Theme.of(context).textTheme.bodySmall),
+            subtitle: Text("${subMeters.length} sub-meters registered", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : null)),
             children: [
               if (subMeters.isEmpty) 
                 Padding(
@@ -1327,13 +1343,14 @@ class _CategoryPageState extends State<CategoryPage> {
                       children: [
                         TableRow(
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.secondary,
+                            color: isOutline ? Colors.white : Theme.of(context).colorScheme.secondary,
+                            border: isOutline ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
                           ),
                           children: [
                             "#", "Sub-Meter", "Main-Meter", "Last", "Present", "Used", "Action"
                           ].map((h) => Padding(
                             padding: const EdgeInsets.all(12), 
-                            child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle))
+                            child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: isOutline ? Colors.black : null)))
                           )).toList().sublist(0, isOp ? 6 : 7),
                         ),
                         ...subMeters.asMap().entries.map((entry) {
@@ -1344,14 +1361,14 @@ class _CategoryPageState extends State<CategoryPage> {
                           double pres = (sData['presentReading'] ?? last).toDouble();
 
                           return TableRow(
-                            decoration: BoxDecoration(color: idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent),
+                            decoration: BoxDecoration(color: isOutline ? Colors.white : (idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent)),
                             children: [
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${idx + 1}", style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['subMeterNo'] ?? '', style: dataStyle?.copyWith(fontWeight: FontWeight.bold)))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['mainMeterNo'] ?? '', style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(last.toStringAsFixed(0), style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(pres.toStringAsFixed(0), style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text((pres - last).toStringAsFixed(0), style: dataStyle?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${idx + 1}", style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['subMeterNo'] ?? '', style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['mainMeterNo'] ?? '', style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(last.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(pres.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text((pres - last).toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)))),
                               if (!isOp)
                                 Padding(
                                   padding: const EdgeInsets.all(4),
