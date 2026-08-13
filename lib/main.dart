@@ -44,11 +44,16 @@ class MyApp extends StatelessWidget {
         return ValueListenableBuilder<String>(
           valueListenable: ThemeManager.appFontNotifier,
           builder: (context, fontName, child) {
-            return MaterialApp(
-              title: 'AkonsSquare',
-              debugShowCheckedModeBanner: false,
-              theme: ThemeManager.getThemeByName(themeName, fontName: fontName),
-              home: const SplashScreen(),
+            return ValueListenableBuilder<Color>(
+              valueListenable: ThemeManager.appOutlineBgNotifier,
+              builder: (context, outlineBg, child) {
+                return MaterialApp(
+                  title: 'AkonsSquare',
+                  debugShowCheckedModeBanner: false,
+                  theme: ThemeManager.getThemeByName(themeName, fontName: fontName),
+                  home: const SplashScreen(),
+                );
+              }
             );
           },
         );

@@ -963,7 +963,7 @@ class _CategoryPageState extends State<CategoryPage> {
       margin: const EdgeInsets.symmetric(vertical: 2),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
-        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surfaceContainerLow, 
+        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow, 
         borderRadius: BorderRadius.circular(12), 
         border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
       ),
@@ -1106,7 +1106,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 ),
                 Card(
                   elevation: isOutline ? 0 : 2,
-                  color: isOutline ? Colors.white : Theme.of(context).colorScheme.primaryContainer,
+                  color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primaryContainer,
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16), 
@@ -1114,9 +1114,9 @@ class _CategoryPageState extends State<CategoryPage> {
                   ),
                   child: ExpansionTile(
                     backgroundColor: ThemeManager.outlineBackground,
-                    collapsedBackgroundColor: isOutline ? Colors.white : null,
+                    collapsedBackgroundColor: isOutline ? ThemeManager.outlineBackground : null,
                     leading: CircleAvatar(
-                      backgroundColor: isOutline ? Colors.white : Theme.of(context).colorScheme.onPrimary, 
+                      backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.onPrimary, 
                       child: Container(
                         decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
                         child: Icon(Icons.settings_input_component, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.primary, size: 20)
@@ -1162,7 +1162,7 @@ class _CategoryPageState extends State<CategoryPage> {
     bool isOp = widget.isOperator;
     final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
-    final Color effectiveBgColor = (ThemeManager.appThemeNotifier.value == "Outline Theme") ? Colors.white : (bgColor ?? Theme.of(context).colorScheme.surface);
+    final Color effectiveBgColor = (ThemeManager.appThemeNotifier.value == "Outline Theme") ? ThemeManager.outlineBackground : (bgColor ?? Theme.of(context).colorScheme.surface);
     final Color effectiveAccentColor = accentColor ?? color;
     final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
 
@@ -1176,9 +1176,9 @@ class _CategoryPageState extends State<CategoryPage> {
       ),
       child: ExpansionTile(
         backgroundColor: ThemeManager.outlineBackground,
-        collapsedBackgroundColor: isOutline ? Colors.white : null,
+        collapsedBackgroundColor: isOutline ? ThemeManager.outlineBackground : null,
         leading: CircleAvatar(
-          backgroundColor: isOutline ? Colors.white : effectiveAccentColor, 
+          backgroundColor: isOutline ? ThemeManager.outlineBackground : effectiveAccentColor, 
           child: Container(
             decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
             child: Icon(icon, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary, size: 20)
@@ -1209,7 +1209,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   children: [
                     TableRow(
                       decoration: BoxDecoration(
-                        color: isOutline ? Colors.white : effectiveAccentColor,
+                        color: isOutline ? ThemeManager.outlineBackground : effectiveAccentColor,
                         border: isOutline ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
                       ),
                       children: [
@@ -1250,7 +1250,7 @@ class _CategoryPageState extends State<CategoryPage> {
                       }
 
                       return TableRow(
-                        decoration: BoxDecoration(color: isOutline ? Colors.white : (idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent)),
+                        decoration: BoxDecoration(color: isOutline ? ThemeManager.outlineBackground : (idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent)),
                         children: [
                           wrapCell(Text("${idx + 1}", style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
                           wrapCell(Text(meterNo, style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary))),
@@ -1309,7 +1309,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
         return Card(
           elevation: isOutline ? 0 : 2,
-          color: isOutline ? Colors.white : Theme.of(context).colorScheme.secondaryContainer,
+          color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.secondaryContainer,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16), 
@@ -1317,9 +1317,9 @@ class _CategoryPageState extends State<CategoryPage> {
           ),
           child: ExpansionTile(
             backgroundColor: ThemeManager.outlineBackground,
-            collapsedBackgroundColor: isOutline ? Colors.white : null,
+            collapsedBackgroundColor: isOutline ? ThemeManager.outlineBackground : null,
             leading: CircleAvatar(
-              backgroundColor: isOutline ? Colors.white : Theme.of(context).colorScheme.onSecondary, 
+              backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.onSecondary, 
               child: Container(
                 decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
                 child: Icon(Icons.cable, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary, size: 20)
@@ -1350,7 +1350,7 @@ class _CategoryPageState extends State<CategoryPage> {
                       children: [
                         TableRow(
                           decoration: BoxDecoration(
-                            color: isOutline ? Colors.white : Theme.of(context).colorScheme.secondary,
+                            color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.secondary,
                             border: isOutline ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
                           ),
                           children: [
@@ -1368,7 +1368,7 @@ class _CategoryPageState extends State<CategoryPage> {
                           double pres = (sData['presentReading'] ?? last).toDouble();
 
                           return TableRow(
-                            decoration: BoxDecoration(color: isOutline ? Colors.white : (idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent)),
+                            decoration: BoxDecoration(color: isOutline ? ThemeManager.outlineBackground : (idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent)),
                             children: [
                               Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${idx + 1}", style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
                               Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['subMeterNo'] ?? '', style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)))),

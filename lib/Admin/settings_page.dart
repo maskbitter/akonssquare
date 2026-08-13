@@ -772,6 +772,12 @@ class _SettingsPageState extends State<SettingsPage> {
       const Color(0xFFE6E6FA), // Lavender Mist
       const Color(0xFFF0FFF0), // Honeydew
       const Color(0xFFF0F8FF), // Alice Blue
+      const Color(0xFFFFF5EE), // Shell
+      const Color(0xFFF0FFFF), // Azure
+      const Color(0xFFF5FFFA), // Mint Cream
+      const Color(0xFFFFFFF0), // Ivory
+      const Color(0xFFFFFAF0), // Floral White
+      const Color(0xFFFFF0F5), // Lavender Blush
     ];
 
     showDialog(
@@ -783,13 +789,16 @@ class _SettingsPageState extends State<SettingsPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Select a background color for Outline Theme:", textAlign: TextAlign.center),
+              const Text("Select a background color for Outline Theme (Updates Live!):", textAlign: TextAlign.center),
               const SizedBox(height: 20),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
                 children: presets.map((c) => GestureDetector(
-                  onTap: () => setST(() => selected = c),
+                  onTap: () async {
+                    setST(() => selected = c);
+                    await ThemeManager.setOutlineBgColor(c);
+                  },
                   child: Container(
                     width: 45, height: 45,
                     decoration: BoxDecoration(
@@ -808,23 +817,11 @@ class _SettingsPageState extends State<SettingsPage> {
               actions: [
                 AppButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                    elevation: 0,
-                  ),
-                  onPressed: () => Navigator.pop(ctx), 
-                  child: const Text("Keep Current")
-                ),
-                AppButton(
-                  style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary, 
                     foregroundColor: Theme.of(context).colorScheme.onPrimary
                   ),
-                  onPressed: () async {
-                    await ThemeManager.setOutlineBgColor(selected);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  },
-                  child: const Text("Apply Color"),
+                  onPressed: () => Navigator.pop(ctx), 
+                  child: const Text("Done")
                 ),
               ],
             ),
