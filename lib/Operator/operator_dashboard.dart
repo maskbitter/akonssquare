@@ -90,12 +90,6 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
         if (userData['password'] != currentPassword) {
           _handleLogout();
         }
-
-        String? serverSessionId = userData['currentSessionId'];
-        if (currentSessionId != null && serverSessionId != null && serverSessionId != currentSessionId) {
-          // New session started elsewhere
-          _handleLogout();
-        }
       }
     }, onError: (e) {
       _handleLogout();

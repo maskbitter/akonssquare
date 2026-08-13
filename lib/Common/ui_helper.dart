@@ -144,36 +144,47 @@ class AppVersionInfo extends StatelessWidget {
     return Column(
       crossAxisAlignment: crossAxisAlignment,
       children: [
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: "V: $version", 
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: isOutline ? Colors.black : effectiveColor, 
-                  fontWeight: FontWeight.bold, 
-                  fontSize: mainFontSize
-                )
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: "V: $version", 
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: isOutline ? Colors.black : effectiveColor, 
+                      fontWeight: FontWeight.bold, 
+                      fontSize: mainFontSize
+                    )
+                  ),
+                  if (isOutdated && latestVersion != null) ...[
+                    TextSpan(
+                      text: " | ", 
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: isOutline ? Colors.black : Theme.of(context).colorScheme.outline, 
+                        fontSize: mainFontSize
+                      )
+                    ),
+                    TextSpan(
+                      text: "Latest V: $latestVersion", 
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error, 
+                        fontWeight: FontWeight.bold, 
+                        fontSize: mainFontSize
+                      )
+                    ),
+                  ]
+                ]
               ),
-              if (isOutdated && latestVersion != null) ...[
-                TextSpan(
-                  text: " | ", 
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isOutline ? Colors.black : Theme.of(context).colorScheme.outline, 
-                    fontSize: mainFontSize
-                  )
-                ),
-                TextSpan(
-                  text: "Latest V: $latestVersion", 
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error, 
-                    fontWeight: FontWeight.bold, 
-                    fontSize: mainFontSize
-                  )
-                ),
-              ]
-            ]
-          ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.logout, 
+              size: 10, 
+              color: isOutline ? Colors.black : effectiveColor.withValues(alpha: 0.8)
+            ),
+          ],
         ),
         const SizedBox(height: 1),
         Text(

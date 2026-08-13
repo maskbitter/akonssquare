@@ -66,14 +66,6 @@ class _UserDashboardState extends State<UserDashboard> {
         _handleLogout();
         return;
       }
-
-      // Check for Session ID (requires async prefs)
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? currentSessionId = prefs.getString('sessionId');
-      String? serverSessionId = data['currentSessionId'];
-      if (currentSessionId != null && serverSessionId != null && serverSessionId != currentSessionId) {
-        _handleLogout();
-      }
     }, onError: (e) {
       debugPrint("Listener Error: $e");
       _handleLogout();

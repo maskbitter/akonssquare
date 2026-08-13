@@ -52,12 +52,6 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
         // User deleted or DB wiped
         _handleLogout();
       } else {
-        var data = snapshot.data() as Map<String, dynamic>;
-        String? serverSessionId = data['currentSessionId'];
-        if (currentSessionId != null && serverSessionId != null && serverSessionId != currentSessionId) {
-          // New session started elsewhere
-          _handleLogout();
-        }
       }
     }, onError: (e) {
       _handleLogout();

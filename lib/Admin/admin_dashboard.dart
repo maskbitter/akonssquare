@@ -177,12 +177,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
           // Password changed
           _handleLogout();
         }
-        
-        String? serverSessionId = userData['currentSessionId'];
-        if (currentSessionId != null && serverSessionId != null && serverSessionId != currentSessionId) {
-          // New session started elsewhere
-          _handleLogout();
-        }
       }
     }, onError: (e) {
        _handleLogout();
