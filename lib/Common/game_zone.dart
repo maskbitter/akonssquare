@@ -99,38 +99,39 @@ class _TicTacToeGameState extends State<TicTacToeGame> {
   }
 }
 
-// 2. OBSTACLE RUNNER
+// 2. OBSTACLE RUNNER (Ground Runner Version)
 class ObstacleRunnerGame extends StatefulWidget {
   const ObstacleRunnerGame({super.key});
   @override
   State<ObstacleRunnerGame> createState() => _ObstacleRunnerGameState();
 }
-class _ObstacleRunnerGameState extends State<ObstacleRunnerGame> {
-  double birdY = 0;
-  double initialPos = 0;
-  double height = 0;
-  double time = 0;
-  double gravity = -4.9;
-  double velocity = 3.5;
-  double birdWidth = 0.1;
-  double birdHeight = 0.1;
 
+class _ObstacleRunnerGameState extends State<ObstacleRunnerGame> {
+  double playerY = 0.8; // Alignment Y: 0.8 is near bottom
+  double yVelocity = 0;
+  double gravity = 0.003;
+  double jumpStrength = -0.06;
+  bool isJumping = false;
   bool gameHasStarted = false;
 
-  static List<double> barrierX = [2, 2 + 1.5];
-  static double barrierWidth = 0.2;
-  List<List<double>> barrierHeight = [
-    [0.6, 0.4],
-    [0.4, 0.6],
-  ];
+  static List<double> barrierX = [1.2, 2.2]; // Horizontal positions
+  double barrierWidth = 0.15;
+  double barrierHeight = 0.25; // Height relative to alignment space
 
   int score = 0;
   int bestScore = 0;
+  Timer? gameTimer;
 
   @override
   void initState() {
     super.initState();
     _loadBestScore();
+  }
+
+  @override
+  void dispose() {
+    gameTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadBestScore() async {
@@ -141,30 +142,44 @@ class _ObstacleRunnerGameState extends State<ObstacleRunnerGame> {
   }
 
   void startGame() {
-    gameHasStarted = true;
-    score = 0;
-    Timer.periodic(const Duration(milliseconds: 10), (timer) {
-      height = gravity * time * time + velocity * time;
+    setState(() {
+      gameHasStarted = true;
+      score = 0;
+      playerY = 0.8;
+      yVelocity = 0;
+      barrierX = [1.2, 2.2];
+    });
+
+    gameTimer = Timer.periodic(const Duration(milliseconds: 15), (timer) {
+      // Physics: Gravity & Jump
       setState(() {
-        birdY = initialPos - height;
+        playerY += yVelocity;
+        if (playerY < 0.8) {
+          yVelocity += gravity;
+        } else {
+          playerY = 0.8;
+          yVelocity = 0;
+          isJumping = false;
+        }
       });
 
+      // Move Barriers
+      _moveBarriers();
+
+      // Check Game Over
       if (_checkGameOver()) {
         timer.cancel();
         _endGame();
       }
-
-      _moveBarriers();
-      time += 0.01;
     });
   }
 
   void _moveBarriers() {
     setState(() {
       for (int i = 0; i < barrierX.length; i++) {
-        barrierX[i] -= 0.01;
+        barrierX[i] -= 0.025; // Speed
         if (barrierX[i] < -1.5) {
-          barrierX[i] += 3;
+          barrierX[i] += 2.5; // Respawn on right
           score++;
         }
       }
@@ -172,17 +187,23 @@ class _ObstacleRunnerGameState extends State<ObstacleRunnerGame> {
   }
 
   void jump() {
-    setState(() {
-      time = 0;
-      initialPos = birdY;
-    });
+    if (!isJumping) {
+      setState(() {
+        isJumping = true;
+        yVelocity = jumpStrength;
+      });
+    }
   }
 
   bool _checkGameOver() {
-    if (birdY < -1 || birdY > 1) return true;
     for (int i = 0; i < barrierX.length; i++) {
-      if (barrierX[i] <= birdWidth && barrierX[i] + barrierWidth >= -birdWidth && (birdY <= -1 + barrierHeight[i][0] || birdY + birdHeight >= 1 - barrierHeight[i][1])) {
-        return true;
+      // Simple Bounding Box Collision
+      // Player is at X=0, Y=playerY. Box size approx 0.1 wide, 0.1 high.
+      // Barrier is at X=barrierX[i], Y=0.8. Box size approx 0.15 wide, 0.25 high.
+      if (barrierX[i] > -0.15 && barrierX[i] < 0.1) {
+        if (playerY > 0.55) { // Barrier top is around 0.8 - 0.25 = 0.55
+          return true;
+        }
       }
     }
     return false;
@@ -195,7 +216,7 @@ class _ObstacleRunnerGameState extends State<ObstacleRunnerGame> {
       final p = await SharedPreferences.getInstance();
       p.setInt('runner_best', bestScore);
     }
-    _showGameOverDialog();
+    if (mounted) _showGameOverDialog();
   }
 
   void _showGameOverDialog() {
@@ -203,10 +224,23 @@ class _ObstacleRunnerGameState extends State<ObstacleRunnerGame> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text("Game Over"),
-        content: Text("Score: $score\nBest Score: $bestScore"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Center(child: Text("GAME OVER", style: TextStyle(fontWeight: FontWeight.bold))),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Your Score: $score", style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 8),
+            Text("Best Score: $bestScore", style: const TextStyle(color: Colors.grey)),
+          ],
+        ),
         actions: [
-          TextButton(onPressed: () { Navigator.pop(ctx); _resetGame(); }, child: const Text("Play Again")),
+          Center(
+            child: ElevatedButton(
+              onPressed: () { Navigator.pop(ctx); _resetGame(); }, 
+              child: const Text("PLAY AGAIN")
+            ),
+          ),
         ],
       ),
     );
@@ -214,11 +248,10 @@ class _ObstacleRunnerGameState extends State<ObstacleRunnerGame> {
 
   void _resetGame() {
     setState(() {
-      birdY = 0;
+      playerY = 0.8;
       gameHasStarted = false;
-      time = 0;
-      initialPos = 0;
-      barrierX = [2, 2 + 1.5];
+      yVelocity = 0;
+      barrierX = [1.2, 2.2];
     });
   }
 
@@ -227,61 +260,85 @@ class _ObstacleRunnerGameState extends State<ObstacleRunnerGame> {
     return GestureDetector(
       onTap: gameHasStarted ? jump : startGame,
       child: Scaffold(
-        backgroundColor: Colors.blue[100],
+        appBar: AppBar(title: const Text("Obstacle Runner"), centerTitle: true),
         body: Column(
           children: [
             Expanded(
-              flex: 3,
+              flex: 4,
               child: Container(
-                color: Colors.blue[100],
-                child: Center(
-                  child: Stack(
-                    children: [
-                      // Player
-                      Container(
-                        alignment: Alignment(0, birdY),
-                        child: Container(width: 30, height: 30, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
-                      ),
-                      // Barriers
-                      ...List.generate(barrierX.length, (i) {
-                        return Stack(
-                          children: [
-                            Container(
-                              alignment: Alignment(barrierX[i], 1.1),
-                              child: Container(width: 50, height: 150 * barrierHeight[i][1], color: Colors.green),
-                            ),
-                            Container(
-                              alignment: Alignment(barrierX[i], -1.1),
-                              child: Container(width: 50, height: 150 * barrierHeight[i][0], color: Colors.green),
-                            ),
-                          ],
-                        );
-                      }),
-                      Container(
-                        alignment: const Alignment(0, -0.3),
-                        child: Text(gameHasStarted ? "" : "TAP TO PLAY", style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade300, Colors.blue.shade50],
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
                   ),
+                ),
+                child: Stack(
+                  children: [
+                    // Clouds / Background decor
+                    const Positioned(top: 50, left: 40, child: Icon(Icons.cloud, color: Colors.white, size: 60)),
+                    const Positioned(top: 100, right: 60, child: Icon(Icons.cloud, color: Colors.white, size: 40)),
+
+                    // Player (Running Man)
+                    Container(
+                      alignment: Alignment(0, playerY),
+                      child: Icon(
+                        isJumping ? Icons.accessibility_new : Icons.directions_run, 
+                        size: 50, color: Colors.indigo.shade900
+                      ),
+                    ),
+
+                    // Barriers (Obstacles on Ground)
+                    ...List.generate(barrierX.length, (i) {
+                      return Container(
+                        alignment: Alignment(barrierX[i], 0.85),
+                        child: Icon(Icons.warning, color: Colors.red.shade700, size: 35),
+                      );
+                    }),
+
+                    // Ground
+                    Container(
+                      alignment: const Alignment(0, 0.95),
+                      child: Container(height: 4, width: double.infinity, color: Colors.brown.shade400),
+                    ),
+
+                    // Start Message
+                    if (!gameHasStarted)
+                      Container(
+                        alignment: const Alignment(0, -0.2),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(10)),
+                          child: const Text("TAP TO JUMP OVER OBSTACLES", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold))
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
-            Container(height: 15, color: Colors.green),
-            Expanded(
-              child: Container(
-                color: Colors.brown,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text("SCORE", style: const TextStyle(color: Colors.white, fontSize: 20)), Text("$score", style: const TextStyle(color: Colors.white, fontSize: 35))]),
-                    Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text("BEST", style: const TextStyle(color: Colors.white, fontSize: 20)), Text("$bestScore", style: const TextStyle(color: Colors.white, fontSize: 35))]),
-                  ],
-                ),
+            // Bottom Info Panel
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              color: Colors.white,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _scoreItem("SCORE", score),
+                  _scoreItem("BEST", bestScore),
+                ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _scoreItem(String label, int value) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
+        Text("$value", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.indigo.shade800)),
+      ],
     );
   }
 }
