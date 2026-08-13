@@ -587,12 +587,11 @@ class _LoginPageState extends State<LoginPage> {
 
                                           return DropdownButtonFormField<String>(
                                             isExpanded: true,
-                                            alignment: Alignment.center,
                                             decoration: InputDecoration(
                                               labelText: "Select User Name",
                                               labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                               prefixIcon: Icon(Icons.meeting_room_outlined, color: Theme.of(context).colorScheme.onSurface),
-                                              contentPadding: const EdgeInsets.fromLTRB(12, 20, 12, 20),
+                                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
                                             ),
                                             icon: const Icon(Icons.arrow_drop_down),
                                             value: _selectedSubItemId,
@@ -601,12 +600,11 @@ class _LoginPageState extends State<LoginPage> {
                                               String unit = data['subItemName'] ?? 'Unit';
                                               return DropdownMenuItem<String>(
                                                 value: data['id'], 
-                                                alignment: Alignment.center,
-                                                child: Text("$unit ($tName)", textAlign: TextAlign.center, overflow: TextOverflow.ellipsis)
+                                                child: Text("$unit ($tName)", overflow: TextOverflow.ellipsis)
                                               );
                                             }).toList(),
                                             onChanged: (v) => setState(() => _selectedSubItemId = v),
-                                            hint: const Center(child: Text("Select User Name")),
+                                            hint: const Text("Select User Name"),
                                           );
                                         },
                                       ),
