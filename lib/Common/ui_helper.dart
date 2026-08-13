@@ -181,7 +181,7 @@ class AppVersionInfo extends StatelessWidget {
           const SizedBox(height: 1),
           const Icon(
             Icons.logout, 
-            size: 14, 
+            size: 18, 
             color: Colors.red,
           ),
         ],
