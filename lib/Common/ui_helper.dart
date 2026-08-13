@@ -179,10 +179,10 @@ class AppVersionInfo extends StatelessWidget {
         ),
         if (showLogoutIcon) ...[
           const SizedBox(height: 1),
-          Icon(
+          const Icon(
             Icons.logout, 
-            size: 8, 
-            color: isOutline ? Colors.black : effectiveColor.withValues(alpha: 0.8)
+            size: 14, 
+            color: Colors.red,
           ),
         ],
         const SizedBox(height: 1),
