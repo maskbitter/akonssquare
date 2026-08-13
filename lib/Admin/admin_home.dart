@@ -108,7 +108,7 @@ class _AdminHomeState extends State<AdminHome> {
                                   children: [
                                     Row(
                                       children: [
-                                        Icon(Icons.account_balance_wallet_outlined, size: 22, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.indigo : Theme.of(context).colorScheme.primary),
+                                        Icon(Icons.account_balance_wallet_outlined, size: 22, color: Theme.of(context).colorScheme.primary),
                                         const SizedBox(width: 8),
                                         Text(
                                           "Accounts",
@@ -181,7 +181,7 @@ class _AdminHomeState extends State<AdminHome> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.electric_bolt, size: 20, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.orange : Theme.of(context).colorScheme.primary),
+                Icon(Icons.electric_bolt, size: 20, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
                   "Electricity",
@@ -236,7 +236,7 @@ class _AdminHomeState extends State<AdminHome> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.category_outlined, size: 20, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.teal : Theme.of(context).colorScheme.primary),
+                Icon(Icons.category_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
                   "Category",
@@ -363,7 +363,7 @@ class _AdminHomeState extends State<AdminHome> {
                                   child: _buildInteractiveStat(
                                     "Received", 
                                     receivedTotal, 
-                                    Theme.of(context).colorScheme.onTertiaryContainer, // Enhanced for Default Theme
+                                    Theme.of(context).colorScheme.primary, 
                                     Theme.of(context).colorScheme.tertiaryContainer,
                                     Icons.check_circle_outline,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 0)
@@ -374,7 +374,7 @@ class _AdminHomeState extends State<AdminHome> {
                                   child: _buildInteractiveStat(
                                     "Due", 
                                     dueTotal, 
-                                    Theme.of(context).colorScheme.onErrorContainer, // Enhanced for Default Theme
+                                    Theme.of(context).colorScheme.primary, 
                                     Theme.of(context).colorScheme.errorContainer,
                                     Icons.pending_actions,
                                     () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 1)
@@ -389,7 +389,7 @@ class _AdminHomeState extends State<AdminHome> {
                                   child: _buildInteractiveStat(
                                     "Rent", 
                                     rentTotal, 
-                                    Theme.of(context).colorScheme.onPrimaryContainer, // Enhanced for Default Theme
+                                    Theme.of(context).colorScheme.primary, 
                                     Theme.of(context).colorScheme.primaryContainer,
                                     Icons.home_work_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: true)
@@ -400,7 +400,7 @@ class _AdminHomeState extends State<AdminHome> {
                                   child: _buildInteractiveStat(
                                     "Utility", 
                                     utilityTotal, 
-                                    Theme.of(context).colorScheme.onSecondaryContainer, // Enhanced for Default Theme
+                                    Theme.of(context).colorScheme.primary, 
                                     Theme.of(context).colorScheme.secondaryContainer,
                                     Icons.settings_suggest_outlined,
                                     () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: false)
@@ -444,7 +444,7 @@ class _AdminHomeState extends State<AdminHome> {
         decoration: BoxDecoration(
           color: (active && !isOutline) ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
-          border: (active && isOutline) ? Border.all(color: Colors.black, width: 1) : null,
+          border: (active && isOutline) ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
         ),
         child: Icon(icon, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, size: 18),
       ),
@@ -467,7 +467,7 @@ class _AdminHomeState extends State<AdminHome> {
             title: '${((received/total)*100).toStringAsFixed(0)}%',
             radius: 35,
             titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Colors.black87, fontWeight: FontWeight.bold),
-            borderSide: isOutline ? const BorderSide(color: Colors.green, width: 2) : BorderSide.none,
+            borderSide: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
           ),
           PieChartSectionData(
             color: isOutline ? Colors.transparent : Colors.redAccent,
@@ -475,7 +475,7 @@ class _AdminHomeState extends State<AdminHome> {
             title: '${((due/total)*100).toStringAsFixed(0)}%',
             radius: 30,
             titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.bold),
-            borderSide: isOutline ? const BorderSide(color: Colors.red, width: 2) : BorderSide.none,
+            borderSide: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
           ),
         ],
       ),
@@ -861,7 +861,7 @@ class _AdminHomeState extends State<AdminHome> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-            ? BorderSide(color: color, width: 1.5) 
+            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
             : BorderSide.none,
       ),
       child: InkWell(
@@ -1120,7 +1120,7 @@ class _AdminHomeState extends State<AdminHome> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                ? BorderSide(color: accentColor, width: 1.5) 
+                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
                 : BorderSide.none,
           ),
           child: Padding(
@@ -1192,7 +1192,7 @@ class _AdminHomeState extends State<AdminHome> {
           decoration: BoxDecoration(
             color: isOutline ? Colors.transparent : Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-            border: isOutline ? Border.all(color: Colors.black, width: 2) : null,
+            border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
           ),
           child: DefaultTabController(
             length: 2,
@@ -1269,7 +1269,7 @@ class _AdminHomeState extends State<AdminHome> {
           decoration: BoxDecoration(
             color: isOutline ? Colors.transparent : Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-            border: isOutline ? Border.all(color: Colors.black, width: 2) : null,
+            border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
           ),
           child: Column(
             children: [
@@ -1615,11 +1615,11 @@ class _AdminHomeState extends State<AdminHome> {
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(color: isOutline ? Colors.white : modeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: isOutline ? Border.all(color: modeColor, width: 1.5) : null),
-              child: Text(mode.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: modeColor, letterSpacing: 2, fontWeight: FontWeight.bold)),
+              decoration: BoxDecoration(color: isOutline ? Colors.white : modeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null),
+              child: Text(mode.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : modeColor, letterSpacing: 2, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 12),
-            Text(subName, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: modeColor, fontWeight: FontWeight.w900)),
+            Text(subName, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: isOutline ? Colors.black : modeColor, fontWeight: FontWeight.w900)),
             Text("$tenantName | $catName", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
             const Divider(height: 32),
           ],
@@ -1659,7 +1659,7 @@ class _AdminHomeState extends State<AdminHome> {
                     color: isOutline ? Colors.white : null,
                     gradient: isOutline ? null : LinearGradient(colors: [modeColor, modeColor.withOpacity(0.8)]),
                     borderRadius: BorderRadius.circular(20),
-                    border: isOutline ? Border.all(color: modeColor, width: 2) : null,
+                    border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
                     boxShadow: isOutline ? null : [BoxShadow(color: modeColor.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
                   ),
                   child: Row(

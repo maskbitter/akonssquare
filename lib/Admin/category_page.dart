@@ -505,7 +505,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12), 
                                       side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                                          ? BorderSide(color: itemAccentColor, width: 1.5) 
+                                          ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
                                           : BorderSide.none,
                                     ),
                                     child: ExpansionTile(
@@ -528,7 +528,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 decoration: BoxDecoration(
                                                   color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
                                                   borderRadius: BorderRadius.circular(6),
-                                                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: itemAccentColor, width: 1) : null,
+                                                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
                                                 ),
                                                 child: Text(
                                                   subName,
