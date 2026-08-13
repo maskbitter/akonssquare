@@ -98,7 +98,7 @@ class ThemeManager {
 
   static Color getCardContainerColor(int index, {double alpha = 1.0, bool isSubCard = false}) {
     if (appThemeNotifier.value == "Outline Theme") {
-      return Colors.transparent;
+      return Colors.white;
     }
     if (appThemeNotifier.value == "Black & White Theme") {
       return (isSubCard ? Colors.grey.shade200 : Colors.white).withValues(alpha: alpha);
@@ -167,19 +167,19 @@ class ThemeManager {
         surface: Colors.white,
         onSurface: Colors.black,
         outline: _sessionSeedColor,
-        primaryContainer: Colors.transparent,
+        primaryContainer: Colors.white,
         onPrimaryContainer: Colors.black,
-        secondaryContainer: Colors.transparent,
+        secondaryContainer: Colors.white,
         onSecondaryContainer: Colors.black,
-        tertiaryContainer: Colors.transparent,
+        tertiaryContainer: Colors.white,
         onTertiaryContainer: Colors.black,
-        errorContainer: Colors.transparent,
+        errorContainer: Colors.white,
         onErrorContainer: Colors.black,
-        surfaceContainerLow: Colors.transparent,
-        surfaceContainerLowest: Colors.transparent,
-        surfaceContainer: Colors.transparent,
-        surfaceContainerHigh: Colors.transparent,
-        surfaceContainerHighest: Colors.transparent,
+        surfaceContainerLow: Colors.white,
+        surfaceContainerLowest: Colors.white,
+        surfaceContainer: Colors.white,
+        surfaceContainerHigh: Colors.white,
+        surfaceContainerHighest: Colors.white,
         outlineVariant: Colors.black,
         shadow: Colors.transparent,
       );
@@ -284,7 +284,7 @@ class ThemeManager {
         ),
       ],
       cardTheme: CardThemeData(
-        color: themeName == "Outline Theme" ? Colors.transparent : colorScheme.surface,
+        color: themeName == "Outline Theme" ? Colors.white : colorScheme.surface,
         elevation: themeName == "Outline Theme" ? 0 : 1,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
@@ -297,7 +297,7 @@ class ThemeManager {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: themeName == "Outline Theme" ? 0 : 2,
-          backgroundColor: themeName == "Outline Theme" ? Colors.transparent : null,
+          backgroundColor: themeName == "Outline Theme" ? Colors.white : null,
           foregroundColor: themeName == "Outline Theme" ? colorScheme.primary : null,
           side: themeName == "Outline Theme" ? BorderSide(color: colorScheme.primary, width: 1.5) : null,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -313,8 +313,8 @@ class ThemeManager {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: themeName != "Outline Theme",
-        fillColor: themeName == "Outline Theme" ? Colors.transparent : colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        filled: true,
+        fillColor: themeName == "Outline Theme" ? Colors.white : colorScheme.surfaceContainerHighest.withOpacity(0.3),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         floatingLabelBehavior: FloatingLabelBehavior.always,
         border: OutlineInputBorder(
@@ -323,7 +323,7 @@ class ThemeManager {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: themeName == "Outline Theme" ? BorderSide(color: colorScheme.primary.withOpacity(0.5), width: 1) : BorderSide.none,
+          borderSide: themeName == "Outline Theme" ? BorderSide(color: colorScheme.primary, width: 1) : BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -369,7 +369,6 @@ class ThemeManager {
 
   static TextTheme _getTextTheme(String fontName, Color onSurface) {
     bool isOutline = appThemeNotifier.value == "Outline Theme";
-    Color effectiveColor = isOutline ? Colors.black : onSurface;
 
     TextTheme base;
     switch (fontName) {
@@ -384,14 +383,14 @@ class ThemeManager {
     }
 
     return base.copyWith(
-      headlineMedium: base.headlineMedium?.copyWith(fontSize: 26, fontWeight: FontWeight.w900, color: effectiveColor),
-      titleLarge: base.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold, color: effectiveColor),
-      titleMedium: base.titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.bold, color: effectiveColor),
-      titleSmall: base.titleSmall?.copyWith(fontSize: 14, fontWeight: FontWeight.bold, color: effectiveColor),
-      bodyLarge: base.bodyLarge?.copyWith(fontSize: 15, color: effectiveColor),
-      bodyMedium: base.bodyMedium?.copyWith(fontSize: 13, color: effectiveColor),
-      bodySmall: base.bodySmall?.copyWith(fontSize: 12, color: effectiveColor),
-      labelSmall: base.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.bold, color: effectiveColor),
+      headlineMedium: base.headlineMedium?.copyWith(fontSize: 26, fontWeight: FontWeight.w900, color: isOutline ? Colors.black : onSurface),
+      titleLarge: base.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
+      titleMedium: base.titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
+      titleSmall: base.titleSmall?.copyWith(fontSize: 14, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
+      bodyLarge: base.bodyLarge?.copyWith(fontSize: 15, color: isOutline ? Colors.black : onSurface),
+      bodyMedium: base.bodyMedium?.copyWith(fontSize: 13, color: isOutline ? Colors.black : onSurface),
+      bodySmall: base.bodySmall?.copyWith(fontSize: 12, color: isOutline ? Colors.black : onSurface),
+      labelSmall: base.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
     );
   }
 }

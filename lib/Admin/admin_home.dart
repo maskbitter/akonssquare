@@ -291,7 +291,7 @@ class _AdminHomeState extends State<AdminHome> {
                     Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 1,
-                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.primary,
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                         side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
@@ -672,7 +672,7 @@ class _AdminHomeState extends State<AdminHome> {
                 AppButton(
                   onPressed: onAction,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isHighlighted ? color : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Colors.grey.shade300),
+                    backgroundColor: isHighlighted ? color : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Colors.grey.shade300),
                     foregroundColor: isHighlighted ? Colors.white : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Colors.grey),
                     side: (ThemeManager.appThemeNotifier.value == "Outline Theme") ? BorderSide(color: isHighlighted ? color : Colors.black, width: 1.5) : null,
                     elevation: isHighlighted ? 2 : 0,
@@ -809,7 +809,7 @@ class _AdminHomeState extends State<AdminHome> {
   Widget _buildSubOverviewCard({required String title, required int count, required Color color, required IconData icon, required VoidCallback onTap, Color? countColor}) {
     return Card(
       elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface,
+      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16), 
         side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
@@ -846,7 +846,7 @@ class _AdminHomeState extends State<AdminHome> {
     return Card(
       elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
       margin: EdgeInsets.zero,
-      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : bgColor,
+      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
@@ -943,7 +943,7 @@ class _AdminHomeState extends State<AdminHome> {
                     children: [
                       TableRow(
                         decoration: BoxDecoration(
-                          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : accentColor,
+                          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : accentColor,
                           border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border(bottom: BorderSide(color: accentColor, width: 1.5)) : null,
                         ),
                         children: headers.map((h) => Padding(
@@ -1093,7 +1093,7 @@ class _AdminHomeState extends State<AdminHome> {
 
         return Card(
           elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : bgColor,
+          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : bgColor,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -1107,7 +1107,7 @@ class _AdminHomeState extends State<AdminHome> {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : accentColor,
+                  backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : accentColor,
                   child: Container(
                     decoration: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                         ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: accentColor, width: 1)) 
@@ -1499,7 +1499,7 @@ class _AdminHomeState extends State<AdminHome> {
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         leading: CircleAvatar(
-          backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : color.withOpacity(0.15),
+          backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : color.withOpacity(0.15),
           child: Icon(icon, color: color, size: 22),
           foregroundColor: color,
         ),

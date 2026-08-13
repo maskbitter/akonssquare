@@ -40,7 +40,7 @@ class _CategoryPageState extends State<CategoryPage> {
     DatabaseService.vibrate();
     showModalBottomSheet(
       context: context,
-      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
+      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         decoration: BoxDecoration(
@@ -121,7 +121,7 @@ class _CategoryPageState extends State<CategoryPage> {
   void _showMeterChoiceMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
+      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
@@ -245,7 +245,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface,
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
                     border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Colors.black, width: 1.5) : null,
                   ),
                   child: Row(
@@ -362,7 +362,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
                       return Card(
                         elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : bgColor,
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : bgColor,
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16), 
@@ -388,7 +388,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface,
+                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
                                       borderRadius: BorderRadius.circular(6),
                                       border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: onBgColor, width: 1) : null,
                                     ),
@@ -500,7 +500,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                   },
                                   child: Card(
                                     margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : itemBgColor,
+                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : itemBgColor,
                                     elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12), 
@@ -526,7 +526,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface,
+                                                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
                                                   borderRadius: BorderRadius.circular(6),
                                                   border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: itemAccentColor, width: 1) : null,
                                                 ),
@@ -708,8 +708,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                     child: Card(
                                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       color: isPaid 
-                                          ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.tertiaryContainer) 
-                                          : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : itemBgColor),
+                                          ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.tertiaryContainer) 
+                                          : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : itemBgColor),
                                       elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                                         shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
@@ -739,7 +739,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surface,
+                                                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surface,
                                                   borderRadius: BorderRadius.circular(6),
                                                   border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                                                       ? Border.all(color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error, width: 1) 
@@ -962,7 +962,7 @@ class _CategoryPageState extends State<CategoryPage> {
       margin: const EdgeInsets.symmetric(vertical: 2),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
-        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerLow, 
+        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.white : Theme.of(context).colorScheme.surfaceContainerLow, 
         borderRadius: BorderRadius.circular(12), 
         border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: effectiveColor, width: 1) : null,
       ),
