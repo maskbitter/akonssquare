@@ -85,6 +85,27 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _loadAppConfig();
     _checkConnectivity();
+    _debugPopulateData();
+  }
+
+  Future<void> _debugPopulateData() async {
+    try {
+      var snap = await FirebaseFirestore.instance.collection('sub_items').where('status', isEqualTo: 'Occupied').limit(1).get();
+      if (snap.docs.isEmpty) {
+        var vacantSnap = await FirebaseFirestore.instance.collection('sub_items').limit(1).get();
+        if (vacantSnap.docs.isNotEmpty) {
+          await _dbService.updateSubItemStatus(
+            vacantSnap.docs.first.id, 
+            'Occupied', 
+            'DEBUG_BOT', 
+            TenantName: 'Test Tenant', 
+            nidNumber: '1234'
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Debug Population Error: $e");
+    }
   }
 
   void _checkConnectivity() {
@@ -108,7 +129,7 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => PopScope(
-        canPop: false,
+        canPop: true,
         child: AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Row(
@@ -118,17 +139,30 @@ class _LoginPageState extends State<LoginPage> {
               Text("No Internet"),
             ],
           ),
-          content: const Text("Device is offline. Please check your internet connection to resume using the app."),
+          content: const Text("Device is offline. Please check your internet connection to resume using the app.\n\nHowever, you can still enjoy our games!"),
           actions: [
             AppDialogActions(
               actions: [
                 AppButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const GameZonePage()));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                  ),
+                  child: const Text("Enter GameZone"),
+                ),
+                AppButton(
+                  onPressed: () {
+                    // Just a visual cue, the listener handles reconnect
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                     foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  child: const Text("Waiting for connection..."),
+                  child: const Text("Waiting..."),
                 ),
               ],
             ),
