@@ -137,59 +137,76 @@ class _SettingsPageState extends State<SettingsPage> {
     if (_isProcessing) return;
     HapticFeedback.mediumImpact();
     try {
-      DocumentSnapshot backupInfo = await FirebaseFirestore.instance.collection('app_config').doc('database_info').get();
-      bool hasBackup = backupInfo.exists && (backupInfo.data() as Map).containsKey('lastBackupAt');
-      bool proceed = false;
-      if (!hasBackup) {
-        bool backupNow = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Center(child: Text("Backup Required!", style: TextStyle(fontWeight: FontWeight.bold))),
-            content: const Text("It is recommended to backup before wiping.", textAlign: TextAlign.center),
-            actions: [
-              AppDialogActions(
-                actions: [
-                  AppButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    onPressed: () => Navigator.pop(ctx, false), 
-                    child: const Text("Cancel")
-                  ),
-                  AppButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () => Navigator.pop(ctx, true), 
-                    child: const Text("Backup Now")
-                  ),
-                ],
-              ),
+      String? choice = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Column(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 40),
+              SizedBox(height: 12),
+              Text("Backup Recommended", textAlign: TextAlign.center),
             ],
           ),
-        ) ?? false;
-        if (backupNow) { if (context.mounted) await _handleBackup(context); }
-        return;
+          content: const Text(
+            "Wiping will delete all data (except Users). It is highly recommended to save a backup first.",
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppButton.icon(
+                  icon: const Icon(Icons.cloud_upload_outlined),
+                  onPressed: () => Navigator.pop(ctx, 'cloud'),
+                  child: const Text("Backup to Cloud"),
+                ),
+                const SizedBox(height: 8),
+                AppButton.icon(
+                  icon: const Icon(Icons.save_alt),
+                  style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
+                  onPressed: () => Navigator.pop(ctx, 'local'),
+                  child: const Text("Save Locally"),
+                ),
+                const SizedBox(height: 8),
+                AppButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white),
+                  onPressed: () => Navigator.pop(ctx, 'skip'),
+                  child: const Text("Skip & Wipe anyway"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, 'cancel'),
+                  child: const Text("Cancel Process"),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      if (choice == null || choice == 'cancel') return;
+
+      if (choice == 'cloud') {
+        await _handleBackup(context);
+      } else if (choice == 'local') {
+        await _handleLocalSave(context);
       }
-      bool confirm1 = await _showConfirmDialog(context, "Initial Confirmation", "Delete ALL data?");
-      if (confirm1) proceed = await _showConfirmDialog(context, "FINAL WARNING", "Erase all records. PROCEED?");
+
+      // Final Warning after backup (or if skipped)
+      bool proceed = false;
+      bool confirm1 = await _showConfirmDialog(context, "Initial Confirmation", "Delete ALL records (Categories, Items, History, Logs, Config)?");
+      if (confirm1) proceed = await _showConfirmDialog(context, "FINAL WARNING", "This cannot be undone without a backup file. ERASE EVERYTHING?");
       
       if (proceed && context.mounted) {
         setState(() { _isProcessing = true; _activeAction = 'wipe'; _progress = 1.0; });
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String actor = prefs.getString('username') ?? "Unknown";
         
-        // Create rollback snapshot
         await _dbService.createRollbackSnapshot(actor);
         await _dbService.setServerStatus('wiping', progress: 1.0);
         await _dbService.wipeDatabase(actor, onProgress: (p) => setState(() => _progress = p));
-        // Clear snapshot on success
         await _dbService.clearRollbackSnapshot();
         await _dbService.setServerStatus('wipe_completed');
         if (context.mounted) DatabaseService.showToast(context, "Server Wiped Successfully!", backgroundColor: Theme.of(context).colorScheme.error);
