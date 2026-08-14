@@ -403,7 +403,7 @@ class _LoginPageState extends State<LoginPage> {
     bool isLoading = false;
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setST) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

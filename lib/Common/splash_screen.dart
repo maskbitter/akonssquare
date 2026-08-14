@@ -56,16 +56,15 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Future<void> _startPreFetching() async {
-    // 1. Minimum delay for animation beauty (2.5 seconds)
-    final minDelay = Future.delayed(const Duration(milliseconds: 2500));
+    // 1. Animation beauty delay (2.5 seconds)
+    // We navigate exactly when this finishes, regardless of data fetch speed.
+    await Future.delayed(const Duration(milliseconds: 2500));
 
-    // 2. Data Pre-fetching
-    final dataFetch = _fetchInitialData();
+    // 2. Trigger data pre-fetching in background
+    // We don't await this strictly to prevent hangs during offline mode
+    _fetchInitialData();
 
-    // 3. Wait for both
-    await Future.wait([minDelay, dataFetch]);
-
-    // 4. Navigate based on Auth
+    // 3. Navigate
     if (mounted) {
       _navigateNext();
     }

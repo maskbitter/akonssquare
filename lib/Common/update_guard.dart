@@ -65,7 +65,7 @@ class _UpdateGuardState extends State<UpdateGuard> {
     if (mounted) {
       showDialog(
         context: context,
-        barrierDismissible: true,
+        barrierDismissible: false,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Center(child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.warning_amber_rounded, color: Colors.red), SizedBox(width: 8), Text("Logged Out")])),
@@ -188,7 +188,7 @@ class _UpdateGuardState extends State<UpdateGuard> {
     _isPopupShowing = true;
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Center(

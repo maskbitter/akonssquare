@@ -170,7 +170,7 @@ class CategoryDialogs {
     bool isLoading = false;
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -449,7 +449,7 @@ class CategoryDialogs {
 
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
@@ -552,7 +552,7 @@ class CategoryDialogs {
 
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           double lastReading = (data['lastReading'] ?? 0).toDouble();
@@ -812,7 +812,7 @@ class CategoryDialogs {
 
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
@@ -912,7 +912,7 @@ class CategoryDialogs {
 
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
         return AlertDialog(
@@ -1450,7 +1450,7 @@ class CategoryDialogs {
 
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           int wordCount = _getWordCount(notesController.text);
@@ -1583,7 +1583,7 @@ class CategoryDialogs {
 
       showDialog(
         context: context,
-        barrierDismissible: true,
+        barrierDismissible: false,
         builder: (ctx) => StatefulBuilder(
           builder: (context, setDialogState) {
           return AlertDialog(
@@ -1850,7 +1850,7 @@ class CategoryDialogs {
 
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           double total = quantity * unitPrice;
