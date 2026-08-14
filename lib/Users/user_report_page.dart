@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:akonssquare/Common/theme_manager.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/Common/ui_helper.dart';
+import 'package:akons_square/Common/theme_manager.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/ui_helper.dart';
 
 class UserReportPage extends StatelessWidget {
   final String subItemId;

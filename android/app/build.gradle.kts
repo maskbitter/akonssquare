@@ -48,7 +48,7 @@ android {
             // Use a provider or lazy evaluation to get the latest BN during execution/finalization
             val counterFile = file("build_counter.txt")
             val bn = if (counterFile.exists()) counterFile.readText().trim() else "0"
-            val newName = "akonssquare_V${variant.versionName}_${variant.versionCode}_BN${bn}_${variant.buildType.name}.apk"
+            val newName = "AkonsSquare_V${variant.versionName}_${variant.versionCode}_BN${bn}_${variant.buildType.name}.apk"
             output.outputFileName = newName
         }
     }

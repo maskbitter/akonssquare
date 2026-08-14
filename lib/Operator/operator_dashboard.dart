@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:akonssquare/Admin/category_page.dart';
-import 'package:akonssquare/Admin/admin_home.dart';
-import 'package:akonssquare/Admin/settings_page.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/Common/update_guard.dart';
-import 'package:akonssquare/Common/automation_guide.dart';
-import 'package:akonssquare/Common/build_config.dart';
-import 'package:akonssquare/Common/ui_helper.dart';
-import 'package:akonssquare/main.dart';
+import 'package:akons_square/Admin/category_page.dart';
+import 'package:akons_square/Admin/admin_home.dart';
+import 'package:akons_square/Admin/settings_page.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/update_guard.dart';
+import 'package:akons_square/Common/automation_guide.dart';
+import 'package:akons_square/Common/build_config.dart';
+import 'package:akons_square/Common/ui_helper.dart';
+import 'package:akons_square/main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import 'package:akonssquare/main.dart';
+import 'package:akons_square/main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:async';
 

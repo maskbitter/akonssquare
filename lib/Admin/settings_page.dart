@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:akonssquare/Common/database_service.dart';
+import 'package:akons_square/Common/database_service.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
@@ -10,8 +10,10 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:akonssquare/Common/theme_manager.dart';
-import 'package:akonssquare/Common/ui_helper.dart';
+import 'package:akons_square/Common/theme_manager.dart';
+import 'package:akons_square/Common/ui_helper.dart';
+
+import 'package:akons_square/Admin/archive_viewer_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool showOnlyTheme;
@@ -328,6 +330,38 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildSettingsCard(
               context,
               icon: Icons.security_outlined,
+              title: "Security & Audit Logs",
+              subtitle: "Audit system activity and deleted records",
+              color: ThemeManager.getCardContainerColor(0),
+              accentColor: ThemeManager.getCardColor(0),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(children: [
+                    AppDialogActions(
+                      actions: [
+                        AppButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: ThemeManager.outlineBackground), 
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ArchiveViewerPage())), 
+                          icon: const Icon(Icons.history_outlined), 
+                          child: const Text("View Archive & Logs")
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Archived items are preserved until a full system wipe. This allows for detailed auditing of system changes.",
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+                      textAlign: TextAlign.center,
+                    ),
+                  ]),
+                ),
+              ],
+            ),
+
+            _buildSettingsCard(
+              context,
+              icon: Icons.visibility_outlined,
               title: "Dashboard Visibility Control",
               subtitle: "Control what sections are visible to different roles",
               color: ThemeManager.getCardContainerColor(1),

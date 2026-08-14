@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:akonssquare/Common/database_service.dart';
+import 'package:akons_square/Common/database_service.dart';
 
 class AutomationGuidePage extends StatelessWidget {
   const AutomationGuidePage({super.key});

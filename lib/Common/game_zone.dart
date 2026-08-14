@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:math';
-import 'package:akonssquare/Common/theme_manager.dart';
+import 'package:akons_square/Common/theme_manager.dart';
 
 class GameZonePage extends StatefulWidget {
   const GameZonePage({super.key});

@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/Common/ui_helper.dart';
-import 'package:akonssquare/Common/build_config.dart';
-import 'package:akonssquare/main.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/ui_helper.dart';
+import 'package:akons_square/Common/build_config.dart';
+import 'package:akons_square/main.dart';
 
 class UpdateGuard extends StatefulWidget {
   final Widget child;

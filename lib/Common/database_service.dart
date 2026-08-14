@@ -736,7 +736,7 @@ class DatabaseService {
 
     List<String> collections = [
       'categories', 'services', 'sub_items', 'main_meters', 'sub_meters',
-      'billing_history', 'users', 'activity_log', 'removed_history'
+      'billing_history', 'users', 'activity_log', 'removed_history', 'app_config'
     ];
 
     Map<String, dynamic> exportData = {
@@ -791,23 +791,23 @@ class DatabaseService {
     List<String> mainCollections = [
       'categories', 'services', 'sub_items', 'main_meters', 'sub_meters', 'billing_history'
     ];
-    // Collections to wipe directly (Logs and History)
-    List<String> logCollections = ['activity_log', 'removed_history'];
+    // Collections to wipe directly (Logs, History, and Config)
+    List<String> wipeDirectly = ['activity_log', 'removed_history', 'app_config'];
 
     // 1. Calculate Total Documents
     int totalDocs = 0;
     Map<String, List<QueryDocumentSnapshot>> mainSnaps = {};
-    Map<String, List<QueryDocumentSnapshot>> logSnaps = {};
+    Map<String, List<QueryDocumentSnapshot>> directSnaps = {};
 
     for (String col in mainCollections) {
       QuerySnapshot snap = await _db.collection(col).get();
       totalDocs += snap.docs.length;
       mainSnaps[col] = snap.docs;
     }
-    for (String col in logCollections) {
+    for (String col in wipeDirectly) {
       QuerySnapshot snap = await _db.collection(col).get();
       totalDocs += snap.docs.length;
-      logSnaps[col] = snap.docs;
+      directSnaps[col] = snap.docs;
     }
 
     if (totalDocs == 0) {
@@ -834,9 +834,11 @@ class DatabaseService {
       }
     }
 
-    // 3. Process Log Collections (Delete Directly)
-    for (String col in logCollections) {
-      for (var doc in logSnaps[col]!) {
+    // 3. Process Direct Wipe Collections (Delete Directly)
+    for (String col in wipeDirectly) {
+      for (var doc in directSnaps[col]!) {
+        // Special case: Keep database_info working until the end if needed, 
+        // but user said "wipe whole database except users", so we delete it.
         await doc.reference.delete();
         processedCount++;
         if (onProgress != null) onProgress(1.0 - (processedCount / totalDocs));

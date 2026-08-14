@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:akonssquare/Common/theme_manager.dart';
+import 'package:akons_square/Common/theme_manager.dart';
 
 class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;

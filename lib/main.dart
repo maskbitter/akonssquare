@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/Admin/admin_dashboard.dart';
-import 'package:akonssquare/Admin/super_admin_dashboard.dart';
-import 'package:akonssquare/Operator/operator_dashboard.dart';
-import 'package:akonssquare/Viewer/viewer_dashboard.dart';
-import 'package:akonssquare/Users/user_dashboard.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Admin/admin_dashboard.dart';
+import 'package:akons_square/Admin/super_admin_dashboard.dart';
+import 'package:akons_square/Operator/operator_dashboard.dart';
+import 'package:akons_square/Viewer/viewer_dashboard.dart';
+import 'package:akons_square/Users/user_dashboard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:akonssquare/Common/splash_screen.dart';
-import 'package:akonssquare/Common/theme_manager.dart';
+import 'package:akons_square/Common/splash_screen.dart';
+import 'package:akons_square/Common/theme_manager.dart';
 import 'package:flutter/services.dart';
-import 'package:akonssquare/Common/build_config.dart';
-import 'package:akonssquare/Common/game_zone.dart';
+import 'package:akons_square/Common/build_config.dart';
+import 'package:akons_square/Common/game_zone.dart';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:akonssquare/Common/firebase_options.dart';
+import 'package:akons_square/Common/firebase_options.dart';
 
 import 'dart:async';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:akonssquare/Common/automation_guide.dart';
+import 'package:akons_square/Common/automation_guide.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:akonssquare/Common/ui_helper.dart';
+import 'package:akons_square/Common/ui_helper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 void main() async {

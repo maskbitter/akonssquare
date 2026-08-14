@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:akonssquare/Common/database_service.dart';
+import 'package:akons_square/Common/database_service.dart';
 import 'package:flutter/services.dart';
-import 'package:akonssquare/Common/theme_manager.dart';
+import 'package:akons_square/Common/theme_manager.dart';
 import 'package:flutter/foundation.dart';
-import 'package:akonssquare/Common/ui_helper.dart';
+import 'package:akons_square/Common/ui_helper.dart';
 
 class CategoryDialogs {
   static final DatabaseService _dbService = DatabaseService();

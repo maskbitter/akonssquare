@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:akonssquare/Admin/category_dialogs.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/Common/theme_manager.dart';
+import 'package:akons_square/Admin/category_dialogs.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/theme_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
-import 'package:akonssquare/Common/ui_helper.dart';
+import 'package:akons_square/Common/ui_helper.dart';
 
 class CategoryPage extends StatefulWidget {
   final int initialSubTabIndex;
