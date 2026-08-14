@@ -111,6 +111,9 @@ class AppVersionInfo extends StatelessWidget {
   final CrossAxisAlignment crossAxisAlignment;
   final bool showLogoutIcon;
 
+  final String? connectionStatus;
+  final Color? connectionColor;
+
   const AppVersionInfo({
     super.key,
     required this.version,
@@ -122,12 +125,15 @@ class AppVersionInfo extends StatelessWidget {
     this.secondaryColor,
     this.crossAxisAlignment = CrossAxisAlignment.center,
     this.showLogoutIcon = false,
+    this.connectionStatus,
+    this.connectionColor,
   });
 
   @override
   Widget build(BuildContext context) {
     // CENTRALIZED STYLE CONFIG
     const double mainFontSize = 8.0;
+    const double statusFontSize = 7.0;
 
     final effectiveColor = color ?? Theme.of(context).colorScheme.tertiary;
     
@@ -196,6 +202,17 @@ class AppVersionInfo extends StatelessWidget {
               fontWeight: FontWeight.bold, 
             ),
           ),
+          if (connectionStatus != null && connectionStatus!.isNotEmpty) ...[
+            const SizedBox(height: 1),
+            Text(
+              connectionStatus!,
+              style: TextStyle(
+                fontSize: statusFontSize,
+                color: connectionColor ?? Colors.grey,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ],
       ),
     );

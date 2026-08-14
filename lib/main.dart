@@ -77,6 +77,8 @@ class _LoginPageState extends State<LoginPage> {
   String? _temporaryMessage;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _isOffline = false;
+  String? _connectionStatus;
+  Color? _connectionColor;
 
   bool _isLoading = false;
 
@@ -112,7 +114,20 @@ class _LoginPageState extends State<LoginPage> {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
       bool offline = results.contains(ConnectivityResult.none);
       if (offline != _isOffline) {
-        setState(() { _isOffline = offline; });
+        setState(() { 
+          _isOffline = offline; 
+          if (_isOffline) {
+            _connectionStatus = "Offline";
+            _connectionColor = Colors.red;
+          } else {
+            _connectionStatus = "Online";
+            _connectionColor = Colors.green;
+            // Clear "Online" after 2 seconds
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) setState(() { _connectionStatus = null; });
+            });
+          }
+        });
         if (!offline) {
           if (Navigator.canPop(context)) {
             Navigator.pop(context);
@@ -555,6 +570,8 @@ class _LoginPageState extends State<LoginPage> {
                             statusMessage: _temporaryMessage,
                             isOutdated: isOutdated,
                             color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.tertiary,
+                            connectionStatus: _connectionStatus,
+                            connectionColor: _connectionColor,
                           ),
                         ],
                       ),
