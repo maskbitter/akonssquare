@@ -17,13 +17,15 @@ foreach ($folder in $folders) {
     }
 }
 
-# 2. Fix imports in the destination lib folder
-Write-Host ">>> Fixing imports in destination..." -ForegroundColor Cyan
+# 2. Fix imports and class names in the destination lib folder
+Write-Host ">>> Fixing imports and class names in destination..." -ForegroundColor Cyan
 $destLib = Join-Path $destination "lib"
 $files = Get-ChildItem -Path $destLib -Filter *.dart -Recurse
 foreach ($file in $files) {
     $content = Get-Content $file.FullName
     $content = $content -replace 'package:akonssquare/', 'package:akons_automation/'
+    $content = $content -replace 'package:akons_automation/main.dart', 'package:akons_automation/Portal/portal_login.dart'
+    $content = $content -replace 'LoginPage', 'PortalLoginPage'
     Set-Content -Path $file.FullName -Value $content
 }
 

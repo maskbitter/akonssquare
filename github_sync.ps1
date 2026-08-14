@@ -37,7 +37,8 @@ Write-Host ">>> build_config.dart updated with version $appVersion" -ForegroundC
 
 # 3. Build Release APK for akonssquare
 Write-Host ">>> Starting akonssquare Flutter Build Release..." -ForegroundColor Yellow
-flutter build apk --release
+$flutterBat = "E:\AkonsAutomation\Flutter\flutter\flutter\bin\flutter.bat"
+& $flutterBat build apk --release
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "!!! akonssquare Build Failed. Aborting Sync." -ForegroundColor Red
