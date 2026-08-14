@@ -23,6 +23,7 @@ $destLib = Join-Path $destination "lib"
 $files = Get-ChildItem -Path $destLib -Filter *.dart -Recurse
 foreach ($file in $files) {
     $content = Get-Content $file.FullName
+    $content = $content -replace 'package:akons_square/', 'package:akons_automation/'
     $content = $content -replace 'package:akonssquare/', 'package:akons_automation/'
     $content = $content -replace 'package:akons_automation/main.dart', 'package:akons_automation/Portal/portal_login.dart'
     $content = $content -replace '(?<!Portal)LoginPage', 'PortalLoginPage'

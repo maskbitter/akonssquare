@@ -1,2 +1,2 @@
-const int buildNumber = 363;
+const int buildNumber = 365;
 const String appVersion = "1.0.1+2";
