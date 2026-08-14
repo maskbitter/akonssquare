@@ -1,0 +1,30 @@
+# AkonsAutomation Portal Update Script
+$source = "E:\AkonsAutomation\Flutter\flutterapps\akonssquare"
+$destination = "E:\AkonsAutomation\Flutter\flutterapps\AkonsAutomation"
+
+Write-Host ">>> Starting sync from akonssquare to AkonsAutomation..." -ForegroundColor Yellow
+
+# 1. Folders to sync
+$folders = @("lib\Common", "lib\Admin", "lib\Operator", "lib\Viewer", "lib\Users", "assets", "ios\Runner\Assets.xcassets")
+
+foreach ($folder in $folders) {
+    $srcPath = Join-Path $source $folder
+    $destPath = Join-Path $destination $folder
+
+    if (Test-Path $srcPath) {
+        Write-Host ">>> Syncing $folder..." -ForegroundColor Cyan
+        Copy-Item -Path $srcPath -Destination (Split-Path $destPath -Parent) -Recurse -Force
+    }
+}
+
+# 2. Fix imports in the destination lib folder
+Write-Host ">>> Fixing imports in destination..." -ForegroundColor Cyan
+$destLib = Join-Path $destination "lib"
+$files = Get-ChildItem -Path $destLib -Filter *.dart -Recurse
+foreach ($file in $files) {
+    $content = Get-Content $file.FullName
+    $content = $content -replace 'package:akonssquare/', 'package:akons_automation/'
+    Set-Content -Path $file.FullName -Value $content
+}
+
+Write-Host ">>> AkonsAutomation updated successfully!" -ForegroundColor Green
