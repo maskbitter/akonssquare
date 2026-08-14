@@ -113,9 +113,7 @@ class _LoginPageState extends State<LoginPage> {
       bool offline = results.contains(ConnectivityResult.none);
       if (offline != _isOffline) {
         setState(() { _isOffline = offline; });
-        if (offline) {
-          _showOfflineDialog();
-        } else {
+        if (!offline) {
           if (Navigator.canPop(context)) {
             Navigator.pop(context);
           }
@@ -127,7 +125,7 @@ class _LoginPageState extends State<LoginPage> {
   void _showOfflineDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (ctx) => PopScope(
         canPop: true,
         child: AlertDialog(
@@ -139,21 +137,10 @@ class _LoginPageState extends State<LoginPage> {
               Text("No Internet"),
             ],
           ),
-          content: const Text("Device is offline. Please check your internet connection to resume using the app.\n\nHowever, you can still enjoy our games!"),
+          content: const Text("Device is offline. Please check your internet connection to resume using the app."),
           actions: [
             AppDialogActions(
               actions: [
-                AppButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const GameZonePage()));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.secondary,
-                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                  ),
-                  child: const Text("Enter GameZone"),
-                ),
                 AppButton(
                   onPressed: () {
                     // Just a visual cue, the listener handles reconnect
@@ -162,7 +149,7 @@ class _LoginPageState extends State<LoginPage> {
                     backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                     foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  child: const Text("Waiting..."),
+                  child: const Text("Waiting for connection..."),
                 ),
               ],
             ),
@@ -202,6 +189,7 @@ class _LoginPageState extends State<LoginPage> {
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text("Login Failed!", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
@@ -239,7 +227,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setST) {
           String tName = subData['TenantName'] ?? 'No Name';
@@ -319,7 +307,7 @@ class _LoginPageState extends State<LoginPage> {
     final uC = TextEditingController(); final pC = TextEditingController(); bool isVerifying = false;
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setST) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -415,6 +403,7 @@ class _LoginPageState extends State<LoginPage> {
     bool isLoading = false;
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setST) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -677,8 +666,12 @@ class _LoginPageState extends State<LoginPage> {
                                         SizedBox(
                                           width: double.infinity, height: 65, 
                                           child: AppButton.icon(
-                                            onLongPress: _isLoading ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
+                                            onLongPress: (_isLoading || _isOffline) ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
                                             onPressed: _isLoading ? null : () { 
+                                              if (_isOffline) {
+                                                _showOfflineDialog();
+                                                return;
+                                              }
                                               HapticFeedback.mediumImpact(); 
                                               setState(() => _isLoading = true);
                                               _loginBasicUser().then((_) {
@@ -687,14 +680,18 @@ class _LoginPageState extends State<LoginPage> {
                                                 if (mounted) setState(() => _isLoading = false);
                                               });
                                             },
-                                            icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.dashboard_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
-                                            child: Text(_isLoading ? "Connecting..." : "Login to dashboard", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary), maxLines: 1),
+                                            icon: _isLoading 
+                                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+                                              : Icon(_isOffline ? Icons.cloud_off_outlined : Icons.dashboard_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                                            child: Text(_isLoading ? "Connecting..." : (_isOffline ? "Offline Mode" : "Login to dashboard"), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary), maxLines: 1),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiary,
+                                              backgroundColor: _isOffline 
+                                                ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Colors.grey.shade600)
+                                                : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiary),
                                               foregroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: BorderRadius.circular(16),
-                                                side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
+                                                side: (ThemeManager.appThemeNotifier.value == "Outline Theme" || _isOffline) ? BorderSide(color: _isOffline ? Colors.grey : Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
                                               ),
                                               elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                                             ),

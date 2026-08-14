@@ -295,7 +295,7 @@ class _MemoryMatchGameState extends State<MemoryMatchGame> {
     if (!mounted) return;
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Center(child: Text("Victory!", style: TextStyle(fontWeight: FontWeight.bold))),
@@ -564,7 +564,7 @@ class _ColorMatchGameState extends State<ColorMatchGame> {
     if (!mounted) return;
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Center(child: Text("Time's Up!", style: TextStyle(fontWeight: FontWeight.bold))),

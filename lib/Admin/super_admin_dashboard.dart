@@ -44,7 +44,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     if (!mounted) return;
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
@@ -94,7 +94,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     final progressNotifier = ValueNotifier<double>(0.0);
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Rolling Back...", textAlign: TextAlign.center),

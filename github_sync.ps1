@@ -1,6 +1,7 @@
 param(
     [string]$customMsg,
-    [switch]$SkipPortal
+    [switch]$SkipPortal,
+    [switch]$Build
 )
 
 # akonssquare Master Build & Sync Script
@@ -36,26 +37,30 @@ $configContent | Out-File -FilePath $configPath -Encoding ascii
 Write-Host ">>> build_config.dart updated with version $appVersion" -ForegroundColor Cyan
 
 # 3. Build Release APK for akonssquare
-Write-Host ">>> Starting akonssquare Flutter Build Release..." -ForegroundColor Yellow
-$flutterBat = "E:\AkonsAutomation\Flutter\flutter\flutter\bin\flutter.bat"
-& $flutterBat build apk --release
+if ($Build) {
+    Write-Host ">>> Starting akonssquare Flutter Build Release..." -ForegroundColor Yellow
+    $flutterBat = "E:\AkonsAutomation\Flutter\flutter\flutter\bin\flutter.bat"
+    & $flutterBat build apk --release
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "!!! akonssquare Build Failed. Aborting Sync." -ForegroundColor Red
-    exit 1
-}
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "!!! akonssquare Build Failed. Aborting Sync." -ForegroundColor Red
+        exit 1
+    }
 
-# 4. Rename and Move APK
-$sourceApk = "build/app/outputs/flutter-apk/app-release.apk"
-$destName = "akonssquare_V${verForName}_BN${newBN}_release.apk"
-$destPath = "release/$destName"
+    # 4. Rename and Move APK
+    $sourceApk = "build/app/outputs/flutter-apk/app-release.apk"
+    $destName = "akonssquare_V${verForName}_BN${newBN}_release.apk"
+    $destPath = "release/$destName"
 
-if (Test-Path $sourceApk) {
-    Copy-Item $sourceApk -Destination $destPath -Force
-    Write-Host ">>> akonssquare APK generated and moved to: $destPath" -ForegroundColor Green
+    if (Test-Path $sourceApk) {
+        Copy-Item $sourceApk -Destination $destPath -Force
+        Write-Host ">>> akonssquare APK generated and moved to: $destPath" -ForegroundColor Green
+    } else {
+        Write-Host "!!! Build output not found!" -ForegroundColor Red
+        exit 1
+    }
 } else {
-    Write-Host "!!! Build output not found!" -ForegroundColor Red
-    exit 1
+    Write-Host ">>> Skipping APK Build for akonssquare (Run with -Build to include build)" -ForegroundColor Gray
 }
 
 # 5. GitHub Sync for akonssquare
@@ -91,7 +96,9 @@ if (-not $SkipPortal) {
         Push-Location $portalPath
         try {
             Write-Host ">>> Running Portal Build Script..." -ForegroundColor Cyan
-            powershell.exe -ExecutionPolicy Bypass -File ".\github_sync.ps1" $customMsg
+            $args = @($customMsg)
+            if ($Build) { $args += "-Build" }
+            powershell.exe -ExecutionPolicy Bypass -File ".\github_sync.ps1" @args
         } catch {
             Write-Host "!!! Portal Build Script failed." -ForegroundColor Red
         } finally {
