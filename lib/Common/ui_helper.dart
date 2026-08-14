@@ -133,7 +133,7 @@ class AppVersionInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     // CENTRALIZED STYLE CONFIG
     const double mainFontSize = 8.0;
-    const double statusFontSize = 7.0;
+    const double statusFontSize = 9.0; // Increased from 7.0
 
     final effectiveColor = color ?? Theme.of(context).colorScheme.tertiary;
     
@@ -202,17 +202,41 @@ class AppVersionInfo extends StatelessWidget {
               fontWeight: FontWeight.bold, 
             ),
           ),
-          if (connectionStatus != null && connectionStatus!.isNotEmpty) ...[
-            const SizedBox(height: 1),
-            Text(
-              connectionStatus!,
-              style: TextStyle(
-                fontSize: statusFontSize,
-                color: connectionColor ?? Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+          // FIXED HEIGHT STATUS AREA to prevent layout jumps
+          SizedBox(
+            height: 14,
+            child: (connectionStatus != null && connectionStatus!.isNotEmpty) 
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: connectionColor ?? Colors.grey,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (connectionColor ?? Colors.grey).withOpacity(0.4),
+                            blurRadius: 2,
+                            spreadRadius: 1,
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      connectionStatus!,
+                      style: TextStyle(
+                        fontSize: statusFontSize,
+                        color: connectionColor ?? Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                )
+              : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
