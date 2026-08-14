@@ -25,7 +25,7 @@ foreach ($file in $files) {
     $content = Get-Content $file.FullName
     $content = $content -replace 'package:akonssquare/', 'package:akons_automation/'
     $content = $content -replace 'package:akons_automation/main.dart', 'package:akons_automation/Portal/portal_login.dart'
-    $content = $content -replace 'LoginPage', 'PortalLoginPage'
+    $content = $content -replace '(?<!Portal)LoginPage', 'PortalLoginPage'
     Set-Content -Path $file.FullName -Value $content
 }
 
