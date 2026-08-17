@@ -368,6 +368,7 @@ class ThemeManager {
       dialogTheme: DialogThemeData(
         backgroundColor: themeName == "Outline Theme" ? outlineBackground : Colors.white,
         elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 24),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20), 
           side: themeName == "Outline Theme" ? BorderSide(color: colorScheme.primary, width: 1.5) : BorderSide.none,
@@ -415,14 +416,14 @@ class ThemeManager {
     }
 
     return base.copyWith(
-      headlineMedium: base.headlineMedium?.copyWith(fontSize: 26, fontWeight: FontWeight.w900, color: isOutline ? Colors.black : onSurface),
-      titleLarge: base.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
-      titleMedium: base.titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
-      titleSmall: base.titleSmall?.copyWith(fontSize: 14, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
-      bodyLarge: base.bodyLarge?.copyWith(fontSize: 15, color: isOutline ? Colors.black : onSurface),
-      bodyMedium: base.bodyMedium?.copyWith(fontSize: 13, color: isOutline ? Colors.black : onSurface),
-      bodySmall: base.bodySmall?.copyWith(fontSize: 12, color: isOutline ? Colors.black : onSurface),
-      labelSmall: base.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
+      headlineMedium: base.headlineMedium?.copyWith(fontSize: 25, fontWeight: FontWeight.w900, color: isOutline ? Colors.black : onSurface),
+      titleLarge: base.titleLarge?.copyWith(fontSize: 17, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
+      titleMedium: base.titleMedium?.copyWith(fontSize: 15, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
+      titleSmall: base.titleSmall?.copyWith(fontSize: 13, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
+      bodyLarge: base.bodyLarge?.copyWith(fontSize: 14, color: isOutline ? Colors.black : onSurface),
+      bodyMedium: base.bodyMedium?.copyWith(fontSize: 12, color: isOutline ? Colors.black : onSurface),
+      bodySmall: base.bodySmall?.copyWith(fontSize: 11, color: isOutline ? Colors.black : onSurface),
+      labelSmall: base.labelSmall?.copyWith(fontSize: 10, fontWeight: FontWeight.bold, color: isOutline ? Colors.black : onSurface),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:akons_square/Common/database_service.dart';
 import 'package:akons_square/Common/theme_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 
 class CategoryPage extends StatefulWidget {
@@ -20,6 +21,7 @@ class _CategoryPageState extends State<CategoryPage> {
   final DatabaseService _dbService = DatabaseService();
   String? _selectedFilterCategoryId;
   late DateTime _selectedDate;
+  bool _isFabVisible = true;
 
   @override
   void initState() {
@@ -180,21 +182,36 @@ class _CategoryPageState extends State<CategoryPage> {
           Expanded(
             child: Stack(
               children: [
-                TabBarView(
-                  children: [
-                    _buildCategoryManagerTab(status: 'Occupied'),
-                    _buildCategoryManagerTab(status: 'Vacant'),
-                    _buildMainMeterTab(),
-                  ],
+                NotificationListener<UserScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification.direction == ScrollDirection.idle) {
+                      if (!_isFabVisible) setState(() => _isFabVisible = true);
+                    } else {
+                      if (_isFabVisible) setState(() => _isFabVisible = false);
+                    }
+                    return true;
+                  },
+                  child: TabBarView(
+                    children: [
+                      _buildCategoryManagerTab(status: 'Occupied'),
+                      _buildCategoryManagerTab(status: 'Vacant'),
+                      _buildMainMeterTab(),
+                    ],
+                  ),
                 ),
                 if (!widget.isOperator)
                   Positioned(
                     right: 16,
                     bottom: 16,
-                    child: FloatingActionButton.extended(
-                      onPressed: () => _showAddActionMenu(context),
-                      icon: const Icon(Icons.add),
-                      label: const Text("Add / Manage"),
+                    child: AnimatedScale(
+                      scale: _isFabVisible ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutBack,
+                      child: FloatingActionButton.extended(
+                        onPressed: () => _showAddActionMenu(context),
+                        icon: const Icon(Icons.add),
+                        label: const Text("Add / Manage"),
+                      ),
                     ),
                   ),
               ],
@@ -592,14 +609,15 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   }
                                                 },
                                                 itemBuilder: (ctx) => [
-                                                  PopupMenuItem(
-                                                    value: ed == null ? 'electric' : 'stop', 
-                                                    child: ListTile(
-                                                      leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
-                                                      title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
-                                                      dense: true
-                                                    )
-                                                  ),
+                                                  if (ed != null || !widget.isOperator)
+                                                    PopupMenuItem(
+                                                      value: ed == null ? 'electric' : 'stop', 
+                                                      child: ListTile(
+                                                        leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
+                                                        title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
+                                                        dense: true
+                                                      )
+                                                    ),
                                                   const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
                                                   if (!widget.isOperator)
                                                     PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
@@ -837,14 +855,15 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   }
                                                 },
                                                 itemBuilder: (ctx) => [
-                                                  PopupMenuItem(
-                                                    value: ed == null ? 'electric' : 'stop', 
-                                                    child: ListTile(
-                                                      leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
-                                                      title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
-                                                      dense: true
-                                                    )
-                                                  ),
+                                                  if (ed != null || !widget.isOperator)
+                                                    PopupMenuItem(
+                                                      value: ed == null ? 'electric' : 'stop', 
+                                                      child: ListTile(
+                                                        leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
+                                                        title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
+                                                        dense: true
+                                                      )
+                                                    ),
                                                   const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
                                                   if (!widget.isOperator)
                                                     PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
@@ -935,19 +954,23 @@ class _CategoryPageState extends State<CategoryPage> {
                                 },
                               );
                             }).toList(),
-                            const SizedBox(height: 12),
-                            Center(
-                              child: AppButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  foregroundColor: Theme.of(context).colorScheme.primary,
-                                  elevation: 0,
+                            if (status == 'Vacant') ...[
+                              const SizedBox(height: 12),
+                              Center(
+                                child: TextButton.icon(
+                                  onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
+                                  icon: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary),
+                                  label: Text(
+                                    "Add New $catName", 
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                                onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
-                                child: Text("Add New $catName", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
                               ),
-                            ),
-                            const SizedBox(height: 12),
+                              const SizedBox(height: 12),
+                            ],
                           ],
                         ),
                       );

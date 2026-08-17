@@ -145,8 +145,18 @@ class UserReportPage extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Grand Total", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.bold)),
-                      Text("৳${totalAmount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.w900)),
+                      Expanded(
+                        child: Text(
+                          "Grand Total", 
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: isOutline ? Colors.black : Colors.white, 
+                            fontWeight: FontWeight.bold
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text("৳${totalAmount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.w900)),
                     ],
                   ),
                 ),

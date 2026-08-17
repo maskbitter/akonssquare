@@ -951,47 +951,48 @@ class _AdminHomeState extends State<AdminHome> {
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Container(
-                  alignment: Alignment.center,
-                  constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 48),
-                  child: Table(
-                    defaultColumnWidth: const IntrinsicColumnWidth(),
-                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                    border: const TableBorder(
-                      verticalInside: BorderSide.none,
-                    ),
-                    children: [
-                      TableRow(
-                        decoration: BoxDecoration(
-                          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : accentColor,
-                          border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
-                        ),
-                        children: headers.map((h) => Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null))),
-                        )).toList(),
-                      ),
-                      ...List.generate(meters.length, (index) {
-                        var doc = meters[index];
-                        var data = doc.data() as Map<String, dynamic>;
-                        var rows = rowBuilder(data, index);
-                        
-                        return TableRow(
-                          decoration: BoxDecoration(
-                            color: (ThemeManager.appThemeNotifier.value == "Outline Theme") 
-                                ? ThemeManager.outlineBackground 
-                                : (index % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent),
-                          ),
-                          children: rows.map((cell) => Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Center(child: cell),
-                          )).toList(),
-                        );
-                      }),
-                    ],
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Table(
+                  columnWidths: {
+                    0: const FixedColumnWidth(25),
+                    1: const FlexColumnWidth(2.5),
+                    for (int i = 2; i < headers.length; i++) i: const FlexColumnWidth(2),
+                  },
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  border: const TableBorder(
+                    verticalInside: BorderSide.none,
                   ),
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : accentColor,
+                        border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
+                      ),
+                      children: headers.map((h) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                        child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null))),
+                      )).toList(),
+                    ),
+                    ...List.generate(meters.length, (index) {
+                      var doc = meters[index];
+                      var data = doc.data() as Map<String, dynamic>;
+                      var rows = rowBuilder(data, index);
+                      
+                      return TableRow(
+                        decoration: BoxDecoration(
+                          color: (ThemeManager.appThemeNotifier.value == "Outline Theme") 
+                              ? ThemeManager.outlineBackground 
+                              : (index % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent),
+                        ),
+                        children: rows.map((cell) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                          child: Center(child: cell),
+                        )).toList(),
+                      );
+                    }),
+                  ],
                 ),
               ),
             ),
@@ -1667,8 +1668,19 @@ class _AdminHomeState extends State<AdminHome> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("GRAND TOTAL", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                      Text("৳${displayTotal.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.w900)),
+                      Expanded(
+                        child: Text(
+                          "GRAND TOTAL", 
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: isOutline ? Colors.black : Colors.white, 
+                            fontWeight: FontWeight.bold, 
+                            letterSpacing: 1
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text("৳${displayTotal.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.w900)),
                     ],
                   ),
                 ),
