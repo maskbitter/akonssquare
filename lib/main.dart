@@ -24,6 +24,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -47,11 +49,14 @@ class MyApp extends StatelessWidget {
             return ValueListenableBuilder<Color>(
               valueListenable: ThemeManager.appOutlineBgNotifier,
               builder: (context, outlineBg, child) {
-                return MaterialApp(
-                  title: 'AkonsSquare',
-                  debugShowCheckedModeBanner: false,
-                  theme: ThemeManager.getThemeByName(themeName, fontName: fontName),
-                  home: const SplashScreen(),
+                return ConnectivityWrapper(
+                  child: MaterialApp(
+                    navigatorKey: navigatorKey,
+                    title: 'AkonsSquare',
+                    debugShowCheckedModeBanner: false,
+                    theme: ThemeManager.getThemeByName(themeName, fontName: fontName),
+                    home: const SplashScreen(),
+                  ),
                 );
               }
             );
@@ -62,7 +67,95 @@ class MyApp extends StatelessWidget {
   }
 }
 
+
+class ConnectivityWrapper extends StatefulWidget {
+  final Widget child;
+  const ConnectivityWrapper({super.key, required this.child});
+
+  @override
+  State<ConnectivityWrapper> createState() => _ConnectivityWrapperState();
+}
+
+class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
+  bool _isOffline = false;
+  bool _dialogShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = Connectivity().onConnectivityChanged.listen((results) {
+      bool offline = results.contains(ConnectivityResult.none);
+      if (offline != _isOffline) {
+        setState(() {
+          _isOffline = offline;
+        });
+        if (_isOffline) {
+          _showOfflineDialog();
+        } else {
+          if (_dialogShowing) {
+            final context = navigatorKey.currentContext;
+            if (context != null) {
+              Navigator.of(context, rootNavigator: true).pop();
+            }
+            _dialogShowing = false;
+          }
+        }
+      }
+    });
+  }
+
+  void _showOfflineDialog() {
+    if (_dialogShowing) return;
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    
+    _dialogShowing = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false, 
+      builder: (ctx) => PopScope(
+        canPop: false, // ব্যাক বাটন দিয়ে সরানো যাবে না
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.error),
+              const SizedBox(width: 10),
+              const Text("অফলাইন"),
+            ],
+          ),
+          content: const Text("আপনার ইন্টারনেট কানেকশন নেই। অ্যাপটি ব্যবহার করতে পুনরায় অনলাইনে আসুন।"),
+          actions: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  "সংযোগের জন্য অপেক্ষা করা হচ্ছে...",
+                  style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).then((_) => _dialogShowing = false);
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
+}
+
 class LoginPage extends StatefulWidget {
+
   const LoginPage({super.key});
 
   @override

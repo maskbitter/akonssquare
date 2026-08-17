@@ -15,34 +15,8 @@ if (-not $SkipPortal) {
     }
 }
 
-# 1. Increment Build Number for AkonsSquare
-$counterPath = "android/app/build_counter.txt"
-if (-not (Test-Path $counterPath)) {
-    "1" | Out-File -FilePath $counterPath -Encoding utf8 -NoNewline
-}
-$currentBN = [int](Get-Content $counterPath).Trim()
-$newBN = $currentBN + 1
-$newBN | Out-File -FilePath $counterPath -Encoding utf8 -NoNewline
-
-Write-Host ">>> AkonsSquare Build Number incremented to: $newBN" -ForegroundColor Cyan
-
-# 2. Update build_config.dart
-$pubspec = Get-Content "pubspec.yaml" -Raw
-if ($pubspec -match "version: ([\d\.\+]+)") {
-    $appVersion = $Matches[1]
-} else {
-    $appVersion = "1.0.0+1"
-}
-$verForName = $appVersion.Replace("+", "_")
-
-$configPath = "lib/Common/build_config.dart"
-# Fixed quote escaping for Dart string
-$configContent = "const int buildNumber = $newBN;`nconst String appVersion = `"$appVersion`";`n"
-$configContent | Out-File -FilePath $configPath -Encoding utf8
-
-Write-Host ">>> build_config.dart updated with version $appVersion" -ForegroundColor Cyan
-
-# 3. Build Release APK for AkonsSquare
+# 1. Build Release APK for AkonsSquare
+# (Gradle task 'incrementBuildNumber' in build.gradle.kts now handles BN increment and build_config.dart update)
 Write-Host ">>> Starting AkonsSquare Flutter Build Release..." -ForegroundColor Yellow
 $flutterBat = "E:\AkonsAutomation\Flutter\flutter\flutter\bin\flutter.bat"
 & $flutterBat build apk --release
@@ -52,7 +26,21 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# 4. Rename and Move APK
+# 2. Get the new Build Number and Version after build
+$counterPath = "android/app/build_counter.txt"
+$newBN = [int](Get-Content $counterPath).Trim()
+
+$pubspec = Get-Content "pubspec.yaml" -Raw
+if ($pubspec -match "version: ([\d\.\+]+)") {
+    $appVersion = $Matches[1]
+} else {
+    $appVersion = "1.0.0+1"
+}
+$verForName = $appVersion.Replace("+", "_")
+
+Write-Host ">>> Build Complete. New Version: $appVersion (BN$newBN)" -ForegroundColor Cyan
+
+# 3. Rename and Move APK
 $sourceApk = "build/app/outputs/flutter-apk/app-release.apk"
 $destName = "AkonsSquare_V${verForName}_BN${newBN}_release.apk"
 $destPath = "release/$destName"
