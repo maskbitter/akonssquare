@@ -254,11 +254,12 @@ class _UserDashboardState extends State<UserDashboard> {
                       stream: _dbService.getDatabaseInfoStream(),
                       builder: (context, dbInfoSnap) {
                         String local = appVersion; // Instant update from build_config.dart
-                        String? remote = configSnap.data?.exists == true ? configSnap.data!['requiredVersion'] : null;
+                        final configData = configSnap.data?.data() as Map<String, dynamic>?;
+                        String? remote = configData?['requiredVersion'];
                         String dbVersion = "...";
                         if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
                           var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                          dbVersion = (data?['dbVersion'] ?? 26.0).toDouble().toStringAsFixed(1);
+                          dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
                         }
                         
                         bool isOutdated = false;

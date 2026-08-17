@@ -343,6 +343,11 @@ class _CategoryPageState extends State<CategoryPage> {
 
                       subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
 
+                      // Hide category if no units are occupied in this tab
+                      if (status == 'Occupied' && subDocs.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+
                       double catTotal = 0;
                       for (var doc in subDocs) {
                         var d = doc.data() as Map<String, dynamic>;

@@ -374,6 +374,7 @@ class ThemeManager {
         ),
       ),
       appBarTheme: AppBarTheme(
+        toolbarHeight: 60.0,
         centerTitle: false,
         elevation: 0,
         backgroundColor: colorScheme.surface,

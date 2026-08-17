@@ -488,7 +488,7 @@ class _LoginPageState extends State<LoginPage> {
             if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
               var info = dbInfoSnap.data!.data() as Map<String, dynamic>;
               serverStatus = info['serverStatus'] ?? 'completed';
-              dbVersion = (info['dbVersion'] ?? 26.0).toStringAsFixed(1);
+              dbVersion = (info['dbVersion'] ?? DatabaseService.defaultDbVersion).toStringAsFixed(1);
               int firestoreBN = info['buildNumber']?.toInt() ?? 0;
               // If server has a newer BN, show that, otherwise show local
               if (firestoreBN > buildNumber) {
@@ -519,7 +519,7 @@ class _LoginPageState extends State<LoginPage> {
               builder: (context, configSnap) {
                 String latestV = "";
                 if (configSnap.hasData && configSnap.data!.exists) {
-                  latestV = configSnap.data!['requiredVersion'] ?? "";
+                  latestV = (configSnap.data!.data() as Map<String, dynamic>?)?['requiredVersion'] ?? "";
                 }
                 // SMART COMPARISON: Only show RED Latest V if server version is actually newer
                 bool isOutdated = false;

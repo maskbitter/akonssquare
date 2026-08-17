@@ -388,7 +388,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 StreamBuilder<DocumentSnapshot>(
                   stream: _dbService.getAppConfigStream(),
                   builder: (context, snapshot) {
-                    bool isEnabled = snapshot.data?.exists == true ? snapshot.data!['isPopupEnabled'] ?? true : true;
+                    Map<String, dynamic>? data = snapshot.data?.data() as Map<String, dynamic>?;
+                    bool isEnabled = data?['isPopupEnabled'] ?? true;
                     return Card(
                       elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 3,
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

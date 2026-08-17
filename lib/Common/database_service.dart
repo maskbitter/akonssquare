@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  static const double defaultDbVersion = 0.0;
+
   // --- Normalization Helper ---
   String _normalize(String input) => input.toLowerCase().replaceAll(' ', '');
 
@@ -724,9 +726,9 @@ class DatabaseService {
   Future<double> getDBVersion() async {
     DocumentSnapshot snap = await _db.collection('app_config').doc('database_info').get();
     if (snap.exists) {
-      return (snap.data() as Map<String, dynamic>)['dbVersion']?.toDouble() ?? 1.0;
+      return (snap.data() as Map<String, dynamic>)['dbVersion']?.toDouble() ?? defaultDbVersion;
     }
-    return 1.0;
+    return defaultDbVersion;
   }
 
   // Export all data to Map for JSON
@@ -815,19 +817,10 @@ class DatabaseService {
       return;
     }
 
-    // 2. Process Main Collections (Archive then Delete)
+    // 2. Process Main Collections (Delete Directly)
     int processedCount = 0;
     for (String col in mainCollections) {
       for (var doc in mainSnaps[col]!) {
-        await _db.collection('removed_history').add({
-          'collection': col,
-          'originalDocId': doc.id,
-          'originalData': doc.data(),
-          'removedBy': actor,
-          'removedAt': FieldValue.serverTimestamp(),
-          'clientTimestamp': DateTime.now().toIso8601String(),
-          'reason': 'Bulk Database Wipe by Admin',
-        });
         await doc.reference.delete();
         processedCount++;
         if (onProgress != null) onProgress(1.0 - (processedCount / totalDocs));
@@ -844,6 +837,13 @@ class DatabaseService {
         if (onProgress != null) onProgress(1.0 - (processedCount / totalDocs));
       }
     }
+
+    // Explicitly set version to 0.0 after wipe
+    await _db.collection('app_config').doc('database_info').set({
+      'dbVersion': defaultDbVersion,
+      'serverStatus': 'wipe_completed',
+      'statusUpdatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     await logActivity(
       actor: actor,

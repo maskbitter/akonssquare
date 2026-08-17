@@ -1319,15 +1319,16 @@ class _AdminHomeState extends State<AdminHome> {
                         String resolvedSubName = data['subItemName'] ?? '...';
 
                         if (snap.hasData && snap.data!.exists) {
+                          final snapData = snap.data!.data() as Map<String, dynamic>?;
                           if (data['subItemName'] == null) {
-                            resolvedSubName = snap.data!['subItemName'] ?? 'Unnamed';
+                            resolvedSubName = snapData?['subItemName'] ?? 'Unnamed';
                           }
-                          String catId = snap.data!['categoryId'] ?? '';
+                          String catId = snapData?['categoryId'] ?? '';
                           return FutureBuilder<DocumentSnapshot>(
                             future: _dbService.getCategoryById(catId),
                             builder: (context, catSnap) {
                               categoryName = (catSnap.data?.data() as Map?)?['categoryName'] ?? 'Unknown';
-                              String tName = data['TenantName'] ?? snap.data!['TenantName'] ?? 'No Name';
+                              String tName = data['TenantName'] ?? snapData?['TenantName'] ?? 'No Name';
                               
                               return _buildBillingTile(
                                 index: index,
@@ -1382,15 +1383,16 @@ class _AdminHomeState extends State<AdminHome> {
             String resolvedSubName = data['subItemName'] ?? '...';
 
             if (snap.hasData && snap.data!.exists) {
+              final snapData = snap.data!.data() as Map<String, dynamic>?;
               if (data['subItemName'] == null) {
-                resolvedSubName = snap.data!['subItemName'] ?? 'Unnamed';
+                resolvedSubName = snapData?['subItemName'] ?? 'Unnamed';
               }
-              String catId = snap.data!['categoryId'] ?? '';
+              String catId = snapData?['categoryId'] ?? '';
               return FutureBuilder<DocumentSnapshot>(
                 future: _dbService.getCategoryById(catId),
                 builder: (context, catSnap) {
                   categoryName = (catSnap.data?.data() as Map?)?['categoryName'] ?? 'Unknown';
-                  String tName = data['TenantName'] ?? snap.data!['TenantName'] ?? 'No Name';
+                  String tName = data['TenantName'] ?? snapData?['TenantName'] ?? 'No Name';
 
                   return _buildBillingTile(
                     index: index,
@@ -1458,7 +1460,7 @@ class _AdminHomeState extends State<AdminHome> {
               builder: (context, subSnap) {
                 String tName = 'No Name';
                 if (subSnap.hasData && subSnap.data!.exists) {
-                  tName = subSnap.data!['TenantName'] ?? 'No Name';
+                  tName = (subSnap.data!.data() as Map<String, dynamic>?)?['TenantName'] ?? 'No Name';
                 }
                 return FutureBuilder<double>(
                   future: _calculateSingleDue(doc),
