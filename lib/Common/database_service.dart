@@ -756,6 +756,7 @@ class DatabaseService {
     double currentVersion = await getDBVersion();
     double nextVersion = forcedVersion ?? (currentVersion + 1.0);
 
+    // List of all collections to backup
     List<String> collections = [
       'categories', 'services', 'sub_items', 'main_meters', 'sub_meters',
       'billing_history', 'users', 'activity_log', 'removed_history', 'app_config'
@@ -777,7 +778,7 @@ class DatabaseService {
       totalDocs += snap.docs.length;
     }
 
-    if (totalDocs == 0) totalDocs = 1; // Avoid div by zero
+    if (totalDocs == 0) totalDocs = 1;
 
     // 2. Process documents
     int processedCount = 0;
@@ -794,83 +795,69 @@ class DatabaseService {
       }).toList();
     }
 
-    // Note: We no longer update server version during export. 
-    // Server version ONLY increases when a higher-version backup is Restored.
-
     await logActivity(
       actor: actor,
-      action: "Database Backup",
-      details: "Full database backup generated. Version: $nextVersion",
+      action: "Full Database Backup",
+      details: "Full backup (including Users and Logs) generated. Version: $nextVersion",
       category: "System",
     );
 
     return exportData;
   }
 
-  // Wipe all administrative data EXCEPT users with countdown progress
+  // Wipe administrative data EXCEPT users
   Future<void> wipeDatabase(String actor, {Function(double)? onProgress}) async {
-    // Collections to archive then wipe
-    List<String> mainCollections = [
-      'categories', 'services', 'sub_items', 'main_meters', 'sub_meters', 'billing_history'
+    // List of collections to wipe
+    List<String> collectionsToWipe = [
+      'categories', 'services', 'sub_items', 'main_meters', 
+      'sub_meters', 'billing_history', 'activity_log', 'removed_history'
     ];
-    // Collections to wipe directly (Logs, History, and Config)
-    List<String> wipeDirectly = ['activity_log', 'removed_history', 'app_config'];
 
     // 1. Calculate Total Documents
     int totalDocs = 0;
-    Map<String, List<QueryDocumentSnapshot>> mainSnaps = {};
-    Map<String, List<QueryDocumentSnapshot>> directSnaps = {};
+    Map<String, List<QueryDocumentSnapshot>> snapsToWipe = {};
 
-    for (String col in mainCollections) {
+    for (String col in collectionsToWipe) {
       QuerySnapshot snap = await _db.collection(col).get();
       totalDocs += snap.docs.length;
-      mainSnaps[col] = snap.docs;
-    }
-    for (String col in wipeDirectly) {
-      QuerySnapshot snap = await _db.collection(col).get();
-      totalDocs += snap.docs.length;
-      directSnaps[col] = snap.docs;
+      snapsToWipe[col] = snap.docs;
     }
 
     if (totalDocs == 0) {
-      if (onProgress != null) onProgress(0.0);
+      // Still need to reset version
+      await _resetAppConfigAfterWipe();
+      if (onProgress != null) onProgress(1.0);
       return;
     }
 
-    // 2. Process Main Collections (Delete Directly)
+    // 2. Process Deletion
     int processedCount = 0;
-    for (String col in mainCollections) {
-      for (var doc in mainSnaps[col]!) {
+    for (String col in collectionsToWipe) {
+      for (var doc in snapsToWipe[col]!) {
         await doc.reference.delete();
         processedCount++;
-        if (onProgress != null) onProgress(1.0 - (processedCount / totalDocs));
+        if (onProgress != null) onProgress(processedCount / totalDocs);
       }
     }
 
-    // 3. Process Direct Wipe Collections (Delete Directly)
-    for (String col in wipeDirectly) {
-      for (var doc in directSnaps[col]!) {
-        // Special case: Keep database_info working until the end if needed, 
-        // but user said "wipe whole database except users", so we delete it.
-        await doc.reference.delete();
-        processedCount++;
-        if (onProgress != null) onProgress(1.0 - (processedCount / totalDocs));
-      }
-    }
+    // 3. Reset App Config (Keep important settings, reset version)
+    await _resetAppConfigAfterWipe();
 
-    // Explicitly set version to 0.0 after wipe
+    await logActivity(
+      actor: actor,
+      action: "System Data Wipe",
+      details: "All data collections were wiped except for 'users'.",
+      category: "Danger Zone",
+    );
+  }
+
+  Future<void> _resetAppConfigAfterWipe() async {
+    // Reset database info to version 0.0 without deleting the config doc itself
     await _db.collection('app_config').doc('database_info').set({
       'dbVersion': defaultDbVersion,
       'serverStatus': 'wipe_completed',
       'statusUpdatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
-
-    await logActivity(
-      actor: actor,
-      action: "Database Wipe",
-      details: "All administrative collections were wiped from the server.",
-      category: "Danger Zone",
-    );
   }
 
   // Import data from Map (Restore)
