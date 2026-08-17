@@ -25,6 +25,7 @@ import 'package:akons_square/Common/ui_helper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+bool isUserLoggedIn = false; // গ্লোবাল ফ্ল্যাগ
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -110,6 +111,9 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
     final context = navigatorKey.currentContext;
     if (context == null) return;
     
+    // শুধুমাত্র লগইন করার পর ডায়ালগ দেখাবে
+    if (!isUserLoggedIn) return;
+
     _dialogShowing = true;
     showDialog(
       context: context,
@@ -122,16 +126,16 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
             children: [
               Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.error),
               const SizedBox(width: 10),
-              const Text("অফলাইন"),
+              const Text("Offline"),
             ],
           ),
-          content: const Text("আপনার ইন্টারনেট কানেকশন নেই। অ্যাপটি ব্যবহার করতে পুনরায় অনলাইনে আসুন।"),
+          content: const Text("You are offline. Please check your internet connection to continue using the app."),
           actions: [
             Center(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text(
-                  "সংযোগের জন্য অপেক্ষা করা হচ্ছে...",
+                  "Waiting for connection...",
                   style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 12),
                 ),
               ),
@@ -155,7 +159,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
 }
 
 class LoginPage extends StatefulWidget {
-
   const LoginPage({super.key});
 
   @override
@@ -201,6 +204,12 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       debugPrint("Debug Population Error: $e");
     }
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
   }
 
   void _checkConnectivity() {
@@ -265,12 +274,6 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _connectivitySubscription?.cancel();
-    super.dispose();
   }
 
   Future<void> _loadAppConfig() async {
@@ -394,6 +397,7 @@ class _LoginPageState extends State<LoginPage> {
                         await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'user');
                         await prefs.setString('subItemId', subId); await prefs.setString('categoryId', catId);
                         await prefs.setString('sessionId', sessionId);
+                        isUserLoggedIn = true; // লগইন সফল
                         if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboard(subItemId: subId, categoryId: catId))); }
                       } else {
                         if (context.mounted) DatabaseService.showToast(context, "Incorrect password!", backgroundColor: Theme.of(context).colorScheme.error);
@@ -470,6 +474,7 @@ class _LoginPageState extends State<LoginPage> {
                             SharedPreferences prefs = await SharedPreferences.getInstance();
                             await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'admin');
                             await prefs.setString('username', u); await prefs.setString('savedPassword', p);
+                            isUserLoggedIn = true; // Admin Login
                             if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard())); }
                             return;
                          }
@@ -485,6 +490,7 @@ class _LoginPageState extends State<LoginPage> {
                         await prefs.setString('username', u); await prefs.setString('savedPassword', p);
                         await prefs.setString('userDocId', userDoc.id);
                         await prefs.setString('sessionId', sessionId);
+                        isUserLoggedIn = true; // ইউজার লগইন
                         if (mounted) {
                           Navigator.pop(ctx);
                           if (role == 'admin') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
@@ -552,6 +558,7 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: (isLoading || keyController.text.trim().isEmpty) ? null : () async {
                     if (keyController.text.trim() == 'superadmin') {
                       setST(() => isLoading = true);
+                      isUserLoggedIn = true; // সুপার অ্যাডমিন লগইন
                       SharedPreferences prefs = await SharedPreferences.getInstance();
                       await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'superadmin');
                       if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard())); }
