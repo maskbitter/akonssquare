@@ -351,7 +351,7 @@ class _SettingsPageState extends State<SettingsPage> {
             'canControlVisibility': true,
             'canManageData': true,
             'canManageAccounts': true,
-          });
+          }, role);
         }
 
         // For Admin/Operator/Viewer - Listen to real-time permissions
@@ -373,14 +373,14 @@ class _SettingsPageState extends State<SettingsPage> {
               }
             }
 
-            return _buildSettingsList(context, perms);
+            return _buildSettingsList(context, perms, role);
           },
         );
       }
     );
   }
 
-  Widget _buildSettingsList(BuildContext context, Map<String, dynamic> perms) {
+  Widget _buildSettingsList(BuildContext context, Map<String, dynamic> perms, String role) {
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -680,7 +680,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
-  }
   }
 
   Widget _buildThemeSection() {
