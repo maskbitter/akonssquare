@@ -122,20 +122,25 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
         canPop: false, // ব্যাক বাটন দিয়ে সরানো যাবে না
         child: AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
+          title: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.error),
-              const SizedBox(width: 10),
-              const Text("Offline"),
+              Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.error, size: 40),
+              const SizedBox(height: 10),
+              const Text("Offline", textAlign: TextAlign.center),
             ],
           ),
-          content: const Text("You are offline. Please check your internet connection to continue using the app."),
+          content: const Text(
+            "You are offline. Please check your internet connection to continue using the app.",
+            textAlign: TextAlign.center,
+          ),
           actions: [
             Center(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text(
                   "Waiting for connection...",
+                  textAlign: TextAlign.center,
                   style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 12),
                 ),
               ),
