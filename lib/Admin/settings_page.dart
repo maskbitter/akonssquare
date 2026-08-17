@@ -337,13 +337,58 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     }
 
+    return FutureBuilder<SharedPreferences>(
+      future: SharedPreferences.getInstance(),
+      builder: (context, psSnap) {
+        if (!psSnap.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        
+        String role = psSnap.data?.getString('userRole') ?? 'viewer';
+        String userDocId = psSnap.data?.getString('userDocId') ?? '';
+
+        if (role == 'superadmin') {
+          return _buildSettingsList(context, {
+            'canSeeSecurityLogs': true,
+            'canControlVisibility': true,
+            'canManageData': true,
+            'canManageAccounts': true,
+          });
+        }
+
+        // For Admin/Operator/Viewer - Listen to real-time permissions
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance.collection('users').doc(userDocId).snapshots(),
+          builder: (context, userSnap) {
+            Map<String, dynamic> perms = {
+              'canSeeSecurityLogs': false,
+              'canControlVisibility': false,
+              'canManageData': false,
+              'canManageAccounts': false,
+            };
+
+            if (userSnap.hasData && userSnap.data!.exists) {
+              var data = userSnap.data!.data() as Map<String, dynamic>;
+              if (data.containsKey('permissions')) {
+                Map<String, dynamic> userPerms = data['permissions'];
+                userPerms.forEach((k, v) => perms[k] = v as bool);
+              }
+            }
+
+            return _buildSettingsList(context, perms);
+          },
+        );
+      }
+    );
+  }
+
+  Widget _buildSettingsList(BuildContext context, Map<String, dynamic> perms) {
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Dashboard Visibility
+            // 1. Security & Audit Logs
+            if (perms['canSeeSecurityLogs'] == true)
             _buildSettingsCard(
               context,
               icon: Icons.security_outlined,
@@ -376,6 +421,8 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
 
+            // 2. Visibility Control
+            if (perms['canControlVisibility'] == true)
             _buildSettingsCard(
               context,
               icon: Icons.visibility_outlined,
@@ -384,7 +431,7 @@ class _SettingsPageState extends State<SettingsPage> {
               color: ThemeManager.getCardContainerColor(1),
               accentColor: ThemeManager.getCardColor(1),
               children: [
-                // Nested System Config at the top
+                // Nested System Config
                 StreamBuilder<DocumentSnapshot>(
                   stream: _dbService.getAppConfigStream(),
                   builder: (context, snapshot) {
@@ -524,6 +571,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             // 3. Data Management
+            if (perms['canManageData'] == true)
             _buildSettingsCard(
               context,
               icon: Icons.storage_outlined,
@@ -580,35 +628,29 @@ class _SettingsPageState extends State<SettingsPage> {
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
                       textAlign: TextAlign.center,
                     ),
-                    FutureBuilder<SharedPreferences>(
-                      future: SharedPreferences.getInstance(),
-                      builder: (context, snapshot) {
-                        if (snapshot.data?.getString('userRole') == 'superadmin') {
-                          return Padding(padding: const EdgeInsets.only(top: 16), child: Column(children: [
-                            const Divider(),
-                            AppDialogActions(
-                              actions: [
-                                AppButton.icon(
-                                  style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: ThemeManager.outlineBackground), 
-                                  onPressed: _isProcessing ? null : () => _handleWipe(context), 
-                                  icon: (_isProcessing && _activeAction == 'wipe') 
-                                    ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
-                                    : const Icon(Icons.delete_forever), 
-                                  child: const Text("Wipe All Data")
-                                ),
-                              ],
+                    if (role == 'superadmin')
+                      Padding(padding: const EdgeInsets.only(top: 16), child: Column(children: [
+                        const Divider(),
+                        AppDialogActions(
+                          actions: [
+                            AppButton.icon(
+                              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: ThemeManager.outlineBackground), 
+                              onPressed: _isProcessing ? null : () => _handleWipe(context), 
+                              icon: (_isProcessing && _activeAction == 'wipe') 
+                                ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
+                                : const Icon(Icons.delete_forever), 
+                              child: const Text("Wipe All Data")
                             ),
-                          ]));
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
+                          ],
+                        ),
+                      ])),
                   ]),
                 ),
               ],
             ),
 
             // 4. Account Management
+            if (perms['canManageAccounts'] == true)
             _buildSettingsCard(
               context,
               icon: Icons.manage_accounts_outlined,
@@ -638,6 +680,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
   }
 
   Widget _buildThemeSection() {

@@ -644,7 +644,7 @@ class DatabaseService {
     return _db.collection('users').snapshots();
   }
 
-  Future<void> saveUser(String username, String password, String role, String actor, {String? docId}) async {
+  Future<void> saveUser(String username, String password, String role, String actor, {String? docId, Map<String, bool>? permissions}) async {
     Map<String, dynamic> data = {
       'username': username,
       'password': password,
@@ -653,13 +653,33 @@ class DatabaseService {
       'clientTimestamp': DateTime.now().toIso8601String(),
     };
 
+    if (permissions != null) {
+      data['permissions'] = permissions;
+    } else if (docId == null && role == 'admin') {
+      // Default permissions for new Admin
+      data['permissions'] = {
+        'canSeeSecurityLogs': false,
+        'canControlVisibility': false,
+        'canManageData': false,
+        'canManageAccounts': false,
+      };
+    }
+
     if (docId == null) {
       await _db.collection('users').add(data);
       await logActivity(actor: actor, action: "Create User", details: "Created new $role account: $username", category: "Security");
     } else {
       await _db.collection('users').doc(docId).update(data);
-      await logActivity(actor: actor, action: "Update User", details: "Updated credentials for $role: $username", category: "Security");
+      await logActivity(actor: actor, action: "Update User", details: "Updated credentials/permissions for $role: $username", category: "Security");
     }
+  }
+
+  Future<void> updateUserPermissions(String docId, Map<String, bool> permissions, String actor) async {
+    await _db.collection('users').doc(docId).update({
+      'permissions': permissions,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    await logActivity(actor: actor, action: "Update Permissions", details: "Updated permissions for user ID: $docId", category: "Security");
   }
 
   // ==========================================
