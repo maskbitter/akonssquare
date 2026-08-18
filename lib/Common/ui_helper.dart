@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:akons_square/Common/theme_manager.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:ota_update/ota_update.dart';
+import 'package:akons_square/main.dart';
 
 class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
@@ -108,6 +110,7 @@ class AppVersionInfo extends StatefulWidget {
   final String? latestVersion;
   final String? statusMessage;
   final bool isOutdated;
+  final bool animate;
   final Color? color;
   final Color? secondaryColor;
   final CrossAxisAlignment crossAxisAlignment;
@@ -122,6 +125,7 @@ class AppVersionInfo extends StatefulWidget {
     this.latestVersion,
     this.statusMessage,
     this.isOutdated = false,
+    this.animate = true,
     this.color,
     this.secondaryColor,
     this.crossAxisAlignment = CrossAxisAlignment.center,
@@ -141,7 +145,7 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
   @override
   void initState() {
     super.initState();
-    if (widget.isOutdated) {
+    if (widget.isOutdated && widget.animate) {
       _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
         if (mounted) {
           setState(() {
@@ -155,7 +159,7 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
   @override
   void didUpdateWidget(AppVersionInfo oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isOutdated && _timer == null) {
+    if (widget.isOutdated && widget.animate && _timer == null) {
       _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
         if (mounted) {
           setState(() {
@@ -163,7 +167,7 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
           });
         }
       });
-    } else if (!widget.isOutdated && _timer != null) {
+    } else if ((!widget.isOutdated || !widget.animate) && _timer != null) {
       _timer?.cancel();
       _timer = null;
       _showUpdateInfo = false;
@@ -307,6 +311,114 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
 
 // --- UPDATE DIALOGS ---
 
+class _UpdateProgressDialog extends StatefulWidget {
+  final String url;
+  const _UpdateProgressDialog({required this.url});
+
+  @override
+  State<_UpdateProgressDialog> createState() => _UpdateProgressDialogState();
+}
+
+class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
+  OtaEvent? currentEvent;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _startDownload();
+  }
+
+  void _startDownload() {
+    try {
+      final String filename = "update_${DateTime.now().millisecondsSinceEpoch}.apk";
+      print("OTA: Starting download from ${widget.url} to $filename");
+      OtaUpdate().execute(widget.url, destinationFilename: filename).listen(
+        (OtaEvent event) {
+          print("OTA Status: ${event.status}, Value: ${event.value}");
+          setState(() {
+            currentEvent = event;
+            if (event.status == OtaStatus.INSTALLING) {
+              Navigator.pop(context);
+            } else if (event.status == OtaStatus.DOWNLOAD_ERROR || 
+                       event.status == OtaStatus.INTERNAL_ERROR ||
+                       event.status == OtaStatus.PERMISSION_NOT_GRANTED_ERROR) {
+              error = "Update failed: ${event.status}. Please check internet or permissions.";
+            }
+          });
+        },
+        onError: (e) {
+          print("OTA Error: $e");
+          setState(() {
+            error = "Download error: $e";
+          });
+        },
+      );
+    } catch (e) {
+      print("OTA Exception: $e");
+      setState(() {
+        error = "System error: $e";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double progress = 0;
+    if (currentEvent?.value != null) {
+      progress = (double.tryParse(currentEvent!.value!) ?? 0) / 100;
+    }
+
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.download, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 10),
+              const Text("Downloading", style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (error != null)
+              Text("Error: $error", style: const TextStyle(color: Colors.red), textAlign: TextAlign.center)
+            else ...[
+              const Text("Please wait while we prepare your update.", textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              LinearProgressIndicator(
+                value: progress,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(10),
+                minHeight: 10,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "${(progress * 100).toInt()}% Complete",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ]
+          ],
+        ),
+        actions: error != null ? [
+          AppButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+        ] : [],
+      ),
+    );
+  }
+}
+
 void showUpdateDialog({
   required BuildContext context,
   required String remoteVersion,
@@ -355,10 +467,11 @@ void showUpdateDialog({
                   return;
                 }
                 Navigator.pop(ctx);
-                final Uri url = Uri.parse(downloadUrl);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => _UpdateProgressDialog(url: downloadUrl),
+                );
               },
               child: const Text("Update Now"),
             ),
@@ -414,10 +527,11 @@ void showUpdateLogoutDialog({
                   return;
                 }
                 Navigator.pop(ctx);
-                final Uri url = Uri.parse(downloadUrl);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => _UpdateProgressDialog(url: downloadUrl),
+                );
               },
               child: const Text("Update Now"),
             ),
