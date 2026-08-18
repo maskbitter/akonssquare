@@ -155,7 +155,7 @@ class _AdminHomeState extends State<AdminHome> {
                             if (settings['showCategory']!)
                               _buildCategorySection(settings),
                             
-                            const SizedBox(height: 80),
+                            const SizedBox(height: 10),
                           ],
                         );
                       }

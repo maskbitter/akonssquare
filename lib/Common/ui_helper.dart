@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:akons_square/Common/theme_manager.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ota_update/ota_update.dart';
@@ -141,10 +142,13 @@ class AppVersionInfo extends StatefulWidget {
 class _AppVersionInfoState extends State<AppVersionInfo> {
   bool _showUpdateInfo = false;
   Timer? _timer;
+  StreamSubscription? _connectivitySub;
+  bool _isInternalOffline = false;
 
   @override
   void initState() {
     super.initState();
+    _checkConnectivity();
     if (widget.isOutdated && widget.animate) {
       _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
         if (mounted) {
@@ -154,6 +158,22 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
         }
       });
     }
+  }
+
+  void _checkConnectivity() async {
+    final results = await Connectivity().checkConnectivity();
+    if (mounted) {
+      setState(() {
+        _isInternalOffline = results.contains(ConnectivityResult.none);
+      });
+    }
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      if (mounted) {
+        setState(() {
+          _isInternalOffline = results.contains(ConnectivityResult.none);
+        });
+      }
+    });
   }
 
   @override
@@ -177,6 +197,7 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
   @override
   void dispose() {
     _timer?.cancel();
+    _connectivitySub?.cancel();
     super.dispose();
   }
 
@@ -203,6 +224,14 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
     // Toggle logic for update notification
     bool isShowingUpdateIcon = widget.isOutdated && _showUpdateInfo;
 
+    // Determine connectivity info (Prioritize widget prop if provided)
+    final bool showOffline = widget.connectionStatus != null 
+        ? widget.connectionStatus == "Offline" 
+        : _isInternalOffline;
+    
+    final String? statusText = widget.connectionStatus ?? (showOffline ? "Offline" : null);
+    final Color statusColor = widget.connectionColor ?? (showOffline ? Colors.red : Colors.green);
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -212,41 +241,24 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
             textAlign: widget.crossAxisAlignment == CrossAxisAlignment.center ? TextAlign.center : TextAlign.start,
             text: TextSpan(
               children: [
-                if (isShowingUpdateIcon && !widget.showLogoutIcon) ...[
-                   TextSpan(
-                    text: "NEW UPDATE AVAILABLE", 
+                if (widget.isOutdated && widget.latestVersion != null) ...[
+                  TextSpan(
+                    text: "Latest V: ${widget.latestVersion}", 
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.red, 
+                      color: isOutline ? Colors.black : Colors.red, 
                       fontWeight: FontWeight.bold, 
-                      fontSize: mainFontSize + 1
+                      fontSize: mainFontSize
                     )
                   ),
                 ] else ...[
                   TextSpan(
                     text: "V: ${widget.version}", 
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: isOutline ? Colors.black : effectiveColor, 
+                      color: isOutline ? Colors.black : Colors.green, 
                       fontWeight: FontWeight.bold, 
                       fontSize: mainFontSize
                     )
                   ),
-                  if (widget.isOutdated && widget.latestVersion != null) ...[
-                    TextSpan(
-                      text: " | ", 
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: isOutline ? Colors.black : Theme.of(context).colorScheme.outline, 
-                        fontSize: mainFontSize
-                      )
-                    ),
-                    TextSpan(
-                      text: "Latest V: ${widget.latestVersion}", 
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error, 
-                        fontWeight: FontWeight.bold, 
-                        fontSize: mainFontSize
-                      )
-                    ),
-                  ]
                 ]
               ]
             ),
@@ -271,7 +283,7 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
           // FIXED HEIGHT STATUS AREA to prevent layout jumps
           SizedBox(
             height: 14,
-            child: (widget.connectionStatus != null && widget.connectionStatus!.isNotEmpty) 
+            child: (statusText != null) 
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -279,11 +291,11 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
                       width: 6,
                       height: 6,
                       decoration: BoxDecoration(
-                        color: widget.connectionColor ?? Colors.grey,
+                        color: statusColor,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: (widget.connectionColor ?? Colors.grey).withOpacity(0.4),
+                            color: statusColor.withOpacity(0.4),
                             blurRadius: 2,
                             spreadRadius: 1,
                           )
@@ -292,10 +304,10 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      widget.connectionStatus!,
+                      statusText,
                       style: TextStyle(
                         fontSize: statusFontSize,
-                        color: widget.connectionColor ?? Colors.grey,
+                        color: statusColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

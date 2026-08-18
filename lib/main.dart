@@ -85,6 +85,7 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   @override
   void initState() {
     super.initState();
+    _checkInitialConnectivity();
     _subscription = Connectivity().onConnectivityChanged.listen((results) {
       bool offline = results.contains(ConnectivityResult.none);
       if (offline != _isOffline) {
@@ -104,6 +105,19 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
         }
       }
     });
+  }
+
+  void _checkInitialConnectivity() async {
+    final results = await Connectivity().checkConnectivity();
+    bool offline = results.contains(ConnectivityResult.none);
+    if (offline) {
+      if (mounted) {
+        setState(() {
+          _isOffline = true;
+        });
+        _showOfflineDialog();
+      }
+    }
   }
 
   void _showOfflineDialog() {
@@ -197,10 +211,18 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _checkConnectivity() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
-      bool offline = results.contains(ConnectivityResult.none);
-      if (offline != _isOffline) {
+  void _checkConnectivity() async {
+    // Check initial state
+    final initial = await Connectivity().checkConnectivity();
+    _updateConnectivityState(initial);
+
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(_updateConnectivityState);
+  }
+
+  void _updateConnectivityState(List<ConnectivityResult> results) {
+    bool offline = results.contains(ConnectivityResult.none);
+    if (offline != _isOffline) {
+      if (mounted) {
         setState(() { 
           _isOffline = offline; 
           if (_isOffline) {
@@ -215,13 +237,28 @@ class _LoginPageState extends State<LoginPage> {
             });
           }
         });
-        if (!offline) {
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          }
+      }
+      if (!offline) {
+        final context = navigatorKey.currentContext;
+        if (context != null && Navigator.canPop(context)) {
+          // Check if the current dialog is the offline dialog before popping
+          // For now, simple pop is okay if we are careful
         }
       }
-    });
+    }
+  }
+
+  void _checkInitialConnectivity() async {
+    final results = await Connectivity().checkConnectivity();
+    bool offline = results.contains(ConnectivityResult.none);
+    if (offline) {
+      if (mounted) {
+        setState(() {
+          _isOffline = true;
+        });
+        _showOfflineDialog();
+      }
+    }
   }
 
   void _showOfflineDialog() {
@@ -808,23 +845,6 @@ class _LoginPageState extends State<LoginPage> {
                                           ),
                                         ),
                                         if (isOutdated) ...[
-                                          const SizedBox(height: 12),
-                                          InkWell(
-                                            onTap: () {
-                                              String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
-                                              if (dUrl.isNotEmpty) {
-                                                showUpdateDialog(context: context, remoteVersion: latestV, downloadUrl: dUrl);
-                                              }
-                                            },
-                                            child: AppVersionInfo(
-                                              version: _currentVersion,
-                                              dbVersion: dbVersion,
-                                              latestVersion: latestV,
-                                              isOutdated: true,
-                                              color: Colors.red,
-                                              secondaryColor: Colors.red,
-                                            ),
-                                          ),
                                           const SizedBox(height: 8),
                                           SizedBox(
                                             width: double.infinity,
