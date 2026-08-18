@@ -507,6 +507,7 @@ class DatabaseService {
     if (shouldUpdate) {
       await _db.collection('app_config').doc('settings').set({
         'requiredVersion': newVersion,
+        'downloadUrl': snap.exists ? (snap['downloadUrl'] ?? "") : "", 
         'updatedAt': FieldValue.serverTimestamp(),
         'clientTimestamp': DateTime.now().toIso8601String(),
       }, SetOptions(merge: true));

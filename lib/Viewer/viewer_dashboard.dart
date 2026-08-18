@@ -129,77 +129,88 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
           ),
         ),
         actions: [
-          InkWell(
-            onTap: () {
-               showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: Center(child: Text("Logout", style: Theme.of(context).textTheme.titleLarge)),
-                  content: Text("Are you sure you want to logout from viewer mode?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
-                  actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  actions: [
-                    AppDialogActions(
-                      actions: [
-                        AppButton(
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-                            elevation: 0,
-                          ),
-                          onPressed: () => Navigator.pop(ctx), 
-                          child: const Text("Cancel")
-                        ),
-                        AppButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.error, 
-                            foregroundColor: Theme.of(context).colorScheme.onPrimary
-                          ),
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            _handleLogout();
-                          },
-                          child: const Text("Logout"),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-            child: StreamBuilder<DocumentSnapshot>(
-              stream: DatabaseService().getAppConfigStream(),
-              builder: (context, configSnap) {
-                return StreamBuilder<DocumentSnapshot>(
-                  stream: DatabaseService().getDatabaseInfoStream(),
-                    builder: (context, dbInfoSnap) {
-                      String local = appVersion; // Instant update from build_config.dart
-                      final configData = configSnap.data?.data() as Map<String, dynamic>?;
-                      String? remote = configData?['requiredVersion'];
-                      String dbVersion = "...";
-                      if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
-                        var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                        dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
-                      }
-                      
-                      bool isOutdated = false;
-                      if (remote != null && remote != local) {
-                        try {
-                          List<String> localParts = local.split('+');
-                          List<String> serverParts = remote.split('+');
-                          int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
-                          int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
-                          if (serverMain > localMain) {
-                            isOutdated = true;
-                          } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
-                            int localBuild = int.tryParse(localParts[1]) ?? 0;
-                            int serverBuild = int.tryParse(serverParts[1]) ?? 0;
-                            if (serverBuild > localBuild) isOutdated = true;
-                          }
-                        } catch (e) { isOutdated = remote != local; }
-                      }
-                      
-                      return AppVersionInfo(
+          StreamBuilder<DocumentSnapshot>(
+            stream: DatabaseService().getAppConfigStream(),
+            builder: (context, configSnap) {
+              return StreamBuilder<DocumentSnapshot>(
+                stream: DatabaseService().getDatabaseInfoStream(),
+                  builder: (context, dbInfoSnap) {
+                    String local = appVersion; // Instant update from build_config.dart
+                    final configData = configSnap.data?.data() as Map<String, dynamic>?;
+                    String? remote = configData?['requiredVersion'];
+                    String dbVersion = "...";
+                    if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                      var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                    }
+                    
+                    bool isOutdated = false;
+                    if (remote != null && remote != local) {
+                      try {
+                        List<String> localParts = local.split('+');
+                        List<String> serverParts = remote.split('+');
+                        int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                        int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                        if (serverMain > localMain) {
+                          isOutdated = true;
+                        } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                          int localBuild = int.tryParse(localParts[1]) ?? 0;
+                          int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                          if (serverBuild > localBuild) isOutdated = true;
+                        }
+                      } catch (e) { isOutdated = remote != local; }
+                    }
+                    
+                    return InkWell(
+                      onTap: () {
+                        if (isOutdated) {
+                          String dUrl = configData?['downloadUrl'] ?? "";
+                          showUpdateLogoutDialog(
+                            context: context, 
+                            remoteVersion: remote ?? "Unknown", 
+                            downloadUrl: dUrl, 
+                            onLogout: _handleLogout
+                          );
+                        } else {
+                          // Show old logout dialog
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: Center(child: Text("Logout", style: Theme.of(context).textTheme.titleLarge)),
+                              content: Text("Are you sure you want to logout from viewer mode?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+                              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              actions: [
+                                AppDialogActions(
+                                  actions: [
+                                    AppButton(
+                                      style: ElevatedButton.styleFrom(
+                                        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                                        elevation: 0,
+                                      ),
+                                      onPressed: () => Navigator.pop(ctx), 
+                                      child: const Text("Cancel")
+                                    ),
+                                    AppButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Theme.of(context).colorScheme.error, 
+                                        foregroundColor: Theme.of(context).colorScheme.onPrimary
+                                      ),
+                                      onPressed: () {
+                                        Navigator.pop(ctx);
+                                        _handleLogout();
+                                      },
+                                      child: const Text("Logout"),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      },
+                      child: AppVersionInfo(
                         version: local,
                         dbVersion: dbVersion,
                         latestVersion: remote,
@@ -207,11 +218,11 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
                         color: Theme.of(context).colorScheme.primary,
                         secondaryColor: Theme.of(context).colorScheme.secondary,
                         showLogoutIcon: true,
-                      );
-                    }
-                );
-              }
-            ),
+                      ),
+                    );
+                  }
+              );
+            }
           ),
           const SizedBox(width: 16),
         ],

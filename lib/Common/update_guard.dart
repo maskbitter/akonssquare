@@ -1,3 +1,4 @@
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -209,12 +210,6 @@ class _UpdateGuardState extends State<UpdateGuard> {
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
-            Text(
-              "Contact with the authority to get the update.",
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error),
-            ),
           ],
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -223,14 +218,35 @@ class _UpdateGuardState extends State<UpdateGuard> {
             actions: [
               AppButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Theme.of(context).colorScheme.onError,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  elevation: 0,
                 ),
-                onPressed: () {
-                  Navigator.of(ctx).pop();
+                onPressed: () => Navigator.of(ctx).pop(), 
+                child: const Text("Later")
+              ),
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                ),
+                onPressed: () async {
+                   // Fetch download URL and launch
+                   DocumentSnapshot snap = await FirebaseFirestore.instance.collection('app_config').doc('settings').get();
+                   if (snap.exists) {
+                     String dUrl = (snap.data() as Map<String, dynamic>)['downloadUrl'] ?? "";
+                     if (dUrl.isNotEmpty) {
+                        Navigator.of(ctx).pop();
+                        final Uri url = Uri.parse(dUrl);
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        }
+                     } else {
+                        DatabaseService.showToast(context, "Download link not found!");
+                     }
+                   }
                 }, 
-                child: const Text("OK")
+                child: const Text("Update Now")
               ),
             ],
           ),

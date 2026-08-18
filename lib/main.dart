@@ -648,15 +648,23 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          AppVersionInfo(
-                            version: _currentVersion,
-                            dbVersion: dbVersion,
-                            latestVersion: latestV,
-                            statusMessage: _temporaryMessage,
-                            isOutdated: isOutdated,
-                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.tertiary,
-                            connectionStatus: _connectionStatus,
-                            connectionColor: _connectionColor,
+                          InkWell(
+                            onTap: isOutdated ? () {
+                              String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
+                              if (dUrl.isNotEmpty) {
+                                showUpdateDialog(context: context, remoteVersion: latestV, downloadUrl: dUrl);
+                              }
+                            } : null,
+                            child: AppVersionInfo(
+                              version: _currentVersion,
+                              dbVersion: dbVersion,
+                              latestVersion: latestV,
+                              statusMessage: _temporaryMessage,
+                              isOutdated: isOutdated,
+                              color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.tertiary,
+                              connectionStatus: _connectionStatus,
+                              connectionColor: _connectionColor,
+                            ),
                           ),
                         ],
                       ),
@@ -799,6 +807,45 @@ class _LoginPageState extends State<LoginPage> {
                                             ),
                                           ),
                                         ),
+                                        if (isOutdated) ...[
+                                          const SizedBox(height: 12),
+                                          InkWell(
+                                            onTap: () {
+                                              String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
+                                              if (dUrl.isNotEmpty) {
+                                                showUpdateDialog(context: context, remoteVersion: latestV, downloadUrl: dUrl);
+                                              }
+                                            },
+                                            child: AppVersionInfo(
+                                              version: _currentVersion,
+                                              dbVersion: dbVersion,
+                                              latestVersion: latestV,
+                                              isOutdated: true,
+                                              color: Colors.red,
+                                              secondaryColor: Colors.red,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            height: 50,
+                                            child: AppButton.icon(
+                                              onPressed: () {
+                                                String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
+                                                if (dUrl.isNotEmpty) {
+                                                  showUpdateDialog(context: context, remoteVersion: latestV, downloadUrl: dUrl);
+                                                }
+                                              },
+                                              icon: const Icon(Icons.system_update_alt, color: Colors.white),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue,
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                              child: const Text("UPDATE NOW", style: TextStyle(fontWeight: FontWeight.bold)),
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
