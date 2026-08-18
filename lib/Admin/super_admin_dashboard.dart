@@ -126,6 +126,50 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     });
   }
 
+  void _showLogoutConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Center(child: Text("Logout Confirmation", style: Theme.of(context).textTheme.titleLarge)),
+          content: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          actions: [
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error, 
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _handleLogout(context);
+                  },
+                  child: const Text("Logout"),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _handleLogout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -172,53 +216,65 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           ],
         ),
         actions: [
-          InkWell(
-            onTap: () => _handleLogout(context),
-            child: StreamBuilder<DocumentSnapshot>(
-              stream: DatabaseService().getAppConfigStream(),
-              builder: (context, configSnap) {
-                return StreamBuilder<DocumentSnapshot>(
-                  stream: DatabaseService().getDatabaseInfoStream(),
-                  builder: (context, dbInfoSnap) {
-                    String local = appVersion; // Instant update from build_config.dart
-                    final configData = configSnap.data?.data() as Map<String, dynamic>?;
-                    String? remote = configData?['requiredVersion'];
-                    String dbVersion = "...";
-                    if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
-                      var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
-                    }
-                    
-                    bool isOutdated = false;
-                    if (remote != null && remote != local) {
-                      try {
-                        List<String> localParts = local.split('+');
-                        List<String> serverParts = remote.split('+');
-                        int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
-                        int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
-                        if (serverMain > localMain) {
-                          isOutdated = true;
-                        } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
-                          int localBuild = int.tryParse(localParts[1]) ?? 0;
-                          int serverBuild = int.tryParse(serverParts[1]) ?? 0;
-                          if (serverBuild > localBuild) isOutdated = true;
-                        }
-                      } catch (e) { isOutdated = remote != local; }
-                    }
-                    
-                      return AppVersionInfo(
-                        version: local,
-                        dbVersion: dbVersion,
-                        latestVersion: remote,
-                        isOutdated: isOutdated,
-                        color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
-                        secondaryColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
-                        showLogoutIcon: true,
-                      );
+          StreamBuilder<DocumentSnapshot>(
+            stream: DatabaseService().getAppConfigStream(),
+            builder: (context, configSnap) {
+              return StreamBuilder<DocumentSnapshot>(
+                stream: DatabaseService().getDatabaseInfoStream(),
+                builder: (context, dbInfoSnap) {
+                  String local = appVersion; // Instant update from build_config.dart
+                  final configData = configSnap.data?.data() as Map<String, dynamic>?;
+                  String? remote = configData?['requiredVersion'];
+                  String dbVersion = "...";
+                  if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                    var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                    dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
                   }
-                );
-              }
-            ),
+                  
+                  bool isOutdated = false;
+                  if (remote != null && remote != local) {
+                    try {
+                      List<String> localParts = local.split('+');
+                      List<String> serverParts = remote.split('+');
+                      int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                      int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                      if (serverMain > localMain) {
+                        isOutdated = true;
+                      } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                        int localBuild = int.tryParse(localParts[1]) ?? 0;
+                        int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                        if (serverBuild > localBuild) isOutdated = true;
+                      }
+                    } catch (e) { isOutdated = remote != local; }
+                  }
+                  
+                  return InkWell(
+                    onTap: () {
+                      if (isOutdated) {
+                        String dUrl = configData?['downloadUrl'] ?? "";
+                        showUpdateLogoutDialog(
+                          context: context, 
+                          remoteVersion: remote ?? "Unknown", 
+                          downloadUrl: dUrl, 
+                          onLogout: () => _handleLogout(context)
+                        );
+                      } else {
+                        _showLogoutConfirmationDialog();
+                      }
+                    },
+                    child: AppVersionInfo(
+                      version: local,
+                      dbVersion: dbVersion,
+                      latestVersion: remote,
+                      isOutdated: isOutdated,
+                      color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
+                      secondaryColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
+                      showLogoutIcon: true,
+                    ),
+                  );
+                }
+              );
+            }
           ),
           const SizedBox(width: 16),
         ],

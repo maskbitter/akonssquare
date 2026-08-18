@@ -322,41 +322,53 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
           ),
           actions: [
-            InkWell(
-              onTap: _showLogoutConfirmationDialog,
-              child: StreamBuilder<DocumentSnapshot>(
-                stream: _dbService.getAppConfigStream(),
-                builder: (context, configSnap) {
-                  return StreamBuilder<DocumentSnapshot>(
-                    stream: _dbService.getDatabaseInfoStream(),
-                    builder: (context, dbInfoSnap) {
-                      String local = appVersion; // Instant update from build_config.dart
-                      final configData = configSnap.data?.data() as Map<String, dynamic>?;
-                      String? remote = configData?['requiredVersion'];
-                      String dbVersion = "...";
-                      if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
-                        var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                        dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
-                      }
-                      
-                      bool isOutdated = false;
-                      if (remote != null && remote != local) {
-                        try {
-                          List<String> localParts = local.split('+');
-                          List<String> serverParts = remote.split('+');
-                          int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
-                          int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
-                          if (serverMain > localMain) {
-                            isOutdated = true;
-                          } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
-                            int localBuild = int.tryParse(localParts[1]) ?? 0;
-                            int serverBuild = int.tryParse(serverParts[1]) ?? 0;
-                            if (serverBuild > localBuild) isOutdated = true;
-                          }
-                        } catch (e) { isOutdated = remote != local; }
-                      }
-                      
-                      return AppVersionInfo(
+            StreamBuilder<DocumentSnapshot>(
+              stream: _dbService.getAppConfigStream(),
+              builder: (context, configSnap) {
+                return StreamBuilder<DocumentSnapshot>(
+                  stream: _dbService.getDatabaseInfoStream(),
+                  builder: (context, dbInfoSnap) {
+                    String local = appVersion; // Instant update from build_config.dart
+                    final configData = configSnap.data?.data() as Map<String, dynamic>?;
+                    String? remote = configData?['requiredVersion'];
+                    String dbVersion = "...";
+                    if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                      var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                    }
+                    
+                    bool isOutdated = false;
+                    if (remote != null && remote != local) {
+                      try {
+                        List<String> localParts = local.split('+');
+                        List<String> serverParts = remote.split('+');
+                        int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                        int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                        if (serverMain > localMain) {
+                          isOutdated = true;
+                        } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                          int localBuild = int.tryParse(localParts[1]) ?? 0;
+                          int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                          if (serverBuild > localBuild) isOutdated = true;
+                        }
+                      } catch (e) { isOutdated = remote != local; }
+                    }
+                    
+                    return InkWell(
+                      onTap: () {
+                        if (isOutdated) {
+                          String dUrl = configData?['downloadUrl'] ?? "";
+                          showUpdateLogoutDialog(
+                            context: context, 
+                            remoteVersion: remote ?? "Unknown", 
+                            downloadUrl: dUrl, 
+                            onLogout: _handleLogout
+                          );
+                        } else {
+                          _showLogoutConfirmationDialog();
+                        }
+                      },
+                      child: AppVersionInfo(
                         version: local,
                         dbVersion: dbVersion,
                         latestVersion: remote,
@@ -364,11 +376,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         color: Theme.of(context).colorScheme.primary,
                         secondaryColor: Theme.of(context).colorScheme.secondary,
                         showLogoutIcon: true,
-                      );
-                    }
-                  );
-                }
-              ),
+                      ),
+                    );
+                  }
+                );
+              }
             ),
             const SizedBox(width: 16),
           ],

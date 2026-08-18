@@ -67,6 +67,6 @@ out/
 .artifacts/
 
 # Build Release APKs
-release/
-*.apk
+# release/  <-- Commented out to allow GitHub hosting
+# *.apk     <-- Commented out to allow GitHub hosting
 
