@@ -63,6 +63,13 @@ out/
 *.swp
 .DS_Store
 
+# GitHub Token & Service Account
+github-token.txt
+service-account.json
+
+# Node Modules
+node_modules/
+
 # Local Agent Artifacts
 .artifacts/
 
