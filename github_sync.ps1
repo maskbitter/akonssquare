@@ -1,22 +1,10 @@
 param(
-    [string]$customMsg,
-    [switch]$SkipPortal
+    [string]$customMsg
 )
 
-# AkonsSquare Master Build & Sync Script
-
-# 0. Sync changes to Portal first
-if (-not $SkipPortal) {
-    Write-Host ">>> Orchestrating Portal Update..." -ForegroundColor Yellow
-    if (Test-Path ".\update_portal.ps1") {
-        & ".\update_portal.ps1"
-    } else {
-        Write-Host "!!! update_portal.ps1 not found. Skipping sync." -ForegroundColor Red
-    }
-}
+# AkonsSquare Master Build & Sync Script (CLEANED)
 
 # 1. Build Release APK for AkonsSquare
-# (Gradle task 'incrementBuildNumber' in build.gradle.kts now handles BN increment and build_config.dart update)
 Write-Host ">>> Starting AkonsSquare Flutter Build Release..." -ForegroundColor Yellow
 $flutterBat = "E:\AkonsAutomation\Flutter\flutter\flutter\bin\flutter.bat"
 & $flutterBat build apk --release
@@ -55,7 +43,7 @@ if (Test-Path $sourceApk) {
     exit 1
 }
 
-# 5. GitHub Sync for AkonsSquare
+# 4. GitHub Sync for AkonsSquare
 Write-Host ">>> Syncing AkonsSquare with GitHub..." -ForegroundColor Yellow
 git add .
 
@@ -80,26 +68,6 @@ if ($stagedFiles.Count -eq 0) {
     Write-Host ">>> Committing AkonsSquare with message: $fullMsg" -ForegroundColor Cyan
     git commit -m "$fullMsg"
     git push origin master
-}
-
-# 6. Trigger AkonsAutomation Build & Sync
-if (-not $SkipPortal) {
-    Write-Host "`n>>> Starting Master Portal (AkonsAutomation) Workflow..." -ForegroundColor Yellow
-    $portalPath = "E:\AkonsAutomation\Flutter\flutterapps\AkonsAutomation"
-
-    if (Test-Path $portalPath) {
-        Push-Location $portalPath
-        try {
-            Write-Host ">>> Running Portal Build Script..." -ForegroundColor Cyan
-            powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\github_sync.ps1" $customMsg
-        } catch {
-            Write-Host "!!! Portal Build Script failed." -ForegroundColor Red
-        } finally {
-            Pop-Location
-        }
-    } else {
-        Write-Host "!!! Portal path not found at $portalPath" -ForegroundColor Red
-    }
 }
 
 Write-Host "`n>>> [MASTER SYNC] All processes completed successfully!" -ForegroundColor Green
