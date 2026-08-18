@@ -188,28 +188,8 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _loadAppConfig();
     _checkConnectivity();
-    _debugPopulateData();
   }
 
-  Future<void> _debugPopulateData() async {
-    try {
-      var snap = await FirebaseFirestore.instance.collection('sub_items').where('status', isEqualTo: 'Occupied').limit(1).get();
-      if (snap.docs.isEmpty) {
-        var vacantSnap = await FirebaseFirestore.instance.collection('sub_items').limit(1).get();
-        if (vacantSnap.docs.isNotEmpty) {
-          await _dbService.updateSubItemStatus(
-            vacantSnap.docs.first.id, 
-            'Occupied', 
-            'DEBUG_BOT', 
-            TenantName: 'Test Tenant', 
-            nidNumber: '1234'
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint("Debug Population Error: $e");
-    }
-  }
 
   @override
   void dispose() {
