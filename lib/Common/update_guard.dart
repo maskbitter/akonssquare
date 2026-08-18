@@ -231,15 +231,19 @@ class _UpdateGuardState extends State<UpdateGuard> {
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
                 onPressed: () async {
-                   // Fetch download URL and launch
+                   // Fetch download URL and start progress dialog immediately
                    DocumentSnapshot snap = await FirebaseFirestore.instance.collection('app_config').doc('settings').get();
                    if (snap.exists) {
                      String dUrl = (snap.data() as Map<String, dynamic>)['downloadUrl'] ?? "";
                      if (dUrl.isNotEmpty) {
-                        Navigator.of(ctx).pop();
-                        final Uri url = Uri.parse(dUrl);
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        Navigator.of(ctx).pop(); // Close the notification popup
+                        if (context.mounted) {
+                          // Show the progress dialog directly
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) => UpdateProgressDialog(url: dUrl),
+                          );
                         }
                      } else {
                         DatabaseService.showToast(context, "Download link not found!");

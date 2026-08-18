@@ -323,15 +323,15 @@ class _AppVersionInfoState extends State<AppVersionInfo> {
 
 // --- UPDATE DIALOGS ---
 
-class _UpdateProgressDialog extends StatefulWidget {
+class UpdateProgressDialog extends StatefulWidget {
   final String url;
-  const _UpdateProgressDialog({required this.url});
+  const UpdateProgressDialog({required this.url});
 
   @override
-  State<_UpdateProgressDialog> createState() => _UpdateProgressDialogState();
+  State<UpdateProgressDialog> createState() => _UpdateProgressDialogState();
 }
 
-class _UpdateProgressDialogState extends State<_UpdateProgressDialog> {
+class _UpdateProgressDialogState extends State<UpdateProgressDialog> {
   OtaEvent? currentEvent;
   String? error;
 
@@ -482,7 +482,7 @@ void showUpdateDialog({
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => _UpdateProgressDialog(url: downloadUrl),
+                  builder: (context) => UpdateProgressDialog(url: downloadUrl),
                 );
               },
               child: const Text("Update Now"),
@@ -542,7 +542,7 @@ void showUpdateLogoutDialog({
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => _UpdateProgressDialog(url: downloadUrl),
+                  builder: (context) => UpdateProgressDialog(url: downloadUrl),
                 );
               },
               child: const Text("Update Now"),
