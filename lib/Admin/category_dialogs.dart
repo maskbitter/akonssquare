@@ -1328,7 +1328,8 @@ class CategoryDialogs {
     required double electricityBill, 
     required List<Map<String, dynamic>> services, 
     required Map<String, dynamic>? electricityDetails,
-    required String mainCategoryName
+    required String mainCategoryName,
+    String? notes
   }) {
     final noteController = TextEditingController(); 
     final presentUnitsController = TextEditingController(text: (electricityDetails?['presentReading'] ?? 0).toString());
@@ -1375,8 +1376,58 @@ class CategoryDialogs {
                     ),
                   ],
                 ),
+                
+                if (notes != null && notes!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.note_alt_outlined, size: 20, color: Theme.of(context).colorScheme.error),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Unit Notes: $notes", 
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onErrorContainer,
+                              fontWeight: FontWeight.bold
+                            )
+                          )
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const Divider(height: 24),
-                _buildRow(context, "$mainCategoryName Rent:", "৳${houseRentTotal.toStringAsFixed(1)}"),
+
+                // Breakdown Section
+                Column(
+                  children: [
+                    // House Rent (if available)
+                    ...services.where((s) => s['name'].toString().toLowerCase().contains('rent')).map((s) => 
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: _buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(1)}", isBold: true),
+                      )
+                    ),
+
+                    // Other Services
+                    ...services.where((s) => !s['name'].toString().toLowerCase().contains('rent')).map((s) => 
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: _buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(1)}"),
+                      )
+                    ),
+                  ],
+                ),
+                
                 const SizedBox(height: 12),
                 
                 if (electricityDetails != null && electricityDetails['isStopped'] != true) ...[
@@ -1405,7 +1456,7 @@ class CategoryDialogs {
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 8),
-                        _buildRow(context, "Sub-Meter Bill:", "৳${dynamicElecBill.toStringAsFixed(1)}"),
+                        _buildRow(context, "Sub-Meter Bill:", "৳${dynamicElecBill.toStringAsFixed(1)}", isBold: true),
                       ],
                     ),
                   ),
@@ -1413,7 +1464,7 @@ class CategoryDialogs {
                 ],
                 
                 const Divider(height: 12),
-                _buildRow(context, "Total:", "৳${(houseRentTotal + dynamicElecBill).toStringAsFixed(1)}", isBold: true),
+                _buildRow(context, "Total Payable:", "৳${(houseRentTotal + dynamicElecBill).toStringAsFixed(1)}", isBold: true, fontSize: 18),
                 const SizedBox(height: 12),
                 if (!isFuture) ...[
                    TextField(
@@ -2244,14 +2295,14 @@ class CategoryDialogs {
     return text.trim().split(RegExp(r'\s+')).length;
   }
 
-  static Widget _buildRow(BuildContext context, String label, String value, {bool isBold = false}) {
+  static Widget _buildRow(BuildContext context, String label, String value, {bool isBold = false, double? fontSize}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2), 
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween, 
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.normal)), 
-          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: isBold ? Theme.of(context).colorScheme.primary : null))
+          Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, fontSize: fontSize)), 
+          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: isBold ? Theme.of(context).colorScheme.primary : null, fontSize: fontSize))
         ]
       )
     );
