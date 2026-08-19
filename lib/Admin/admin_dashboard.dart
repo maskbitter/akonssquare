@@ -58,7 +58,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Text("Interrupted Job"),
           ],
         ),
-        content: const Text("A previous database operation (Restore/Delete) was interrupted or failed. Would you like to rollback to the safe state or ignore?"),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: const Text("A previous database operation (Restore/Delete) was interrupted or failed. Would you like to rollback to the safe state or ignore?"),
+        ),
         actions: [
           AppDialogActions(
             actions: [
@@ -103,19 +106,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Rolling Back...", textAlign: TextAlign.center),
-        content: ValueListenableBuilder<double>(
-          valueListenable: progressNotifier,
-          builder: (context, value, child) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                LinearProgressIndicator(value: value),
-                const SizedBox(height: 10),
-                Text("${(value * 100).toStringAsFixed(1)}%", style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            );
-          },
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: ValueListenableBuilder<double>(
+            valueListenable: progressNotifier,
+            builder: (context, value, child) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  LinearProgressIndicator(value: value),
+                  const SizedBox(height: 10),
+                  Text("${(value * 100).toStringAsFixed(1)}%", style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -210,7 +216,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Center(child: Text("Logout Confirmation", style: Theme.of(context).textTheme.titleLarge)),
-          content: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          ),
           actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
             AppDialogActions(

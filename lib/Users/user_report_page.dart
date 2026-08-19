@@ -64,7 +64,7 @@ class UserReportPage extends StatelessWidget {
           ],
         ),
         content: SizedBox(
-          width: MediaQuery.of(context).size.width * 0.9,
+          width: MediaQuery.of(context).size.width * 0.95,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,

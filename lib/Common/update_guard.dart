@@ -70,7 +70,10 @@ class _UpdateGuardState extends State<UpdateGuard> {
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Center(child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.warning_amber_rounded, color: Colors.red), SizedBox(width: 8), Text("Logged Out")])),
-          content: const Text("You have been logged out because someone else logged in using this account on another device.", textAlign: TextAlign.center),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: const Text("You have been logged out because someone else logged in using this account on another device.", textAlign: TextAlign.center),
+          ),
           actions: [
             AppDialogActions(
               actions: [
@@ -202,15 +205,18 @@ class _UpdateGuardState extends State<UpdateGuard> {
             ],
           ),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "A new version of the app ($_remoteVersion) is available. Your current version is $_localVersion.",
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "A new version of the app ($_remoteVersion) is available. Your current version is $_localVersion.",
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [

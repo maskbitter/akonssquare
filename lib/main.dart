@@ -143,9 +143,12 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
               const Text("Offline", textAlign: TextAlign.center),
             ],
           ),
-          content: const Text(
-            "You are offline. Please check your internet connection to continue using the app.",
-            textAlign: TextAlign.center,
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: const Text(
+              "You are offline. Please check your internet connection to continue using the app.",
+              textAlign: TextAlign.center,
+            ),
           ),
           actions: [
             Center(
@@ -325,7 +328,10 @@ class _LoginPageState extends State<LoginPage> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text("Login Failed!", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
-        content: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+        ),
         actions: [
           AppDialogActions(
             actions: [
@@ -367,24 +373,27 @@ class _LoginPageState extends State<LoginPage> {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(unitName, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), Text("($tName)", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic))])),
-            content: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text("Enter last 4 digits of your NID:", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall),
-              const SizedBox(height: 12),
-              TextField(
-                controller: passController, 
-                obscureText: true, 
-                keyboardType: TextInputType.number, 
-                maxLength: 4, 
-                style: Theme.of(context).textTheme.bodyLarge, 
-                onChanged: (v) => setST((){}), 
-                decoration: const InputDecoration(
-                  labelText: "Password", 
-                  hintText: "Last 4 digits of NID",
-                  prefixIcon: Icon(Icons.lock_outline), 
-                  counterText: ""
-                )
-              ),
-            ]),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.95,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text("Enter last 4 digits of your NID:", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passController, 
+                  obscureText: true, 
+                  keyboardType: TextInputType.number, 
+                  maxLength: 4, 
+                  style: Theme.of(context).textTheme.bodyLarge, 
+                  onChanged: (v) => setST((){}), 
+                  decoration: const InputDecoration(
+                    labelText: "Password", 
+                    hintText: "Last 4 digits of NID",
+                    prefixIcon: Icon(Icons.lock_outline), 
+                    counterText: ""
+                  )
+                ),
+              ]),
+            ),
             actions: [
               AppDialogActions(
                 actions: [
@@ -445,28 +454,31 @@ class _LoginPageState extends State<LoginPage> {
         builder: (context, setST) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Center(child: Text("Access Login", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
-              controller: uC, 
-              decoration: const InputDecoration(
-                labelText: "Username", 
-                hintText: "Enter username",
-                prefixIcon: Icon(Icons.person)
-              ), 
-              onChanged: (v) => setST((){})
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: pC, 
-              obscureText: true, 
-              decoration: const InputDecoration(
-                labelText: "Password", 
-                hintText: "Enter password",
-                prefixIcon: Icon(Icons.lock)
-              ), 
-              onChanged: (v) => setST((){})
-            ),
-          ]),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(
+                controller: uC, 
+                decoration: const InputDecoration(
+                  labelText: "Username", 
+                  hintText: "Enter username",
+                  prefixIcon: Icon(Icons.person)
+                ), 
+                onChanged: (v) => setST((){})
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: pC, 
+                obscureText: true, 
+                decoration: const InputDecoration(
+                  labelText: "Password", 
+                  hintText: "Enter password",
+                  prefixIcon: Icon(Icons.lock)
+                ), 
+                onChanged: (v) => setST((){})
+              ),
+            ]),
+          ),
           actions: [
             AppDialogActions(
               actions: [
@@ -543,20 +555,23 @@ class _LoginPageState extends State<LoginPage> {
         builder: (context, setST) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Center(child: Text("Master Access", style: TextStyle(fontWeight: FontWeight.bold))),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text("Enter secret key:", style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 12),
-            TextField(
-              controller: keyController, 
-              obscureText: true, 
-              onChanged: (v) => setST((){}), 
-              decoration: const InputDecoration(
-                labelText: "Secret Key", 
-                hintText: "Master password",
-                prefixIcon: Icon(Icons.vpn_key_outlined)
-              )
-            ),
-          ]),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text("Enter secret key:", style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 12),
+              TextField(
+                controller: keyController, 
+                obscureText: true, 
+                onChanged: (v) => setST((){}), 
+                decoration: const InputDecoration(
+                  labelText: "Secret Key", 
+                  hintText: "Master password",
+                  prefixIcon: Icon(Icons.vpn_key_outlined)
+                )
+              ),
+            ]),
+          ),
           actions: [
             AppDialogActions(
               actions: [

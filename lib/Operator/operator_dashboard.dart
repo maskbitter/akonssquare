@@ -102,7 +102,10 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Center(child: Text("Logout Confirmation", style: Theme.of(context).textTheme.titleLarge)),
-          content: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          ),
           actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
             AppDialogActions(

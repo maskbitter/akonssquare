@@ -293,6 +293,15 @@ class ThemeManager {
         shape: Border(),
         collapsedShape: Border(),
       ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: themeName == "Outline Theme" ? outlineBackground : Colors.white,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24), 
+          side: themeName == "Outline Theme" ? BorderSide(color: colorScheme.primary, width: 1.5) : BorderSide.none,
+        ),
+      ),
       extensions: [
         AppColors(
           success: themeName == "Black & White Theme" ? Colors.black : const Color(0xFF2E7D32),
@@ -363,15 +372,6 @@ class ThemeManager {
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
-        ),
-      ),
-      dialogTheme: DialogThemeData(
-        backgroundColor: themeName == "Outline Theme" ? outlineBackground : Colors.white,
-        elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20), 
-          side: themeName == "Outline Theme" ? BorderSide(color: colorScheme.primary, width: 1.5) : BorderSide.none,
         ),
       ),
       appBarTheme: AppBarTheme(

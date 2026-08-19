@@ -25,7 +25,10 @@ class CategoryDialogs {
             ]
           )
         ),
-        content: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+        ),
         actions: [
           AppDialogActions(
             actions: [
@@ -71,27 +74,30 @@ class CategoryDialogs {
             Text("Duplicate Found!", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                style: Theme.of(context).textTheme.bodyMedium,
-                children: [
-                  const TextSpan(text: "Uh oh! '"),
-                  TextSpan(text: name, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
-                  const TextSpan(text: "' is already registered in our system."),
-                ],
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  children: [
+                    const TextSpan(text: "Uh oh! '"),
+                    TextSpan(text: name, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                    const TextSpan(text: "' is already registered in our system."),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "Please use a unique name to keep your records organized and error-free.",
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                "Please use a unique name to keep your records organized and error-free.",
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
         ),
         actions: [
           AppDialogActions(
@@ -130,7 +136,7 @@ class CategoryDialogs {
           ],
         ),
         content: SizedBox(
-          width: double.maxFinite,
+          width: MediaQuery.of(context).size.width * 0.95,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -233,7 +239,10 @@ class CategoryDialogs {
             Text(title, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
           ],
         ),
-        content: Text(content, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Text(content, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           AppDialogActions(
@@ -277,15 +286,18 @@ class CategoryDialogs {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Center(child: Text("New Category", style: Theme.of(context).textTheme.titleLarge)),
-          content: TextField(
-            controller: controller, 
-            style: Theme.of(context).textTheme.bodyLarge,
-            onChanged: (val) => setDialogState(() {}),
-            decoration: const InputDecoration(
-              labelText: "Category Name",
-              hintText: "e.g. Apartment, Shop",
-              prefixIcon: Icon(Icons.category_outlined),
-            )
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: TextField(
+              controller: controller, 
+              style: Theme.of(context).textTheme.bodyLarge,
+              onChanged: (val) => setDialogState(() {}),
+              decoration: const InputDecoration(
+                labelText: "Category Name",
+                hintText: "e.g. Apartment, Shop",
+                prefixIcon: Icon(Icons.category_outlined),
+              )
+            ),
           ),
           actions: [
             AppDialogActions(
@@ -341,7 +353,7 @@ class CategoryDialogs {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Center(child: Text("Manage Services", style: Theme.of(context).textTheme.titleLarge)),
             content: SizedBox(
-              width: double.maxFinite,
+              width: MediaQuery.of(context).size.width * 0.95,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min, 
@@ -509,22 +521,25 @@ class CategoryDialogs {
         builder: (context, setST) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Center(child: Text("Edit Service", style: Theme.of(context).textTheme.titleLarge)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                style: Theme.of(context).textTheme.bodyLarge,
-                decoration: const InputDecoration(labelText: "Service Name", prefixIcon: Icon(Icons.miscellaneous_services_outlined)),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: amountController,
-                style: Theme.of(context).textTheme.bodyLarge,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Price (BDT)", prefixIcon: Icon(Icons.payments_outlined), prefixText: "৳ "),
-              ),
-            ],
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  decoration: const InputDecoration(labelText: "Service Name", prefixIcon: Icon(Icons.miscellaneous_services_outlined)),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: amountController,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: "Price (BDT)", prefixIcon: Icon(Icons.payments_outlined), prefixText: "৳ "),
+                ),
+              ],
+            ),
           ),
           actions: [
             AppDialogActions(
@@ -580,18 +595,26 @@ class CategoryDialogs {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Center(child: Text("Add Unit to $categoryName", style: Theme.of(context).textTheme.titleLarge)),
-          content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
-              controller: subItemController, 
-              style: Theme.of(context).textTheme.bodyLarge,
-              onChanged: (val) => setDialogState(() {}),
-              decoration: InputDecoration(
-                labelText: "$categoryName No",
-                hintText: "e.g. 101, A-1",
-                prefixIcon: const Icon(Icons.meeting_room_outlined),
-              )
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min, 
+                children: [
+                  TextField(
+                    controller: subItemController, 
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    onChanged: (val) => setDialogState(() {}),
+                    decoration: InputDecoration(
+                      labelText: "$categoryName No",
+                      hintText: "e.g. 101, A-1",
+                      prefixIcon: const Icon(Icons.meeting_room_outlined),
+                    )
+                  ),
+                ]
+              ),
             ),
-          ])),
+          ),
           actions: [
             AppDialogActions(
               actions: [
@@ -646,33 +669,36 @@ class CategoryDialogs {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Center(child: Text("Add Main Meter", style: Theme.of(context).textTheme.titleLarge)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  value: meterType,
-                  decoration: const InputDecoration(
-                    labelText: "Meter Type",
-                    prefixIcon: Icon(Icons.merge_type_outlined),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.95,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: meterType,
+                    decoration: const InputDecoration(
+                      labelText: "Meter Type",
+                      prefixIcon: Icon(Icons.merge_type_outlined),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: "Residential", child: Text("Residential")),
+                      DropdownMenuItem(value: "Commercial", child: Text("Commercial")),
+                    ],
+                    onChanged: (v) { if (v != null) setDialogState(() => meterType = v); },
                   ),
-                  items: const [
-                    DropdownMenuItem(value: "Residential", child: Text("Residential")),
-                    DropdownMenuItem(value: "Commercial", child: Text("Commercial")),
-                  ],
-                  onChanged: (v) { if (v != null) setDialogState(() => meterType = v); },
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: meterNoController,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  onChanged: (val) => setDialogState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: "Meter Number",
-                    hintText: "Enter main meter no",
-                    prefixIcon: Icon(Icons.speed_outlined),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: meterNoController,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    onChanged: (val) => setDialogState(() {}),
+                    decoration: const InputDecoration(
+                      labelText: "Meter Number",
+                      hintText: "Enter main meter no",
+                      prefixIcon: Icon(Icons.speed_outlined),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             actions: [
               AppDialogActions(
@@ -769,11 +795,13 @@ class CategoryDialogs {
                 Expanded(child: Text("Update Main Meter: ${data['meterNo']}", style: Theme.of(context).textTheme.titleLarge)),
               ],
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.95,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   _buildReadOnlyRow(context, "Meter Type", data['meterType']),
                   _buildReadOnlyRow(context, "Meter No", data['meterNo']),
                   _buildReadOnlyRow(context, "Last Reading", lastReading.toStringAsFixed(1)),
@@ -858,7 +886,8 @@ class CategoryDialogs {
                 ],
               ),
             ),
-            actions: [
+          ),
+          actions: [
               AppDialogActions(
                 actions: [
                   AppButton(
@@ -911,7 +940,10 @@ class CategoryDialogs {
                           builder: (c) => AlertDialog(
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             title: Text("Sync Main Meter?", style: Theme.of(context).textTheme.titleLarge),
-                            content: Text("Previous reading was $prevSavedMain. Should this be set as the 'Last Reading' for this month?", style: Theme.of(context).textTheme.bodyMedium),
+                            content: SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.95,
+                              child: Text("Previous reading was $prevSavedMain. Should this be set as the 'Last Reading' for this month?", style: Theme.of(context).textTheme.bodyMedium),
+                            ),
                             actions: [
                               AppDialogActions(
                                 actions: [
@@ -938,7 +970,10 @@ class CategoryDialogs {
                           builder: (c) => AlertDialog(
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             title: Text("Sync Govt. Reading?", style: Theme.of(context).textTheme.titleLarge),
-                            content: Text("Previous Govt. reading was $prevSavedGovt. Should this be set as the 'Last Govt. Reading' for this month?", style: Theme.of(context).textTheme.bodyMedium),
+                            content: SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.95,
+                              child: Text("Previous Govt. reading was $prevSavedGovt. Should this be set as the 'Last Govt. Reading' for this month?", style: Theme.of(context).textTheme.bodyMedium),
+                            ),
                             actions: [
                               AppDialogActions(
                                 actions: [
@@ -1020,40 +1055,43 @@ class CategoryDialogs {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Center(child: Text("Add Sub Meter", style: Theme.of(context).textTheme.titleLarge)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              StreamBuilder<QuerySnapshot>(
-                stream: _dbService.getMainMetersStream(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const LinearProgressIndicator();
-                  var meters = snapshot.data!.docs.toList();
-                  meters.sort((a, b) => ((a.data() as Map)['meterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['meterNo'] ?? '').toString().toLowerCase()));
-                  
-                  return DropdownButtonFormField<String>(
-                    value: selectedMainMeter,
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.95,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _dbService.getMainMetersStream(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const LinearProgressIndicator();
+                      var meters = snapshot.data!.docs.toList();
+                      meters.sort((a, b) => ((a.data() as Map)['meterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['meterNo'] ?? '').toString().toLowerCase()));
+                      
+                      return DropdownButtonFormField<String>(
+                        value: selectedMainMeter,
+                        decoration: const InputDecoration(
+                          labelText: "Select Main Meter",
+                          prefixIcon: Icon(Icons.speed_outlined),
+                        ),
+                        items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text("Meter: ${doc['meterNo']}", style: Theme.of(context).textTheme.bodyMedium))).toList(),
+                        onChanged: (v) => setDialogState(() => selectedMainMeter = v),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: subMeterNoController,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    onChanged: (val) => setDialogState(() {}),
                     decoration: const InputDecoration(
-                      labelText: "Select Main Meter",
-                      prefixIcon: Icon(Icons.speed_outlined),
+                      labelText: "Sub Meter Number",
+                      hintText: "Enter sub meter no",
+                      prefixIcon: Icon(Icons.av_timer_outlined),
                     ),
-                    items: meters.map((doc) => DropdownMenuItem(value: doc['meterNo'].toString(), child: Text("Meter: ${doc['meterNo']}", style: Theme.of(context).textTheme.bodyMedium))).toList(),
-                    onChanged: (v) => setDialogState(() => selectedMainMeter = v),
-                  );
-                },
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: subMeterNoController,
-                style: Theme.of(context).textTheme.bodyLarge,
-                onChanged: (val) => setDialogState(() {}),
-                decoration: const InputDecoration(
-                  labelText: "Sub Meter Number",
-                  hintText: "Enter sub meter no",
-                  prefixIcon: Icon(Icons.av_timer_outlined),
-                ),
-              ),
-            ],
-          ),
+            ),
           actions: [
             AppDialogActions(
               actions: [
@@ -1137,10 +1175,12 @@ class CategoryDialogs {
               Text("Update for $subItemName", style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 if (existingData?['updatedAt'] != null) ...[
                   Container(
                     margin: const EdgeInsets.only(top: 4),
@@ -1248,12 +1288,13 @@ class CategoryDialogs {
                     prefixIcon: Icon(Icons.price_change_outlined),
                     prefixText: "৳ ", 
                     isDense: true
-                  )
+                  ),
                 ),
               ],
             ),
           ),
-          actions: [
+        ),
+        actions: [
             AppDialogActions(
               actions: [
                 AppButton(
@@ -1354,10 +1395,12 @@ class CategoryDialogs {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Center(child: Text("Payment: $subItemName", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min, 
-              children: [
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min, 
+                children: [
                 Text("Select month for this payment", style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 8),
                 Row(
@@ -1490,8 +1533,9 @@ class CategoryDialogs {
                 ),
               ],
             ),
-          ), 
-          actions: [
+          ),
+        ),
+        actions: [
             AppDialogActions(
               actions: [
                 if (isFuture) 
@@ -1612,7 +1656,7 @@ class CategoryDialogs {
              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
              title: Center(child: Text("Services: $categoryName", style: Theme.of(context).textTheme.titleLarge)),
            content: SizedBox(
-             width: double.maxFinite,
+             width: MediaQuery.of(context).size.width * 0.95,
              child: StreamBuilder<QuerySnapshot>(
                stream: _dbService.getServicesStream(),
                builder: (context, snapshot) {
@@ -1702,10 +1746,12 @@ class CategoryDialogs {
                 ],
               ),
             ), 
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min, 
-                children: [
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.95,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, 
+                  children: [
                   _buildCenteredField(context, subItemController, "Sub-item Name / Number", onChanged: (v) => setDialogState((){})),
                   const SizedBox(height: 12),
                   _buildCenteredField(context, tenantController, "Tenant Name (Optional)", onChanged: (v) => setDialogState((){})),
@@ -1728,9 +1774,10 @@ class CategoryDialogs {
                   ),
                 ]
               ),
-            ), 
-            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            actions: [
+            ),
+          ),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          actions: [
               AppDialogActions(
                 actions: [
                   AppButton(
@@ -1831,9 +1878,11 @@ class CategoryDialogs {
                 Text("Set $subItemName to Occupied", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.95,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 Text("Enter tenant details to proceed", style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 16),
                 TextField(
@@ -1861,7 +1910,8 @@ class CategoryDialogs {
                 ),
               ],
             ),
-            actions: [
+          ),
+        actions: [
               AppDialogActions(
                 actions: [
                   AppButton(
@@ -1932,21 +1982,24 @@ class CategoryDialogs {
                 Text("Pending Bill Alert!", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.error)),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "This unit has a pending electricity bill of ৳${eBillAmount.toStringAsFixed(1)} (${units.toStringAsFixed(1)} units).",
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Are you sure you want to set $subItemName to Vacant? Renter info will be cleared.",
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.95,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "This unit has a pending electricity bill of ৳${eBillAmount.toStringAsFixed(1)} (${units.toStringAsFixed(1)} units).",
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Are you sure you want to set $subItemName to Vacant? Renter info will be cleared.",
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
             ),
             actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             actions: [
@@ -2008,7 +2061,7 @@ class CategoryDialogs {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Center(child: Text("Manage Services: $subItemName", style: Theme.of(context).textTheme.titleLarge)),
           content: SizedBox(
-            width: double.maxFinite,
+            width: MediaQuery.of(context).size.width * 0.95,
             child: categoryServices.isEmpty 
               ? Center(child: Text("No category services defined.", style: Theme.of(context).textTheme.bodyMedium))
               : ListView.builder(
@@ -2099,9 +2152,11 @@ class CategoryDialogs {
               Text("Edit 'Wifi Bill' for '$subItemName'", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               Text("Service: Wifi Bill", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
               const SizedBox(height: 16),
               Row(
@@ -2142,7 +2197,8 @@ class CategoryDialogs {
               Text("Total Wifi Bill: ৳${total.toStringAsFixed(0)}", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),
             ],
           ),
-            actions: [
+        ),
+        actions: [
               AppDialogActions(
                 actions: [
                   AppButton(
@@ -2200,9 +2256,11 @@ class CategoryDialogs {
       return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), 
         title: const Center(child: Text("Edit Service")), 
-        content: Column(
-          mainAxisSize: MainAxisSize.min, 
-          children: [
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Column(
+            mainAxisSize: MainAxisSize.min, 
+            children: [
             TextField(
               controller: nameController, 
               decoration: const InputDecoration(
@@ -2224,11 +2282,12 @@ class CategoryDialogs {
               onChanged: (v) => setDialogState((){})
             )
           ]
-        ), 
-        actions: [
-          AppDialogActions(
-            actions: [
-              AppButton(
+        ),
+      ),
+      actions: [
+        AppDialogActions(
+          actions: [
+            AppButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.error,
                   foregroundColor: Theme.of(context).colorScheme.onError,

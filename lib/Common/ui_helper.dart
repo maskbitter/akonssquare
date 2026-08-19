@@ -450,9 +450,12 @@ void showUpdateDialog({
           ],
         ),
       ),
-      content: Text(
-        "A new version of the app ($remoteVersion) is available. Update now to get the latest features.",
-        textAlign: TextAlign.center,
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.95,
+        child: Text(
+          "A new version of the app ($remoteVersion) is available. Update now to get the latest features.",
+          textAlign: TextAlign.center,
+        ),
       ),
       actions: [
         AppDialogActions(
@@ -507,9 +510,12 @@ void showUpdateLogoutDialog({
       title: const Center(
         child: Text("App Actions", style: TextStyle(fontWeight: FontWeight.bold)),
       ),
-      content: Text(
-        "New update ($remoteVersion) is available. What would you like to do?",
-        textAlign: TextAlign.center,
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.95,
+        child: Text(
+          "New update ($remoteVersion) is available. What would you like to do?",
+          textAlign: TextAlign.center,
+        ),
       ),
       actions: [
         AppDialogActions(

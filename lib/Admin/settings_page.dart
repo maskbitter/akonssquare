@@ -222,7 +222,10 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold))),
-        content: Text(msg, textAlign: TextAlign.center),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Text(msg, textAlign: TextAlign.center),
+        ),
         actions: [
           AppDialogActions(
             actions: [
@@ -816,9 +819,12 @@ class _SettingsPageState extends State<SettingsPage> {
       return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text("Select Theme", style: Theme.of(context).textTheme.titleLarge)),
-        content: DropdownButton<String>(
-          value: local, isExpanded: true, items: ["Editor Choice", "Random Color Theme", "Black & White Theme", "Outline Theme"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-          onChanged: (val) { if (val != null) setST(() => local = val); },
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: DropdownButton<String>(
+            value: local, isExpanded: true, items: ["Editor Choice", "Random Color Theme", "Black & White Theme", "Outline Theme"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+            onChanged: (val) { if (val != null) setST(() => local = val); },
+          ),
         ),
         actions: [
           AppDialogActions(
@@ -883,34 +889,37 @@ class _SettingsPageState extends State<SettingsPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Center(child: Text("Background Customizer", style: TextStyle(fontWeight: FontWeight.bold))),
           contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Select a background color:", textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: presets.map((c) => GestureDetector(
-                  onTap: () async {
-                    setST(() {
-                      selected = c;
-                    });
-                    await ThemeManager.setOutlineBgColor(c);
-                  },
-                  child: Container(
-                    width: 45, height: 45,
-                    decoration: BoxDecoration(
-                      color: c,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: selected.value == c.value ? Colors.black : Colors.grey, width: selected.value == c.value ? 3 : 1),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Select a background color:", textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: presets.map((c) => GestureDetector(
+                    onTap: () async {
+                      setST(() {
+                        selected = c;
+                      });
+                      await ThemeManager.setOutlineBgColor(c);
+                    },
+                    child: Container(
+                      width: 45, height: 45,
+                      decoration: BoxDecoration(
+                        color: c,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: selected.value == c.value ? Colors.black : Colors.grey, width: selected.value == c.value ? 3 : 1),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+                      ),
                     ),
-                  ),
-                )).toList(),
-              ),
-              const SizedBox(height: 16),
-            ],
+                  )).toList(),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
           actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           actions: [
@@ -940,37 +949,40 @@ class _SettingsPageState extends State<SettingsPage> {
       return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Center(child: Text(docId == null ? "Add Account" : "Edit Account", style: Theme.of(context).textTheme.titleLarge)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-            controller: uC, 
-            decoration: const InputDecoration(
-              labelText: "Username",
-              hintText: "Enter account username",
-              prefixIcon: Icon(Icons.person_outline),
-            ), 
-            onChanged: (v) => setST((){})
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: pC, 
-            decoration: const InputDecoration(
-              labelText: "Password",
-              hintText: "Enter account password",
-              prefixIcon: Icon(Icons.lock_outline),
-            ), 
-            onChanged: (v) => setST((){})
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: role, 
-            decoration: const InputDecoration(
-              labelText: "Role",
-              prefixIcon: Icon(Icons.security_outlined),
-            ), 
-            items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))], 
-            onChanged: (v) => setST(() => role = v!)
-          ),
-        ]),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: uC, 
+              decoration: const InputDecoration(
+                labelText: "Username",
+                hintText: "Enter account username",
+                prefixIcon: Icon(Icons.person_outline),
+              ), 
+              onChanged: (v) => setST((){})
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: pC, 
+              decoration: const InputDecoration(
+                labelText: "Password",
+                hintText: "Enter account password",
+                prefixIcon: Icon(Icons.lock_outline),
+              ), 
+              onChanged: (v) => setST((){})
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: role, 
+              decoration: const InputDecoration(
+                labelText: "Role",
+                prefixIcon: Icon(Icons.security_outlined),
+              ), 
+              items: const [DropdownMenuItem(value: 'admin', child: Text("Admin")), DropdownMenuItem(value: 'operator', child: Text("Operator")), DropdownMenuItem(value: 'viewer', child: Text("Viewer"))], 
+              onChanged: (v) => setST(() => role = v!)
+            ),
+          ]),
+        ),
         actions: [
           AppDialogActions(
             actions: [

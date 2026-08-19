@@ -299,14 +299,17 @@ class _MemoryMatchGameState extends State<MemoryMatchGame> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Center(child: Text("Victory!", style: TextStyle(fontWeight: FontWeight.bold))),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("Time: $timeDisplay", style: const TextStyle(fontSize: 18)),
-            Text("Moves: $moves", style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            Text("Best Time: ${bestTime ~/ 60}:${(bestTime % 60).toString().padLeft(2, '0')}", style: const TextStyle(color: Colors.grey)),
-          ],
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Time: $timeDisplay", style: const TextStyle(fontSize: 18)),
+              Text("Moves: $moves", style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              Text("Best Time: ${bestTime ~/ 60}:${(bestTime % 60).toString().padLeft(2, '0')}", style: const TextStyle(color: Colors.grey)),
+            ],
+          ),
         ),
         actions: [
           Center(
