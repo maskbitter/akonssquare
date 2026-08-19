@@ -1040,7 +1040,14 @@ class _AdminHomeState extends State<AdminHome> {
                   double mainUsed = present - last;
                   String meterNo = data['meterNo'] ?? 'N/A';
                   double totalSubPaid = (paidUnitsMap != null) ? (paidUnitsMap[meterNo] ?? 0) : 0;
-                  double unitRate = (data['unitRate'] as num?)?.toDouble() ?? 0;
+                  
+                  // Live calculation to avoid data inconsistencies
+                  double govtRead = (data['govtBillReading'] as num?)?.toDouble() ?? 0;
+                  double lastGovtRead = (data['lastGovtReading'] as num?)?.toDouble() ?? 0;
+                  double govtAmt = (data['govtBillAmount'] as num?)?.toDouble() ?? 0;
+                  double govtUnits = govtRead - lastGovtRead;
+                  double unitRate = govtUnits > 0 ? (govtAmt / govtUnits) : ((data['unitRate'] as num?)?.toDouble() ?? 0);
+                  
                   double balance = mainUsed - totalSubPaid;
                   
                   return [

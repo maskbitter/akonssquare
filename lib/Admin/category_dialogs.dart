@@ -111,6 +111,108 @@ class CategoryDialogs {
     );
   }
 
+  static void showDeleteMeterDialog({
+    required BuildContext context,
+    required String type, 
+    required String meterNo,
+    required VoidCallback onConfirm,
+  }) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Column(
+          children: [
+            Icon(Icons.warning_amber_outlined, color: Theme.of(context).colorScheme.error, size: 40),
+            const SizedBox(height: 12),
+            Text("Remove $type?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+            Text("Meter: $meterNo", style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Warning: Removing this meter will hide it from all active lists. History will be preserved in records. Please check current usage:",
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              if (type == 'MainMeter')
+                StreamBuilder<QuerySnapshot>(
+                  stream: _dbService.getSubMetersByMainMeter(meterNo),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator());
+                    var linkedSubMeters = snapshot.data!.docs;
+                    if (linkedSubMeters.isEmpty) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Linked Sub-Meters:", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+                        ...linkedSubMeters.map((d) => Text("• ${d['subMeterNo']}", style: Theme.of(context).textTheme.labelMedium)).toList(),
+                        const SizedBox(height: 8),
+                      ],
+                    );
+                  },
+                ),
+              StreamBuilder<QuerySnapshot>(
+                stream: type == 'SubMeter' 
+                  ? _dbService.getSubItemsBySubMeter(meterNo)
+                  : _dbService.getSubItemsByMainMeter(meterNo),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator());
+                  var linkedUnits = snapshot.data!.docs;
+                  if (linkedUnits.isEmpty) return Text("No linked Units/Rooms found.", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic));
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Linked Units/Rooms:", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+                      ...linkedUnits.map((d) => Text("• ${d['subItemName']}", style: Theme.of(context).textTheme.labelMedium)).toList(),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text("Cancel")
+              ),
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  elevation: 2,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  onConfirm();
+                }, 
+                child: const Text("Confirm Remove")
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   static void showConfirmDialog({
     required BuildContext context, 
     required String title, 
@@ -780,11 +882,22 @@ class CategoryDialogs {
                     onPressed: (isLoading || 
                                 (presentReadingController.text == data['presentReading'].toString() &&
                                  govtReadingController.text == data['govtBillReading'].toString() &&
-                                 amountController.text == data['govtBillAmount'].toString())) ? null : () async {
+                                 amountController.text == data['govtBillAmount'].toString() &&
+                                 (govtBillUnit > 0 ? (billAmount / govtBillUnit) : 0) == (data['unitRate'] ?? 0).toDouble()
+                                )) ? null : () async {
                       double last = double.tryParse(lastReadingController.text) ?? 0; 
                       double pres = double.tryParse(presentReadingController.text) ?? last;
                       double govt = double.tryParse(govtReadingController.text) ?? 0; 
                       double amt = double.tryParse(amountController.text) ?? 0;
+
+                      if (pres < lastReading) {
+                        _showValidationWarning(context, "Present reading ($pres) cannot be lower than the last reading ($lastReading).");
+                        return;
+                      }
+                      if (govt < lastGovtReading) {
+                        _showValidationWarning(context, "Govt. reading ($govt) cannot be lower than the last govt. reading ($lastGovtReading).");
+                        return;
+                      }
                       
                       double prevSavedMain = (data['presentReading'] ?? 0).toDouble();
                       double prevSavedGovt = (data['govtBillReading'] ?? 0).toDouble();
@@ -994,8 +1107,8 @@ class CategoryDialogs {
   static void showElectricityDialog({required BuildContext context, required String subItemId, required String subItemName, Map<String, dynamic>? existingData, bool isOperator = false}) {
     String? selectedMainMeter = existingData?['mainMeterNo'];
     String? selectedSubMeter = existingData?['subMeterNo'];
-    final lastReadingController = TextEditingController(text: (existingData?['presentReading'] ?? 0).toString());
-    final presentReadingController = TextEditingController();
+    final lastReadingController = TextEditingController(text: (existingData?['lastReading'] ?? 0).toString());
+    final presentReadingController = TextEditingController(text: (existingData?['presentReading'] ?? '').toString());
     final priceController = TextEditingController(text: (existingData?['pricePerUnit'] ?? 10).toString());
     bool isLoading = false;
 
@@ -1004,13 +1117,23 @@ class CategoryDialogs {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
+          // Always enable if any of the fields have content and it's a new assignment,
+          // or if values changed from existing data.
+          bool hasChanged = true;
+          if (existingData != null) {
+            hasChanged = selectedSubMeter != existingData['subMeterNo'] ||
+                        double.tryParse(lastReadingController.text) != (existingData['lastReading'] ?? 0).toDouble() ||
+                        double.tryParse(presentReadingController.text) != (existingData['presentReading'] ?? 0).toDouble() ||
+                        double.tryParse(priceController.text) != (existingData['pricePerUnit'] ?? 10).toDouble();
+          }
+
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Column(
             children: [
             Icon(Icons.electric_bolt, color: context.electric, size: 40),
               const SizedBox(height: 12),
-              Text("Electricity - assigned submeter", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
+              Text("Sub-Meter Assignment", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
               Text("Update for $subItemName", style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
@@ -1068,13 +1191,40 @@ class CategoryDialogs {
                         selectedSubMeter = v;
                         var match = available.firstWhere((d) => d['subMeterNo'] == v);
                         selectedMainMeter = match['mainMeterNo']?.toString();
-                        lastReadingController.text = (match['presentReading'] ?? 0).toString();
+                        
+                        // Pick the highest reading available from the meter as the starting point
+                        var mData = match.data() as Map<String, dynamic>;
+                        double meterPresent = (mData['presentReading'] ?? 0).toDouble();
+                        double meterLast = (mData['lastReading'] ?? 0).toDouble();
+                        double meterRead = meterPresent >= meterLast ? meterPresent : meterLast;
+                        
+                        lastReadingController.text = meterRead.toString();
+                        presentReadingController.text = meterRead.toString();
                       }),
                     );
                   },
                 ),
                 const SizedBox(height: 12),
-                _buildReadOnlyRow(context, "Last Reading (Previous)", lastReadingController.text),
+                TextField(
+                  controller: lastReadingController, 
+                  keyboardType: TextInputType.number, 
+                  onChanged: (val) {
+                    setDialogState(() {
+                      double last = double.tryParse(val) ?? 0;
+                      double pres = double.tryParse(presentReadingController.text) ?? 0;
+                      // If present reading is behind the new last reading, sync them
+                      if (pres < last) {
+                        presentReadingController.text = last.toString();
+                      }
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    labelText: "Last Reading (Previous)", 
+                    hintText: "Enter previous reading",
+                    prefixIcon: Icon(Icons.history),
+                    isDense: true
+                  )
+                ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: presentReadingController, 
@@ -1124,38 +1274,13 @@ class CategoryDialogs {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  onPressed: (isLoading || 
-                              (presentReadingController.text.trim().isEmpty && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString()) ||
-                              (presentReadingController.text == (existingData?['presentReading'] ?? 0).toString() && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString()) ||
-                              (selectedSubMeter == existingData?['subMeterNo'] && presentReadingController.text.trim().isEmpty && priceController.text == (existingData?['pricePerUnit'] ?? 10).toString())
-                              ) ? null : () async {
+                  onPressed: (isLoading || !hasChanged || selectedSubMeter == null) ? null : () async {
                     double last = double.tryParse(lastReadingController.text) ?? 0; 
                     double pres = double.tryParse(presentReadingController.text) ?? last;
                     
                     if (pres < last) {
-                      bool? confirmLower = await showDialog<bool>(
-                        context: context,
-                        builder: (c) => AlertDialog(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          title: const Row(
-                            children: [
-                              Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                              SizedBox(width: 8),
-                              Text("Lower Reading?"),
-                            ],
-                          ),
-                          content: Text("New reading ($pres) is lower than the previous reading ($last). This might be a mistake or a meter reset. Do you want to proceed?"),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No")),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: ThemeManager.outlineBackground),
-                              onPressed: () => Navigator.pop(c, true), 
-                              child: const Text("Yes, Proceed")
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmLower != true) return;
+                      _showValidationWarning(context, "Present reading ($pres) cannot be lower than the previous reading ($last).");
+                      return;
                     }
 
                     if (selectedMainMeter == null || selectedSubMeter == null) { _showValidationWarning(context, "Please select both Main and Sub meters."); return; }
@@ -1169,11 +1294,11 @@ class CategoryDialogs {
                     }
                     await _dbService.setSubMeterAssignment(selectedSubMeter!, true);
 
-                    // Only update presentReading, lastReading remains same until payment
+                    // Update both presentReading and lastReading from controller values
                     await _dbService.updateSubItemElectricity(subItemId, {
                       'mainMeterNo': selectedMainMeter,
                       'subMeterNo': selectedSubMeter,
-                      'lastReading': (existingData?['lastReading'] ?? last).toDouble(),
+                      'lastReading': last,
                       'presentReading': pres,
                       'pricePerUnit': double.tryParse(priceController.text) ?? 10,
                       'updatedAt': FieldValue.serverTimestamp(),
@@ -1268,7 +1393,7 @@ class CategoryDialogs {
                           children: [
                             Icon(Icons.bolt, color: context.electric, size: 18),
                             const SizedBox(width: 8),
-                            Text("Electricity Readings", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: context.electric, fontWeight: FontWeight.bold)),
+                            Text("Sub-Meter Readings", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: context.electric, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -1276,11 +1401,11 @@ class CategoryDialogs {
                         _buildRow(context, "Present Reading:", currentRead.toStringAsFixed(1), isBold: true),
                         const SizedBox(height: 4),
                         Text(
-                          "(To edit reading, use the Electric icon in the room list)", 
+                          "(To edit reading, use the Edit icon in the room list)", 
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 8),
-                        _buildRow(context, "Electric Bill:", "৳${dynamicElecBill.toStringAsFixed(1)}"),
+                        _buildRow(context, "Sub-Meter Bill:", "৳${dynamicElecBill.toStringAsFixed(1)}"),
                       ],
                     ),
                   ),

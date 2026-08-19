@@ -577,7 +577,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                       if (pres > last) {
                                                         CategoryDialogs.showConfirmDialog(
                                                           context: context,
-                                                          title: "Confirm Stop Electric",
+                                                          title: "Confirm Stop Sub-Meter Billing",
                                                           content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
                                                           onConfirm: () async {
                                                             await _dbService.updateSubItemElectricity(subId, {
@@ -594,6 +594,16 @@ class _CategoryPageState extends State<CategoryPage> {
                                                     } else {
                                                       await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
                                                     }
+                                                  } else if (val == 'remove_electric') {
+                                                     CategoryDialogs.showConfirmDialog(
+                                                      context: context, 
+                                                      title: "Remove Sub-Meter?",
+                                                      content: "Are you sure you want to remove the electric meter from this unit? All previous billing history will be preserved, and the current meter reading will be carried forward for future use.", 
+                                                      onConfirm: () async { 
+                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                        await _dbService.removeSubItemElectricity(subId, prefs.getString('username') ?? "Admin"); 
+                                                      }
+                                                    );
                                                   } else if (val == 'services') {
                                                     CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
                                                   } else if (val == 'remove') {
@@ -614,11 +624,20 @@ class _CategoryPageState extends State<CategoryPage> {
                                                       value: ed == null ? 'electric' : 'stop', 
                                                       child: ListTile(
                                                         leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
-                                                        title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
+                                                        title: Text(ed == null ? "Add Sub-Meter" : (ed['isStopped'] == true ? "Resume Sub-Meter" : "Stop Sub-Meter")), 
                                                         dense: true
                                                       )
                                                     ),
                                                   const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
+                                                  if (ed != null && !widget.isOperator)
+                                                    PopupMenuItem(
+                                                      value: 'remove_electric', 
+                                                      child: ListTile(
+                                                        leading: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.error, size: 20),
+                                                        title: Text("Remove Sub-Meter", style: TextStyle(color: Theme.of(context).colorScheme.error)), 
+                                                        dense: true
+                                                      )
+                                                    ),
                                                   if (!widget.isOperator)
                                                     PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
                                                 ],
@@ -684,13 +703,13 @@ class _CategoryPageState extends State<CategoryPage> {
                                             
                                             if (ed != null && ed['isStopped'] != true)
                                                 _buildSectionBox(
-                                                  "Electric Bills", 
+                                                  "Sub-Meter Bills", 
                                                   "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
                                                   Icons.electric_bolt, 
                                                   amount: eBillAmount, 
                                                   color: context.electric,
                                                   trailing: IconButton(
-                                                    icon: Icon(Icons.electric_bolt, color: context.electric, size: 22), 
+                                                    icon: Icon(Icons.edit_note, color: context.electric, size: 22), 
                                                     onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
                                                   )
                                                 ),
@@ -823,7 +842,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                       if (pres > last) {
                                                         CategoryDialogs.showConfirmDialog(
                                                           context: context,
-                                                          title: "Confirm Stop Electric",
+                                                          title: "Confirm Stop Sub-Meter Billing",
                                                           content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
                                                           onConfirm: () async {
                                                             await _dbService.updateSubItemElectricity(subId, {
@@ -840,6 +859,16 @@ class _CategoryPageState extends State<CategoryPage> {
                                                     } else {
                                                       await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
                                                     }
+                                                  } else if (val == 'remove_electric') {
+                                                     CategoryDialogs.showConfirmDialog(
+                                                      context: context, 
+                                                      title: "Remove Sub-Meter?", 
+                                                      content: "Are you sure you want to remove the electric meter from this unit? All previous billing history will be preserved, and the current meter reading will be carried forward for future use.", 
+                                                      onConfirm: () async { 
+                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                        await _dbService.removeSubItemElectricity(subId, prefs.getString('username') ?? "Admin"); 
+                                                      }
+                                                    );
                                                   } else if (val == 'services') {
                                                      CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
                                                   } else if (val == 'remove') {
@@ -860,11 +889,20 @@ class _CategoryPageState extends State<CategoryPage> {
                                                       value: ed == null ? 'electric' : 'stop', 
                                                       child: ListTile(
                                                         leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
-                                                        title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
+                                                        title: Text(ed == null ? "Add Sub-Meter" : (ed['isStopped'] == true ? "Resume Sub-Meter" : "Stop Sub-Meter")), 
                                                         dense: true
                                                       )
                                                     ),
                                                   const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
+                                                  if (ed != null && !widget.isOperator)
+                                                    PopupMenuItem(
+                                                      value: 'remove_electric', 
+                                                      child: ListTile(
+                                                        leading: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.error, size: 20),
+                                                        title: Text("Remove Sub-Meter", style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                                                        dense: true
+                                                      )
+                                                    ),
                                                   if (!widget.isOperator)
                                                     PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
                                                 ],
@@ -932,13 +970,13 @@ class _CategoryPageState extends State<CategoryPage> {
                                               
                                                   if (ed != null && ed['isStopped'] != true)
                                                 _buildSectionBox(
-                                                  "Electric Bills", 
+                                                  "Sub-Meter Bills", 
                                                   "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
                                                   Icons.electric_bolt, 
                                                   amount: eBillAmount, 
                                                   color: context.electric,
                                                   trailing: IconButton(
-                                                    icon: Icon(Icons.electric_bolt, color: context.electric, size: 22), 
+                                                    icon: Icon(Icons.edit_note, color: context.electric, size: 22), 
                                                     onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
                                                   )
                                                 ),
@@ -1259,7 +1297,9 @@ class _CategoryPageState extends State<CategoryPage> {
                       double govtAmt = (data['govtBillAmount'] ?? 0).toDouble();
                       double govtUnit = newGovt - lastGovt;
                       double lastRate = (data['lastMonthUnitRate'] ?? 0).toDouble();
-                      double thisRate = (data['unitRate'] ?? 0).toDouble();
+                      
+                      // Live calculation for consistency
+                      double thisRate = govtUnit > 0 ? (govtAmt / govtUnit) : (data['unitRate'] ?? 0).toDouble();
                       double govtDueAdv = pres - newGovt;
                       
                       String advDueSuffix = "";
@@ -1298,10 +1338,10 @@ class _CategoryPageState extends State<CategoryPage> {
                               padding: const EdgeInsets.all(4),
                               child: IconButton(
                                 icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.error),
-                                onPressed: () => CategoryDialogs.showConfirmDialog(
+                                onPressed: () => CategoryDialogs.showDeleteMeterDialog(
                                   context: context, 
-                                  title: "Remove Meter?", 
-                                  content: "Are you sure you want to remove meter '$meterNo'?", 
+                                  type: "MainMeter",
+                                  meterNo: meterNo,
                                   onConfirm: () async {
                                     SharedPreferences prefs = await SharedPreferences.getInstance();
                                     await _dbService.removeMainMeter(mDoc.id, prefs.getString('username') ?? "Admin");
@@ -1408,10 +1448,10 @@ class _CategoryPageState extends State<CategoryPage> {
                                   padding: const EdgeInsets.all(4),
                                   child: IconButton(
                                     icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20),
-                                    onPressed: () => CategoryDialogs.showConfirmDialog(
+                                    onPressed: () => CategoryDialogs.showDeleteMeterDialog(
                                       context: context, 
-                                      title: "Remove Sub-Meter?", 
-                                      content: "Are you sure you want to remove '${sData['subMeterNo']}'?", 
+                                      type: "SubMeter",
+                                      meterNo: sData['subMeterNo'] ?? 'N/A',
                                       onConfirm: () async {
                                         SharedPreferences prefs = await SharedPreferences.getInstance();
                                         await _dbService.removeSubMeter(sDoc.id, prefs.getString('username') ?? "Admin");

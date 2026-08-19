@@ -315,6 +315,46 @@ class DatabaseService {
     );
   }
 
+  Future<void> removeSubItemElectricity(String subItemId, String actor) async {
+    DocumentSnapshot doc = await _db.collection('sub_items').doc(subItemId).get();
+    if (!doc.exists) return;
+
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    String unitName = data['subItemName'] ?? 'Unknown';
+    var ed = data['electricityDetails'];
+
+    if (ed != null) {
+      String? subMeterNo = ed['subMeterNo'];
+      double presentReading = (ed['presentReading'] ?? 0).toDouble();
+
+      if (subMeterNo != null) {
+        // 1. Free the sub-meter and save its last reading
+        var meterSnap = await _db.collection('sub_meters').where('subMeterNo', isEqualTo: subMeterNo).limit(1).get();
+        if (meterSnap.docs.isNotEmpty) {
+          await meterSnap.docs.first.reference.update({
+            'isAssigned': false,
+            'presentReading': presentReading,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      // 2. Remove electricityDetails from sub_item
+      await _db.collection('sub_items').doc(subItemId).update({
+        'electricityDetails': FieldValue.delete(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'clientTimestamp': DateTime.now().toIso8601String(),
+      });
+
+      await logActivity(
+        actor: actor,
+        action: "Remove Unit Electricity",
+        details: "Disconnected meter '$subMeterNo' from '$unitName'. Last reading $presentReading carried forward.",
+        category: "Electricity",
+      );
+    }
+  }
+
   // ==========================================
   // 5. MAIN METER METHODS
   // ==========================================
@@ -325,6 +365,14 @@ class DatabaseService {
 
   Stream<QuerySnapshot> getSubItemsByMainMeter(String mainMeterNo) {
     return _db.collection('sub_items').where('electricityDetails.mainMeterNo', isEqualTo: mainMeterNo).snapshots();
+  }
+
+  Stream<QuerySnapshot> getSubItemsBySubMeter(String subMeterNo) {
+    return _db.collection('sub_items').where('electricityDetails.subMeterNo', isEqualTo: subMeterNo).snapshots();
+  }
+
+  Stream<QuerySnapshot> getSubMetersByMainMeter(String mainMeterNo) {
+    return _db.collection('sub_meters').where('mainMeterNo', isEqualTo: mainMeterNo).snapshots();
   }
 
   Future<bool> checkMainMeterExists(String meterNo) async {
