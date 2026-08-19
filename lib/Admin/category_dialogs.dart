@@ -1376,6 +1376,37 @@ class CategoryDialogs {
                     ),
                   ],
                 ),
+
+                const Divider(height: 24),
+
+                // Breakdown Section
+                Column(
+                  children: [
+                    // House Rent (if available)
+                    ...services.where((s) => s['name'].toString().toLowerCase().contains('rent')).map((s) => 
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: _buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(1)}", isBold: true),
+                      )
+                    ),
+
+                    // Other Services
+                    ...services.where((s) => !s['name'].toString().toLowerCase().contains('rent')).map((s) => 
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: _buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(1)}"),
+                      )
+                    ),
+                  ],
+                ),
+                
+                if (electricityDetails != null && electricityDetails['isStopped'] != true) ...[
+                  const SizedBox(height: 6),
+                  _buildRow(context, "Sub-Meter Bill:", "৳${dynamicElecBill.toStringAsFixed(1)}", isBold: true),
+                ],
+                
+                const Divider(height: 12),
+                _buildRow(context, "Total Payable:", "৳${(houseRentTotal + dynamicElecBill).toStringAsFixed(1)}", isBold: true, fontSize: 18),
                 
                 if (notes != null && notes!.trim().isNotEmpty) ...[
                   const SizedBox(height: 12),
@@ -1405,66 +1436,6 @@ class CategoryDialogs {
                   ),
                 ],
 
-                const Divider(height: 24),
-
-                // Breakdown Section
-                Column(
-                  children: [
-                    // House Rent (if available)
-                    ...services.where((s) => s['name'].toString().toLowerCase().contains('rent')).map((s) => 
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: _buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(1)}", isBold: true),
-                      )
-                    ),
-
-                    // Other Services
-                    ...services.where((s) => !s['name'].toString().toLowerCase().contains('rent')).map((s) => 
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: _buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(1)}"),
-                      )
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 12),
-                
-                if (electricityDetails != null && electricityDetails['isStopped'] != true) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : context.electric.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? context.electric : context.electric.withValues(alpha: 0.2)),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.bolt, color: context.electric, size: 18),
-                            const SizedBox(width: 8),
-                            Text("Sub-Meter Readings", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: context.electric, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        _buildRow(context, "Last Reading:", lastRead.toStringAsFixed(1)),
-                        _buildRow(context, "Present Reading:", currentRead.toStringAsFixed(1), isBold: true),
-                        const SizedBox(height: 4),
-                        Text(
-                          "(To edit reading, use the Edit icon in the room list)", 
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildRow(context, "Sub-Meter Bill:", "৳${dynamicElecBill.toStringAsFixed(1)}", isBold: true),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                
-                const Divider(height: 12),
-                _buildRow(context, "Total Payable:", "৳${(houseRentTotal + dynamicElecBill).toStringAsFixed(1)}", isBold: true, fontSize: 18),
                 const SizedBox(height: 12),
                 if (!isFuture) ...[
                    TextField(
