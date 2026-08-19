@@ -1384,7 +1384,7 @@ class CategoryDialogs {
       builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
         String monthYear = "${months[selectedDate.month - 1]}-${selectedDate.year.toString().substring(2)}";
         bool isFuture = selectedDate.year > now.year || (selectedDate.year == now.year && selectedDate.month > now.month);
-        int wordCount = _getWordCount(noteController.text);
+        int letterCount = _getLetterCount(noteController.text);
 
         double lastRead = (electricityDetails?['lastReading'] ?? 0).toDouble();
         double currentRead = double.tryParse(presentUnitsController.text) ?? lastRead;
@@ -1483,15 +1483,16 @@ class CategoryDialogs {
                 if (!isFuture) ...[
                    TextField(
                     controller: noteController, 
-                    onChanged: (val) => setDialogState(() => wordCount = _getWordCount(val)),
+                    onChanged: (val) => setDialogState(() => letterCount = _getLetterCount(val)),
                     style: Theme.of(context).textTheme.bodyLarge,
+                    maxLength: 100,
                     decoration: InputDecoration(
                       labelText: "Notes", 
                       hintText: "Add payment notes",
                       prefixIcon: const Icon(Icons.note_alt_outlined),
                       isDense: true,
-                      counterText: "$wordCount / 100 words",
-                      counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: wordCount > 100 ? Theme.of(context).colorScheme.error : null),
+                      counterText: "$letterCount / 100",
+                      counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: letterCount > 100 ? Theme.of(context).colorScheme.error : null),
                     ),
                   ),
                 ] else
@@ -1566,7 +1567,7 @@ class CategoryDialogs {
                       foregroundColor: Theme.of(context).colorScheme.onTertiary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: (isLoading || wordCount > 100) ? null : () async {
+                    onPressed: (isLoading || letterCount > 100) ? null : () async {
                       if (electricityDetails != null && currentRead < lastRead) {
                         _showValidationWarning(context, "Reading cannot be lower than previous for final payment.");
                         return;
@@ -1733,7 +1734,7 @@ class CategoryDialogs {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
-          int wordCount = _getWordCount(notesController.text);
+          int letterCount = _getLetterCount(notesController.text);
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), 
             title: Center(
@@ -1761,14 +1762,15 @@ class CategoryDialogs {
                   TextField(
                     controller: notesController, 
                     style: Theme.of(context).textTheme.bodyLarge,
-                    onChanged: (val) => setDialogState(() => wordCount = _getWordCount(val)),
+                    onChanged: (val) => setDialogState(() => letterCount = _getLetterCount(val)),
+                    maxLength: 100,
                     decoration: InputDecoration(
-                      labelText: "Notes (Max 100 words)", 
+                      labelText: "Notes (Max 100)", 
                       hintText: "Enter tenant or unit notes",
                       prefixIcon: const Icon(Icons.description_outlined),
                       alignLabelWithHint: true,
-                      counterText: "$wordCount / 100 words",
-                      counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: wordCount > 100 ? Theme.of(context).colorScheme.error : null),
+                      counterText: "$letterCount / 100",
+                      counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: letterCount > 100 ? Theme.of(context).colorScheme.error : null),
                     ), 
                     maxLines: 3
                   ),
@@ -1796,7 +1798,7 @@ class CategoryDialogs {
                       foregroundColor: Theme.of(context).colorScheme.onTertiary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: (isLoading || wordCount > 100 || 
+                    onPressed: (isLoading || letterCount > 100 || 
                                 (subItemController.text == currentName &&
                                  tenantController.text == (currentTenantName == "No Name" ? "" : currentTenantName) &&
                                  nidController.text == (currentNidNumber == "No Number" ? "" : currentNidNumber) &&
@@ -2320,9 +2322,8 @@ class CategoryDialogs {
     }));
   }
 
-  static int _getWordCount(String text) {
-    if (text.trim().isEmpty) return 0;
-    return text.trim().split(RegExp(r'\s+')).length;
+  static int _getLetterCount(String text) {
+    return text.length;
   }
 
   static Widget _buildRow(BuildContext context, String label, String value, {bool isBold = false, double? fontSize}) {
