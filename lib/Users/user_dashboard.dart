@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:akons_square/Common/database_service.dart';
 import 'package:akons_square/Common/update_guard.dart';
-import 'package:akons_square/Common/automation_guide.dart';
 import 'package:akons_square/Common/build_config.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Users/user_report_page.dart';
@@ -209,9 +208,7 @@ class _UserDashboardState extends State<UserDashboard> {
             title: Padding(
               padding: const EdgeInsets.symmetric(vertical: 1),
               child: GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
-                },
+                onTap: null,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,

@@ -334,6 +334,17 @@ class CategoryDialogs {
                                     ),
                                   ),
                                   IconButton(
+                                    icon: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                                    onPressed: () {
+                                      showEditGlobalServiceDialog(
+                                        context: context,
+                                        serviceId: doc.id,
+                                        currentName: sName,
+                                        currentAmount: amt,
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
                                     icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20),
                                     onPressed: () => showConfirmDialog(
                                       context: context, 
@@ -376,6 +387,84 @@ class CategoryDialogs {
             ],
           );
         }
+      ),
+    );
+  }
+
+  static void showEditGlobalServiceDialog({
+    required BuildContext context,
+    required String serviceId,
+    required String currentName,
+    required double currentAmount,
+  }) {
+    final nameController = TextEditingController(text: currentName);
+    final amountController = TextEditingController(text: currentAmount.toStringAsFixed(0));
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setST) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Center(child: Text("Edit Service", style: Theme.of(context).textTheme.titleLarge)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                style: Theme.of(context).textTheme.bodyLarge,
+                decoration: const InputDecoration(labelText: "Service Name", prefixIcon: Icon(Icons.miscellaneous_services_outlined)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: amountController,
+                style: Theme.of(context).textTheme.bodyLarge,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Price (BDT)", prefixIcon: Icon(Icons.payments_outlined), prefixText: "৳ "),
+              ),
+            ],
+          ),
+          actions: [
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh, foregroundColor: Theme.of(context).colorScheme.onSurface),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("Cancel"),
+                ),
+                AppButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary, foregroundColor: Theme.of(context).colorScheme.onTertiary),
+                  onPressed: isLoading ? null : () async {
+                    String name = nameController.text.trim();
+                    double amt = double.tryParse(amountController.text) ?? 0;
+                    if (name.isEmpty) return;
+
+                    setST(() => isLoading = true);
+                    try {
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await _dbService.updateService(
+                        serviceId: serviceId,
+                        oldName: currentName,
+                        newName: name,
+                        newAmount: amt,
+                        actor: prefs.getString('username') ?? "Admin",
+                      );
+                      if (context.mounted) {
+                        Navigator.pop(ctx);
+                        DatabaseService.showToast(context, "Service Updated!");
+                      }
+                    } catch (e) {
+                      // handle error
+                    } finally {
+                      setST(() => isLoading = false);
+                    }
+                  },
+                  child: Text(isLoading ? "Updating..." : "Update"),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

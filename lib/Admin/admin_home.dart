@@ -902,6 +902,7 @@ class _AdminHomeState extends State<AdminHome> {
     required Color containerColor,
     required Color accentColor,
     required IconData titleIcon,
+    Map<int, TableColumnWidth>? customColumnWidths,
   }) {
     final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold);
 
@@ -955,7 +956,7 @@ class _AdminHomeState extends State<AdminHome> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Table(
-                  columnWidths: {
+                  columnWidths: customColumnWidths ?? {
                     0: const FixedColumnWidth(25),
                     1: const FlexColumnWidth(2.5),
                     for (int i = 2; i < headers.length; i++) i: const FlexColumnWidth(2),
@@ -1026,6 +1027,12 @@ class _AdminHomeState extends State<AdminHome> {
                 containerColor: Theme.of(context).colorScheme.secondaryContainer,
                 accentColor: Theme.of(context).colorScheme.secondary,
                 headers: ["#", "Meter\nNumber", "Main Meter\nUsed Units", "Sub-Meter\nTotal Units", "This Month\nUnit Rate", "Balance\nUnits"],
+                customColumnWidths: {
+                  0: const FixedColumnWidth(25),
+                  1: const FlexColumnWidth(2.8),
+                  for (int i = 2; i < 5; i++) i: const FlexColumnWidth(2),
+                  5: const FlexColumnWidth(1.7),
+                },
                 meters: mainMeters,
                 rowBuilder: (data, index) {
                   double last = (data['lastReading'] as num?)?.toDouble() ?? 0;

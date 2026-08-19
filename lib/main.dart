@@ -19,7 +19,6 @@ import 'package:akons_square/Common/firebase_options.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:akons_square/Common/automation_guide.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -671,9 +670,7 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     const SizedBox(height: 10),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
-                      },
+                      onTap: null,
                       onLongPress: _showMasterKeyDialog,
                       child: Column(
                         children: [

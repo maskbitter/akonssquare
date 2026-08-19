@@ -727,6 +727,48 @@ class DatabaseService {
     await archiveAndRemove(collection: 'services', docId: serviceId, removedBy: removedBy, reason: 'Admin removed global service');
   }
 
+  Future<void> updateService({
+    required String serviceId,
+    required String oldName,
+    required String newName,
+    required double newAmount,
+    required String actor,
+  }) async {
+    // 1. Update Global Service
+    await _db.collection('services').doc(serviceId).update({
+      'serviceName': newName,
+      'serviceNameNormalized': _normalize(newName),
+      'amount': newAmount,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    });
+
+    // 2. Update Categories that have this service assigned
+    var categories = await _db.collection('categories').get();
+    for (var catDoc in categories.docs) {
+      List assigned = List.from(catDoc.data()['assignedServices'] ?? []);
+      bool changed = false;
+      for (int i = 0; i < assigned.length; i++) {
+        if (assigned[i]['name'] == oldName) {
+          assigned[i]['name'] = newName;
+          assigned[i]['amount'] = newAmount;
+          changed = true;
+        }
+      }
+      if (changed) {
+        await _db.collection('categories').doc(catDoc.id).update({
+          'assignedServices': assigned,
+        });
+      }
+    }
+
+    await logActivity(
+      actor: actor,
+      action: "Update Global Service",
+      details: "Updated service '$oldName' to '$newName' with rate ৳$newAmount",
+      category: "Configuration",
+    );
+  }
+
   Future<void> removeSubItem(String subItemId, String removedBy) async {
     await archiveAndRemove(collection: 'sub_items', docId: subItemId, removedBy: removedBy, reason: 'Admin/Operator removed unit');
   }

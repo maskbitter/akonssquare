@@ -6,7 +6,6 @@ import 'package:akons_square/Admin/admin_home.dart';
 import 'package:akons_square/Admin/settings_page.dart';
 import 'package:akons_square/Common/database_service.dart';
 import 'package:akons_square/Common/update_guard.dart';
-import 'package:akons_square/Common/automation_guide.dart';
 import 'package:akons_square/Common/build_config.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/main.dart';
@@ -167,9 +166,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
         title: Padding(
           padding: const EdgeInsets.symmetric(vertical: 1),
           child: GestureDetector(
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const AutomationGuidePage()));
-            },
+            onTap: null,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
