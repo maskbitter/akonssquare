@@ -9,6 +9,8 @@ import 'package:akons_square/Common/build_config.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Users/user_report_page.dart';
 import 'package:akons_square/main.dart';
+import 'package:akons_square/Common/share_helper.dart';
+import 'package:akons_square/Admin/category_dialogs.dart';
 import 'dart:async';
 
 class UserDashboard extends StatefulWidget {
@@ -245,6 +247,11 @@ class _UserDashboardState extends State<UserDashboard> {
               ),
             ),
             actions: [
+              IconButton(
+                icon: Icon(Icons.share_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                onPressed: () => ShareHelper.shareApp(context),
+                tooltip: "Share App",
+              ),
               StreamBuilder<DocumentSnapshot>(
                 stream: _dbService.getAppConfigStream(),
                 builder: (context, configSnap) {
@@ -363,6 +370,8 @@ class _UserDashboardState extends State<UserDashboard> {
 
         List excludedServices = subData['excludedServices'] ?? [];
         List overriddenServices = subData['overriddenServices'] ?? [];
+        List macAddresses = subData['macAddresses'] ?? [];
+        List manualDues = subData['manualDues'] ?? [];
         
         List<Map<String, dynamic>> activeServices = [];
         for (var service in assignedServices) {
@@ -397,7 +406,8 @@ class _UserDashboardState extends State<UserDashboard> {
         }
 
         double servicesSum = activeServices.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
-        double totalBill = servicesSum + electricityBill;
+        double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+        double totalBill = servicesSum + electricityBill + mDuesSum;
 
         // --- PAYMENT CHECK FOR CURRENT MONTH ---
         List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -615,40 +625,141 @@ class _UserDashboardState extends State<UserDashboard> {
                 ),
 
               ...activeServices.map((s) {
-                bool isWifi = s['name'].toString().toLowerCase().contains("wifi");
+                String name = s['name'] ?? 'Unnamed';
+                bool isWifi = name.toLowerCase().contains("wifi");
                 bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
-                    boxShadow: isOutline ? [] : [
-                      BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2)),
-                    ],
-                  ),
-                  child: ListTile(
-                    dense: true,
-                    visualDensity: VisualDensity.compact,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                    leading: CircleAvatar(
-                      backgroundColor: isOutline ? ThemeManager.outlineBackground : (isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary).withValues(alpha: 0.1),
-                      child: Container(
-                        decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
-                        child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary, size: 20)
+                return GestureDetector(
+                  onTap: isWifi ? () => CategoryDialogs.showUserMacDetailsDialog(
+                    context: context, 
+                    subItemName: subName, 
+                    macAddresses: macAddresses, 
+                    wifiService: s
+                  ) : null,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                      boxShadow: isOutline ? [] : [
+                        BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2)),
+                      ],
+                    ),
+                    child: isWifi && macAddresses.isNotEmpty
+                      ? Theme(
+                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                          child: ExpansionTile(
+                            dense: true,
+                            visualDensity: VisualDensity.compact,
+                            tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                            childrenPadding: const EdgeInsets.only(left: 56, bottom: 8),
+                            shape: const Border(),
+                            collapsedShape: const Border(),
+                            title: Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                  child: Container(
+                                    decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                                    child: Icon(Icons.wifi, color: Theme.of(context).colorScheme.primary, size: 20)
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    "$name (৳${s['wifiCost'] ?? 0} / device) (x${s['deviceQuantity'] ?? 1})",
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                            children: [
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  "MAC Addresses:\n${macAddresses.asMap().entries.map((e) {
+                                    var val = e.value;
+                                    String sn = (val is Map && val['sn'] != null && val['sn'].toString().isNotEmpty) ? val['sn'].toString() : (e.key + 1).toString();
+                                    String mac = val is Map ? val['mac'] : val.toString();
+                                    return "$sn) $mac";
+                                  }).join('\n')}", 
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary, fontFamily: 'monospace', fontSize: 9)
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListTile(
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          title: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: isOutline ? ThemeManager.outlineBackground : (isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary).withValues(alpha: 0.1),
+                                child: Container(
+                                  decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                                  child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary, size: 20)
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      isWifi 
+                                          ? "$name (৳${s['wifiCost'] ?? 0} / device) (x${s['deviceQuantity'] ?? 1})" 
+                                          : name,
+                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
+                                    ),
+                                    if (isWifi) Text("৳${s['wifiCost'] ?? 0} per device", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : null)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        trailing: Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                       ),
-                    ),
-                    title: Text(
-                      isWifi ? "${s['name']} (x${s['deviceQuantity'] ?? 1})" : s['name'],
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
-                    ),
-                    subtitle: isWifi ? Text("৳${s['wifiCost'] ?? 0} per device", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : null)) : null,
-                    trailing: Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                   ),
                 );
               }),
 
-              if (activeServices.isEmpty && (ed == null || isElectricStopped))
+              if (manualDues.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text("ADDITIONAL DUES", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                ),
+                ...manualDues.map((d) {
+                  bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3), width: 1.5),
+                    ),
+                    child: ListTile(
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                        child: Icon(Icons.money_off, color: Theme.of(context).colorScheme.error, size: 20),
+                      ),
+                      title: Text(
+                        d['reason'],
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
+                      ),
+                      subtitle: Text("Added: ${d['date']?.toString().split('T')[0] ?? ''}", style: Theme.of(context).textTheme.bodySmall),
+                      trailing: Text("৳${(d['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                    ),
+                  );
+                }),
+              ],
+
+              if (activeServices.isEmpty && (ed == null || isElectricStopped) && manualDues.isEmpty)
                 Center(child: Padding(
                   padding: const EdgeInsets.all(32.0),
                   child: Text("No active charges found for this period.", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),

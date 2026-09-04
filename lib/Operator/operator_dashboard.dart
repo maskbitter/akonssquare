@@ -10,9 +10,7 @@ import 'package:akons_square/Common/build_config.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-
-import 'package:akons_square/main.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:akons_square/Common/share_helper.dart';
 import 'dart:async';
 
 class OperatorDashboard extends StatefulWidget {
@@ -203,6 +201,11 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
           ),
         ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              onPressed: () => ShareHelper.shareApp(context),
+              tooltip: "Share App",
+            ),
             StreamBuilder<DocumentSnapshot>(
               stream: DatabaseService().getAppConfigStream(),
               builder: (context, configSnap) {

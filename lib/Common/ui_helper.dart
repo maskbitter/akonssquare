@@ -1,10 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:akons_square/Common/theme_manager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ota_update/ota_update.dart';
 import 'package:akons_square/main.dart';
+
+class MacAddressFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text.replaceAll(':', '').toUpperCase();
+    if (text.length > 12) return oldValue;
+    
+    final buffer = StringBuffer();
+    for (int i = 0; i < text.length; i++) {
+      buffer.write(text[i]);
+      if ((i + 1) % 2 == 0 && (i + 1) != text.length && (i + 1) < 12) {
+        buffer.write(':');
+      }
+    }
+    
+    final newString = buffer.toString();
+    return TextEditingValue(
+      text: newString,
+      selection: TextSelection.collapsed(offset: newString.length),
+    );
+  }
+}
 
 class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;

@@ -8,6 +8,7 @@ import 'package:akons_square/Common/build_config.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/main.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:akons_square/Common/share_helper.dart';
 import 'dart:async';
 
 class ViewerDashboard extends StatefulWidget {
@@ -126,6 +127,11 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () => ShareHelper.shareApp(context),
+            tooltip: "Share App",
+          ),
           StreamBuilder<DocumentSnapshot>(
             stream: DatabaseService().getAppConfigStream(),
             builder: (context, configSnap) {

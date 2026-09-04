@@ -3,16 +3,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart'; 
+import 'dart:async';
 
 import 'package:akons_square/main.dart';
 import 'package:akons_square/Admin/category_page.dart';
 import 'package:akons_square/Admin/admin_home.dart';
 import 'package:akons_square/Admin/settings_page.dart';
+import 'package:akons_square/Common/share_helper.dart';
 import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Common/update_guard.dart';
 import 'package:akons_square/Common/build_config.dart';
-import 'package:akons_square/Common/ui_helper.dart';
-import 'dart:async';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -328,6 +329,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              onPressed: () => ShareHelper.shareApp(context),
+              tooltip: "Share App",
+            ),
             StreamBuilder<DocumentSnapshot>(
               stream: _dbService.getAppConfigStream(),
               builder: (context, configSnap) {

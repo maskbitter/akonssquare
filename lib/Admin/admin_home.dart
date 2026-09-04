@@ -1809,6 +1809,10 @@ class _AdminHomeState extends State<AdminHome> {
 
     double servicesSum = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
     
+    // Manual Dues
+    List manualDues = subData['manualDues'] ?? [];
+    double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+
     var ed = subData['electricityDetails'];
     double eBill = 0;
     if (ed != null && ed['isStopped'] != true) {
@@ -1818,6 +1822,6 @@ class _AdminHomeState extends State<AdminHome> {
       eBill = (present - last) * rate;
     }
 
-    return servicesSum + eBill;
+    return servicesSum + eBill + mDuesSum;
   }
 }

@@ -12,6 +12,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:akons_square/Common/theme_manager.dart';
 import 'package:akons_square/Common/ui_helper.dart';
+import 'package:akons_square/Common/share_helper.dart';
+import 'package:akons_square/Admin/category_dialogs.dart';
 
 import 'package:akons_square/Admin/archive_viewer_page.dart';
 
@@ -465,6 +467,14 @@ class _SettingsPageState extends State<SettingsPage> {
                               return _buildVisibilitySwitch("Haptic Pulse Feedback", h, (v) async { (await SharedPreferences.getInstance()).setBool('isHapticEnabled', v); if(v) DatabaseService.vibrate(); setState((){}); }, icon: Icons.vibration_outlined);
                             }
                           ),
+                          const Divider(),
+                          ListTile(
+                            leading: Icon(Icons.share_outlined, color: ThemeManager.getCardColor(5, isSubCard: true)),
+                            title: Text("Share App", style: Theme.of(context).textTheme.bodyLarge),
+                            subtitle: const Text("Share this app with others"),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => ShareHelper.shareApp(context),
+                          ),
                         ],
                       ),
                     );
@@ -677,7 +687,27 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
 
-            // 5. Theme
+            // 5. Device & Unit Management
+            if (role == 'superadmin' || role == 'admin' || role == 'operator')
+            _buildSettingsCard(
+              context,
+              icon: Icons.devices_other_outlined,
+              title: "Device & Unit Management",
+              subtitle: "Manage Wifi MAC addresses and hardware",
+              color: ThemeManager.getCardContainerColor(6),
+              accentColor: ThemeManager.getCardColor(6),
+              children: [
+                ListTile(
+                  leading: Icon(Icons.wifi_tethering, color: ThemeManager.getCardColor(6)),
+                  title: const Text("Wifi Devices Mac List", style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text("View and manage all registered MAC addresses"),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => CategoryDialogs.showGlobalMacListDialog(context: context),
+                ),
+              ],
+            ),
+
+            // 6. Theme
             _buildThemeSection(),
           ],
         ),

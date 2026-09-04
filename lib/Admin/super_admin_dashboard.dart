@@ -9,6 +9,7 @@ import 'package:akons_square/Common/build_config.dart';
 import 'package:akons_square/Common/update_guard.dart';
 import 'package:akons_square/Common/theme_manager.dart';
 import 'package:akons_square/Common/ui_helper.dart';
+import 'package:akons_square/Common/share_helper.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -216,6 +217,11 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.share_outlined, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
+            onPressed: () => ShareHelper.shareApp(context),
+            tooltip: "Share App",
+          ),
           StreamBuilder<DocumentSnapshot>(
             stream: DatabaseService().getAppConfigStream(),
             builder: (context, configSnap) {

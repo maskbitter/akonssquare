@@ -185,13 +185,26 @@ class DatabaseService {
 
   Future<void> updateSubItemStatus(String subItemId, String status, String actor, {String? TenantName, String? nidNumber}) async {
     DocumentSnapshot old = await _db.collection('sub_items').doc(subItemId).get();
-    String unitName = (old.data() as Map?)?['subItemName'] ?? 'Unknown';
+    var oldData = old.data() as Map<String, dynamic>?;
+    String unitName = oldData?['subItemName'] ?? 'Unknown';
 
     Map<String, dynamic> data = {'status': status};
     if (status == 'Vacant') {
+      // Archive MAC addresses before clearing
+      List macs = oldData?['macAddresses'] ?? [];
+      if (macs.isNotEmpty) {
+        await logActivity(
+          actor: actor,
+          action: "Archive MAC Addresses",
+          details: "Unit '$unitName' became Vacant. Archived MACs: ${macs.join(', ')}",
+          category: "Wifi",
+        );
+      }
       data['TenantName'] = 'No Name';
       data['nidNumber'] = 'No Number';
       data['occupiedAt'] = null;
+      data['macAddresses'] = []; // Clear active list
+      data['manualDues'] = [];   // Clear manual dues
     } else {
       if (TenantName != null) data['TenantName'] = TenantName.isEmpty ? 'No Name' : TenantName;
       if (nidNumber != null) data['nidNumber'] = nidNumber.isEmpty ? 'No Number' : nidNumber;
@@ -241,6 +254,90 @@ class DatabaseService {
       details: "Updated info for unit '$unitName'. Fields changed: ${data.keys.join(', ')}",
       category: "Units",
     );
+  }
+
+  Future<void> updateSubItemManualDues(String subItemId, List dues, String actor) async {
+    DocumentSnapshot old = await _db.collection('sub_items').doc(subItemId).get();
+    String unitName = (old.data() as Map?)?['subItemName'] ?? 'Unknown';
+
+    await _db.collection('sub_items').doc(subItemId).update({
+      'manualDues': dues,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
+    });
+
+    await logActivity(
+      actor: actor,
+      action: "Update Manual Dues",
+      details: "Updated manual dues for '$unitName'. Total entries: ${dues.length}",
+      category: "Billing",
+    );
+  }
+
+  Future<void> updateSubItemMacAddresses(String subItemId, List macs, String actor) async {
+    DocumentSnapshot old = await _db.collection('sub_items').doc(subItemId).get();
+    String unitName = (old.data() as Map?)?['subItemName'] ?? 'Unknown';
+
+    await _db.collection('sub_items').doc(subItemId).update({
+      'macAddresses': macs,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
+    });
+
+    await logActivity(
+      actor: actor,
+      action: "Update MAC Addresses",
+      details: "Updated MAC addresses for '$unitName'. Devices: ${macs.length}",
+      category: "Wifi",
+    );
+  }
+
+  Future<String> generateNextSerialNumber() async {
+    var snap = await _db.collection('sub_items').get();
+    int maxSN = 0;
+    for (var doc in snap.docs) {
+      List macs = (doc.data() as Map)['macAddresses'] ?? [];
+      for (var m in macs) {
+        if (m is Map && m['sn'] != null) {
+          String snStr = m['sn'].toString();
+          int? val = int.tryParse(snStr);
+          if (val != null && val > maxSN) maxSN = val;
+        }
+      }
+    }
+    // Standard starting point 1, or next sequential
+    return (maxSN == 0 ? 1 : maxSN + 1).toString();
+  }
+
+  Future<List<Map<String, dynamic>>> getAllActiveMacAddresses() async {
+    var snap = await _db.collection('sub_items').where('status', isEqualTo: 'Occupied').get();
+    List<Map<String, dynamic>> allMacs = [];
+    for (var doc in snap.docs) {
+      var data = doc.data();
+      List macs = data['macAddresses'] ?? [];
+      for (var m in macs) {
+        // Handle both string and structured data
+        String mac = "";
+        String sn = "";
+        if (m is Map) {
+          mac = m['mac']?.toString() ?? "";
+          sn = m['sn']?.toString() ?? "";
+        } else {
+          mac = m.toString();
+        }
+        
+        if (mac.isNotEmpty) {
+          allMacs.add({
+            'mac': mac,
+            'sn': sn,
+            'subItemName': data['subItemName'] ?? 'Unknown',
+            'tenantName': data['TenantName'] ?? 'No Name',
+            'subItemId': doc.id,
+          });
+        }
+      }
+    }
+    return allMacs;
   }
 
   Future<void> updateSubItemExcludedServices(String subItemId, List excludedServices, String actor) async {

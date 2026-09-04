@@ -115,7 +115,7 @@ class _CategoryPageState extends State<CategoryPage> {
           child: Icon(icon, color: isOutline ? accentColor : Theme.of(context).colorScheme.onPrimary, size: 20),
         ),
         title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : accentColor)),
-        subtitle: Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : accentColor.withOpacity(0.7))),
+        subtitle: Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : accentColor.withValues(alpha: 0.7))),
         trailing: Icon(Icons.arrow_forward_ios, size: 14, color: isOutline ? Colors.black : accentColor),
       ),
     );
@@ -168,7 +168,7 @@ class _CategoryPageState extends State<CategoryPage> {
             color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
             child: TabBar(
               labelColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary,
-              unselectedLabelColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black.withOpacity(0.6) : Theme.of(context).colorScheme.onSurfaceVariant,
+              unselectedLabelColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black.withValues(alpha: 0.6) : Theme.of(context).colorScheme.onSurfaceVariant,
               indicatorColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary,
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Theme.of(context).colorScheme.outlineVariant,
@@ -338,44 +338,59 @@ class _CategoryPageState extends State<CategoryPage> {
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: categoryDocs.length,
-                itemBuilder: (context, i) {
-                  var catDoc = categoryDocs[i];
-                  var catData = catDoc.data() as Map<String, dynamic>;
-                  String catId = catDoc.id;
-                  String catName = catData['categoryName'] ?? 'Unnamed';
-                  List assignedServices = catData['assignedServices'] ?? [];
+              return StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('billing_history').where('monthYear', isEqualTo: _selectedMonthStr).snapshots(),
+                builder: (context, billingSnapshot) {
+                  Set<String> paidIds = {};
+                  if (billingSnapshot.hasData) {
+                    for (var doc in billingSnapshot.data!.docs) {
+                      paidIds.add((doc.data() as Map)['subItemId'] ?? '');
+                    }
+                  }
 
-                  return StreamBuilder<QuerySnapshot>(
-                    stream: _dbService.getSubItemsStream(catId),
-                    builder: (context, subSnapshot) {
-                      if (!subSnapshot.hasData) return const LinearProgressIndicator();
-                      var subDocs = subSnapshot.data!.docs.where((doc) {
-                        var d = doc.data() as Map<String, dynamic>;
-                        String s = d['status'] ?? 'Vacant'; // Strict status check
-                        return s == status;
-                      }).toList();
+                  return ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
+                    itemCount: categoryDocs.length,
+                    itemBuilder: (context, i) {
+                      var catDoc = categoryDocs[i];
+                      var catData = catDoc.data() as Map<String, dynamic>;
+                      String catId = catDoc.id;
+                      String catName = catData['categoryName'] ?? 'Unnamed';
+                      List assignedServices = catData['assignedServices'] ?? [];
 
-                      subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
+                      return StreamBuilder<QuerySnapshot>(
+                        stream: _dbService.getSubItemsStream(catId),
+                        builder: (context, subSnapshot) {
+                          if (!subSnapshot.hasData) return const LinearProgressIndicator();
+                          var subDocs = subSnapshot.data!.docs.where((doc) {
+                            var d = doc.data() as Map<String, dynamic>;
+                            String s = d['status'] ?? 'Vacant'; // Strict status check
+                            return s == status;
+                          }).toList();
 
-                      // Hide category if no units are occupied in this tab
-                      if (status == 'Occupied' && subDocs.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
+                          subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
 
-                      double catTotal = 0;
-                      for (var doc in subDocs) {
-                        var d = doc.data() as Map<String, dynamic>;
-                        var ed = d['electricityDetails'];
-                        double eBillVal = 0;
-                        if (ed != null && ed['isStopped'] != true) {
-                          eBillVal = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
-                        }
-                        List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: d['overriddenServices'] ?? []);
-                        catTotal += (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal);
-                      }
+                          // Hide category if no units are occupied in this tab
+                          if (status == 'Occupied' && subDocs.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+
+                          double catTotal = 0;
+                          for (var doc in subDocs) {
+                            if (paidIds.contains(doc.id)) continue; // Don't count paid units in category total
+
+                            var d = doc.data() as Map<String, dynamic>;
+                            var ed = d['electricityDetails'];
+                            double eBillVal = 0;
+                            if (ed != null && ed['isStopped'] != true) {
+                              eBillVal = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
+                            }
+                            List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: d['overriddenServices'] ?? []);
+                            List manualDues = d['manualDues'] ?? [];
+                            double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+                            
+                            catTotal += (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal + mDuesSum);
+                          }
 
                       bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
                       
@@ -497,9 +512,14 @@ class _CategoryPageState extends State<CategoryPage> {
                               var ed = d['electricityDetails'];
                               List overridden = d['overriddenServices'] ?? [];
                               List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: overridden);
+                              double servicesTotal = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
                               double eBillAmount = 0;
-                              if (ed != null && ed['isStopped'] != true) eBillAmount = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
-                              double total = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillAmount;
+                              if (ed != null && ed['isStopped'] != true) {
+                                eBillAmount = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
+                              }
+                              List manualDues = d['manualDues'] ?? [];
+                              double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+                              double total = servicesTotal + eBillAmount + mDuesSum;
 
                               // Use nested index for sub-item coloring to make them different from category
                               int itemIndex = i + entry.key + 1;
@@ -606,6 +626,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                                     );
                                                   } else if (val == 'services') {
                                                     CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
+                                                  } else if (val == 'dues') {
+                                                    CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? []);
                                                   } else if (val == 'remove') {
                                                      CategoryDialogs.showConfirmDialog(
                                                       context: context, 
@@ -629,6 +651,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                                       )
                                                     ),
                                                   const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
+                                                  if (status == 'Occupied')
+                                                    const PopupMenuItem(value: 'dues', child: ListTile(leading: Icon(Icons.money_off, size: 20, color: Colors.red), title: Text("Adjust Dues/Adv"), dense: true)),
                                                   if (ed != null && !widget.isOperator)
                                                     PopupMenuItem(
                                                       value: 'remove_electric', 
@@ -704,7 +728,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                             if (ed != null && ed['isStopped'] != true)
                                                 _buildSectionBox(
                                                   "Sub-Meter Bills", 
-                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
+                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
                                                   Icons.electric_bolt, 
                                                   amount: eBillAmount, 
                                                   color: context.electric,
@@ -714,7 +738,29 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   )
                                                 ),
 
-                                              ...active.map((s) => _buildServiceRow(subId, subName, s, overridden)),
+                                              ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
+
+                                              if (manualDues.isNotEmpty) ...[
+                                                const SizedBox(height: 12),
+                                                Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                                                const SizedBox(height: 4),
+                                                ...manualDues.map((m) => Container(
+                                                  margin: const EdgeInsets.only(bottom: 4),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodySmall)),
+                                                      Text("৳${(m['amount'] as num).toDouble().toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                                                    ],
+                                                  ),
+                                                )),
+                                              ],
                                           ],
                                         ),
                                       ),
@@ -723,20 +769,15 @@ class _CategoryPageState extends State<CategoryPage> {
                                 ),
                               );
                             }
+                              bool isPaid = paidIds.contains(subId);
+                              
+                              // Always show the current calculated total (Usage-based Elec + Fixed Services + Manual Dues)
+                              double displayTotal = total; 
 
-                              return StreamBuilder<QuerySnapshot>(
-                                stream: FirebaseFirestore.instance.collection('billing_history').where('subItemId', isEqualTo: subId).where('monthYear', isEqualTo: _selectedMonthStr).snapshots(),
-                                builder: (context, paySnap) {
-                                  bool isPaid = paySnap.hasData && paySnap.data!.docs.isNotEmpty;
-                                  
-                                  // Always show the current calculated total (Usage-based Elec + Fixed Services)
-                                  // After payment, eBillAmount is naturally 0 because of reading reset.
-                                  double displayTotal = total; 
+                              bool isOccupied = status == 'Occupied';
 
-                                  bool isOccupied = status == 'Occupied';
-
-                                  return InkWell(
-                                    onLongPress: () {
+                              return InkWell(
+                                onLongPress: () {
                                       HapticFeedback.heavyImpact();
                                       CategoryDialogs.showSubItemStatusDialog(
                                         context: context, 
@@ -824,7 +865,20 @@ class _CategoryPageState extends State<CategoryPage> {
                                                     padding: EdgeInsets.zero,
                                                     constraints: const BoxConstraints(),
                                                     icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, size: 24), 
-                                                    onPressed: () => CategoryDialogs.showMarkAsPaidDialog(context: context, subItemId: subId, subItemName: subName, TenantName: tenant, nidNumber: d['nidNumber'] ?? '', houseRentTotal: total - eBillAmount, electricityBill: eBillAmount, services: active.cast<Map<String, dynamic>>(), electricityDetails: ed, mainCategoryName: catName, notes: d['notes'] ?? '')
+                                                    onPressed: () => CategoryDialogs.showMarkAsPaidDialog(
+                                                      context: context, 
+                                                      subItemId: subId, 
+                                                      subItemName: subName, 
+                                                      TenantName: tenant, 
+                                                      nidNumber: d['nidNumber'] ?? '', 
+                                                      houseRentTotal: servicesTotal, 
+                                                      electricityBill: eBillAmount, 
+                                                      services: active.cast<Map<String, dynamic>>(), 
+                                                      electricityDetails: ed, 
+                                                      mainCategoryName: catName, 
+                                                      manualDues: d['manualDues'] ?? [],
+                                                      notes: d['notes'] ?? ''
+                                                    )
                                                   ),
                                                 ),
                                               const SizedBox(width: 6),
@@ -871,6 +925,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                                     );
                                                   } else if (val == 'services') {
                                                      CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
+                                                  } else if (val == 'dues') {
+                                                     CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? []);
                                                   } else if (val == 'remove') {
                                                      CategoryDialogs.showConfirmDialog(
                                                       context: context, 
@@ -894,6 +950,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                                       )
                                                     ),
                                                   const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
+                                                  if (status == 'Occupied')
+                                                    const PopupMenuItem(value: 'dues', child: ListTile(leading: Icon(Icons.money_off, size: 20, color: Colors.red), title: Text("Adjust Dues/Adv"), dense: true)),
                                                   if (ed != null && !widget.isOperator)
                                                     PopupMenuItem(
                                                       value: 'remove_electric', 
@@ -971,7 +1029,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   if (ed != null && ed['isStopped'] != true)
                                                 _buildSectionBox(
                                                   "Sub-Meter Bills", 
-                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
+                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
                                                   Icons.electric_bolt, 
                                                   amount: eBillAmount, 
                                                   color: context.electric,
@@ -981,7 +1039,29 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   )
                                                 ),
 
-                                              ...active.map((s) => _buildServiceRow(subId, subName, s, overridden)),
+                                              ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
+
+                                              if (manualDues.isNotEmpty) ...[
+                                                const SizedBox(height: 12),
+                                                Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                                                const SizedBox(height: 4),
+                                                ...manualDues.map((m) => Container(
+                                                  margin: const EdgeInsets.only(bottom: 4),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodySmall)),
+                                                      Text("৳${(m['amount'] as num).toDouble().toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                                                    ],
+                                                  ),
+                                                )),
+                                              ],
                                             ],
                                           ),
                                         ),
@@ -989,9 +1069,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                     ),
                                   ),
                                 );
-                                },
-                              );
-                            }).toList(),
+                            }),
                             if (status == 'Vacant') ...[
                               const SizedBox(height: 12),
                               Center(
@@ -1017,11 +1095,13 @@ class _CategoryPageState extends State<CategoryPage> {
                 },
               );
             },
-          ),
-        ),
-      ],
-    );
-  }
+          );
+        },
+      ),
+    ),
+  ],
+);
+}
 
   Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color? color, Widget? trailing}) {
     final effectiveColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
@@ -1058,12 +1138,94 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  Widget _buildServiceRow(String subId, String subName, Map<String, dynamic> s, List overridden) {
+  Widget _buildServiceRow(String subId, String subName, Map<String, dynamic> s, List overridden, List macAddresses) {
     bool isOverridden = s['isOverridden'] == true;
     String name = s['name'];
     bool isWifi = name.toLowerCase().contains("wifi");
     int? devices = isWifi ? (s['deviceQuantity'] as num?)?.toInt() : null;
     double? unitPrice = isWifi ? (s['wifiCost'] as num?)?.toDouble() : null;
+    
+    String displayName = isWifi && devices != null 
+        ? "$name (৳${unitPrice?.toStringAsFixed(0) ?? '0'} / device) (x$devices)" 
+        : name;
+
+    Widget trailing = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text("৳${s['amount'].toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, height: 1.2)),
+        const SizedBox(width: 4),
+        InkWell(
+          onTap: () {
+            if (isWifi) {
+              CategoryDialogs.showWifiServiceEditDialog(
+                context: context, 
+                subItemId: subId, 
+                subItemName: subName, 
+                serviceMap: s, 
+                overriddenServices: overridden,
+                macAddresses: macAddresses
+              );
+            } else {
+              CategoryDialogs.showEditSubItemServiceDialog(context: context, subItemId: subId, subItemName: subName, serviceMap: s, overriddenServices: overridden);
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.edit_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+          ),
+        ),
+      ],
+    );
+
+    if (isWifi && macAddresses.isNotEmpty) {
+      return Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          backgroundColor: Colors.transparent,
+          collapsedBackgroundColor: Colors.transparent,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 8),
+          childrenPadding: const EdgeInsets.only(left: 34, bottom: 8),
+          shape: const Border(),
+          collapsedShape: const Border(),
+          visualDensity: VisualDensity.compact,
+          dense: true,
+          title: Row(
+            children: [
+              Icon(Icons.wifi, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  displayName, 
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, height: 1.2)
+                ),
+              ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              trailing,
+              const SizedBox(width: 4),
+              Icon(Icons.expand_more, size: 16, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+            ],
+          ),
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "MAC Addresses:\n${macAddresses.asMap().entries.map((e) {
+                  var val = e.value;
+                  String sn = (val is Map && val['sn'] != null && val['sn'].toString().isNotEmpty) ? val['sn'].toString() : (e.key + 1).toString();
+                  String mac = val is Map ? val['mac'] : val.toString();
+                  return "$sn) $mac";
+                }).join('\n')}", 
+                style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.primary, fontFamily: 'monospace')
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -1076,31 +1238,15 @@ class _CategoryPageState extends State<CategoryPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isWifi && devices != null ? "$name (x$devices)" : name, 
+                  displayName, 
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, height: 1.2)
                 ),
-                if (isWifi && unitPrice != null)
-                  Text("৳${unitPrice.toStringAsFixed(0)} / device", style: Theme.of(context).textTheme.labelSmall?.copyWith(height: 1.2)),
                 if (isOverridden && !isWifi) Text("Customized", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.secondary, fontStyle: FontStyle.italic, height: 1.2)),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Text("৳${s['amount'].toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, height: 1.2)),
-          const SizedBox(width: 4),
-          InkWell(
-            onTap: () {
-              if (isWifi) {
-                CategoryDialogs.showWifiServiceEditDialog(context: context, subItemId: subId, subItemName: subName, serviceMap: s, overriddenServices: overridden);
-              } else {
-                CategoryDialogs.showEditSubItemServiceDialog(context: context, subItemId: subId, subItemName: subName, serviceMap: s, overriddenServices: overridden);
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Icon(Icons.edit_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
-            ),
-          ),
+          trailing,
         ],
       ),
     );
@@ -1139,7 +1285,7 @@ class _CategoryPageState extends State<CategoryPage> {
             var comMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Commercial').toList();
 
             return ListView(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 80),
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -1278,11 +1424,11 @@ class _CategoryPageState extends State<CategoryPage> {
                         border: isOutline ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
                       ),
                       children: [
-                        "#", "Meter Number", "Last Readings", "Present Readings", "Govt. Last\n Bill Readings", "Govt. New\nBill Readings", "Govt. Bill\nAmounts", "Govt. Bill\nUnits", "Last Month\nUnit Rate", "This Month\nUnit Rate", "Govt.\nDue/Adv Units", "Main Meter\nUsed Units", "Sub-Meter\nUsed Units", "Balance", "Action"
+                        "#", "Meter Number", "Last Updated", "Last Readings", "Present Readings", "Govt. Last\n Bill Readings", "Govt. New\nBill Readings", "Govt. Bill\nAmounts", "Govt. Bill\nUnits", "Last Month\nUnit Rate", "This Month\nUnit Rate", "Govt.\nDue/Adv Units", "Main Meter\nUsed Units", "Sub-Meter\nUsed Units", "Balance", "Action"
                       ].map((h) => Padding(
                         padding: const EdgeInsets.all(12), 
                         child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: isOutline ? Colors.black : null)))
-                      )).toList().sublist(0, isOp ? 14 : 15),
+                      )).toList().sublist(0, isOp ? 15 : 16),
                     ),
                     ...meters.asMap().entries.map((entry) {
                       int idx = entry.key;
@@ -1321,6 +1467,14 @@ class _CategoryPageState extends State<CategoryPage> {
                         children: [
                           wrapCell(Text("${idx + 1}", style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
                           wrapCell(Text(meterNo, style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary))),
+                          wrapCell(Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(DatabaseService.formatFullDateTime(data['updatedAt'] as Timestamp?), style: dataStyle?.copyWith(fontSize: 10, color: isOutline ? Colors.black : null)),
+                              Text(DatabaseService.formatDuration(data['updatedAt'] as Timestamp?), style: dataStyle?.copyWith(fontSize: 9, color: isOutline ? Colors.black54 : Theme.of(context).colorScheme.outline, fontStyle: FontStyle.italic)),
+                            ],
+                          )),
                           wrapCell(Text(last.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
                           wrapCell(Text(pres.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
                           wrapCell(Text(lastGovt.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
@@ -1349,9 +1503,9 @@ class _CategoryPageState extends State<CategoryPage> {
                                 ),
                               ),
                             ),
-                        ].sublist(0, isOp ? 14 : 15),
+                        ].sublist(0, isOp ? 15 : 16),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
@@ -1421,11 +1575,11 @@ class _CategoryPageState extends State<CategoryPage> {
                             border: isOutline ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
                           ),
                           children: [
-                            "#", "Sub-Meter", "Main-Meter", "Last", "Present", "Used", "Action"
+                            "#", "Sub-Meter", "Last Updated", "Main-Meter", "Last", "Present", "Used", "Action"
                           ].map((h) => Padding(
                             padding: const EdgeInsets.all(12), 
                             child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: isOutline ? Colors.black : null)))
-                          )).toList().sublist(0, isOp ? 6 : 7),
+                          )).toList().sublist(0, isOp ? 7 : 8),
                         ),
                         ...subMeters.asMap().entries.map((entry) {
                           int idx = entry.key;
@@ -1439,6 +1593,14 @@ class _CategoryPageState extends State<CategoryPage> {
                             children: [
                               Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${idx + 1}", style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
                               Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['subMeterNo'] ?? '', style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(DatabaseService.formatFullDateTime(sData['updatedAt'] as Timestamp?), style: dataStyle?.copyWith(fontSize: 10, color: isOutline ? Colors.black : null)),
+                                  Text(DatabaseService.formatDuration(sData['updatedAt'] as Timestamp?), style: dataStyle?.copyWith(fontSize: 9, color: isOutline ? Colors.black54 : Theme.of(context).colorScheme.outline, fontStyle: FontStyle.italic)),
+                                ],
+                              ))),
                               Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['mainMeterNo'] ?? '', style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
                               Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(last.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
                               Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(pres.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
@@ -1459,9 +1621,9 @@ class _CategoryPageState extends State<CategoryPage> {
                                     ),
                                   ),
                                 ),
-                            ].sublist(0, isOp ? 6 : 7),
+                            ].sublist(0, isOp ? 7 : 8),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),
