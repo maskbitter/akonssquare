@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ota_update/ota_update.dart';
 import 'package:akons_square/main.dart';
+import 'dart:io';
 
 class MacAddressFormatter extends TextInputFormatter {
   @override
@@ -664,4 +665,37 @@ void showUpdateLogoutDialog({
       ],
     ),
   );
+}
+
+class AppImageHelper {
+  static void showInteractiveImage(BuildContext context, {String? url, File? file, required String title}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(0),
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.white),
+            elevation: 0,
+          ),
+          body: InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4.0,
+            child: Center(
+              child: url != null 
+                  ? Image.network(url, fit: BoxFit.contain, loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(child: CircularProgressIndicator(color: Colors.white));
+                    })
+                  : (file != null ? Image.file(file, fit: BoxFit.contain) : const SizedBox.shrink()),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

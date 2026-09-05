@@ -147,8 +147,7 @@ class _UserDashboardState extends State<UserDashboard> {
                     elevation: 0,
                   ),
                   onPressed: () => Navigator.pop(context), 
-                  child: const Text("Cancel")
-                ),
+                  child: const Text("Cancel")),
                 AppButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.error, 
@@ -166,6 +165,10 @@ class _UserDashboardState extends State<UserDashboard> {
         );
       },
     );
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl, String title) {
+    AppImageHelper.showInteractiveImage(context, url: imageUrl, title: title);
   }
 
   Future<void> _handleLogout() async {
@@ -427,10 +430,10 @@ class _UserDashboardState extends State<UserDashboard> {
           String originalName = (service is Map) ? (service['name'] ?? '') : service.toString();
           if (originalName.isEmpty || excludedServices.contains(originalName)) continue;
           
-          var overrideMatch = overriddenServices.firstWhere(
+          var matches = overriddenServices.where(
             (element) => element is Map && element['originalName'] == originalName,
-            orElse: () => null,
           );
+          var overrideMatch = matches.isEmpty ? null : matches.first;
 
           if (overrideMatch != null) {
             activeServices.add({
@@ -476,7 +479,9 @@ class _UserDashboardState extends State<UserDashboard> {
             // Helper to parse Month-Year for sorting
             DateTime parseMY(String my) {
               List<String> parts = my.split('-');
-              int m = months.indexOf(parts[0]) + 1;
+              if (parts.length < 2) return DateTime(2000);
+              int mIdx = months.indexWhere((m) => m.toLowerCase() == parts[0].trim().toLowerCase());
+              int m = mIdx == -1 ? 1 : mIdx + 1;
               int y = 2000 + (int.tryParse(parts[1]) ?? 0);
               return DateTime(y, m);
             }
@@ -494,97 +499,111 @@ class _UserDashboardState extends State<UserDashboard> {
 
             List<String> paidMonths = historyDocs
                 .where((doc) => (doc.data() as Map)['status'] == 'Paid')
-                .map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
+                .map((doc) => doc['monthYear'].toString().trim().toLowerCase()).toList();
             
             List<String> dueMonthsFromHistory = historyDocs
                 .where((doc) => (doc.data() as Map)['status'] == 'Due')
-                .map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
+                .map((doc) => doc['monthYear'].toString().trim().toLowerCase()).toList();
 
-            bool isPrevPaid = paidMonths.contains(prevMonthYear);
+            bool isPrevPaid = paidMonths.contains(prevMonthYear.toLowerCase());
             
-            List<String> pendingMonths = [];
-            // 1. Add all Due months from history
-            pendingMonths.addAll(dueMonthsFromHistory);
+            List<String> pendingMonths = []; 
+            // Add all Due months from history
+            List<String> rawHistoryDueMonths = historyDocs
+                .where((doc) => (doc.data() as Map)['status'] == 'Due')
+                .map((doc) => doc['monthYear'].toString())
+                .toList();
+            
+            pendingMonths.addAll(rawHistoryDueMonths);
+            
+            // Sort pending months chronologically
+            pendingMonths.sort((a, b) => parseMY(a).compareTo(parseMY(b)));
 
-            // 2. Add months from createdAt that have NO history record at all (neither Paid nor Due)
-            // Only add months BEFORE the current month (don't auto-add the month we are currently in)
-            if (createdAt != null) {
-              DateTime current = DateTime(createdAt.year, createdAt.month);
-              while (current.isBefore(DateTime(nowTime.year, nowTime.month))) {
+            // Total Outstanding: Sum of recorded Dues + Current Estimated Month + Missing Months (Arrears)
+            double totalOutstanding = 0;
+            Set<String> processedMonths = {};
+            
+            // 1. Sum recorded dues
+            for (var doc in historyDocs) {
+              var data = doc.data() as Map;
+              String my = data['monthYear'].toString().trim().toLowerCase();
+              if (data['status'] == 'Due') {
+                totalOutstanding += (data['totalAmount'] as num).toDouble();
+              }
+              processedMonths.add(my);
+            }
+
+            // 2. Add current month if it's not already paid/recorded
+            if (!processedMonths.contains(currentMonthYear.toLowerCase())) {
+               double currentMonthEstimate = servicesSum + electricityBill + mDuesSum;
+               totalOutstanding += currentMonthEstimate;
+               processedMonths.add(currentMonthYear.toLowerCase());
+            }
+
+            // 3. Add missing months (Arrears)
+            Timestamp? occupiedAt = subData['occupiedAt'] as Timestamp?;
+            if (occupiedAt != null) {
+              DateTime current = DateTime(occupiedAt.toDate().year, occupiedAt.toDate().month);
+              DateTime limit = DateTime(nowTime.year, nowTime.month);
+              while (current.isBefore(limit)) {
                 String mYear = "${months[current.month - 1]}-${current.year.toString().substring(2)}";
-                if (!paidMonths.contains(mYear) && !dueMonthsFromHistory.contains(mYear)) {
-                  pendingMonths.add(mYear);
+                if (!processedMonths.contains(mYear.toLowerCase())) {
+                   totalOutstanding += servicesSum;
+                   if (!pendingMonths.contains(mYear)) pendingMonths.add(mYear);
                 }
                 current = DateTime(current.year, current.month + 1);
               }
             }
             
-            // Sort pending months chronologically
             pendingMonths.sort((a, b) => parseMY(a).compareTo(parseMY(b)));
 
-            // Total Outstanding: Sum of recorded Due records + Estimated bill for months with NO record
-            double totalOutstanding = 0;
-            
-            // Sum recorded dues
-            for (var doc in historyDocs) {
-              var data = doc.data() as Map;
-              if (data['status'] == 'Due') {
-                totalOutstanding += (data['totalAmount'] as num).toDouble();
-              }
-            }
-
-            // Add estimates for missing months
-            for (var m in pendingMonths) {
-              if (!dueMonthsFromHistory.contains(m)) {
-                // If it's a current/missing month without a record, use estimate
-                // For simplicity, we assume fixed services sum. 
-                // Variable dues (electricity/manual) only apply if m == currentMonthYear
-                bool isCurrent = m == currentMonthYear;
-                totalOutstanding += servicesSum + (isCurrent ? (electricityBill + mDuesSum) : 0);
-              }
-            }
-
             void showUnpaidDetails(String month) {
-              // 1. Try to find a recorded Due doc
-              var recordedDoc = historyDocs.firstWhere(
-                (doc) => (doc.data() as Map)['monthYear'] == month && (doc.data() as Map)['status'] == 'Due',
-                orElse: () => null as dynamic,
-              );
+              try {
+                String targetMonth = month.trim().toLowerCase();
+                
+                // Helper to parse Month-Year safely
+                DateTime? tryParseMY(String my) {
+                  try {
+                    List<String> parts = my.split('-');
+                    if (parts.length < 2) return null;
+                    int m = months.indexOf(parts[0]) + 1;
+                    if (m < 1) return null;
+                    int y = 2000 + (int.tryParse(parts[1]) ?? 0);
+                    return DateTime(y, m);
+                  } catch (e) {
+                    return null;
+                  }
+                }
 
-              if (recordedDoc != null) {
-                UserReportPage.showDetailsDialog(context, recordedDoc.data() as Map<String, dynamic>);
-                return;
-              }
+                DateTime? targetDateTime = tryParseMY(month);
 
-              bool isCurrent = month == currentMonthYear;
-              
-              // Prepare virtual services list for the dialog
-              List<Map<String, dynamic>> virtualServices = List.from(activeServices);
-              if (isCurrent && manualDues.isNotEmpty) {
-                for (var d in manualDues) {
-                  virtualServices.add({
-                    'name': d['reason'] ?? 'Additional Due',
-                    'amount': d['amount'] ?? 0,
+                // Try to find a recorded Due doc
+                var matchingDocs = historyDocs.where(
+                  (doc) {
+                    var data = doc.data() as Map;
+                    String mYear = (data['monthYear'] ?? '').toString().trim().toLowerCase();
+                    if (mYear == targetMonth && data['status'] == 'Due') return true;
+                    
+                    if (targetDateTime != null) {
+                      DateTime? docDateTime = tryParseMY(mYear);
+                      return docDateTime != null && docDateTime.isAtSameMomentAs(targetDateTime) && data['status'] == 'Due';
+                    }
+                    return false;
+                  },
+                );
+
+                var recordedDoc = matchingDocs.isNotEmpty ? matchingDocs.first : null;
+
+                if (recordedDoc != null) {
+                  UserReportPage.showDetailsDialog(context, {
+                    ...recordedDoc.data() as Map<String, dynamic>,
+                    'docId': recordedDoc.id,
                   });
                 }
+              } catch (e, stack) {
+                debugPrint("ERROR in showUnpaidDetails: $e\n$stack");
+                DatabaseService.showToast(context, "Error: $e", backgroundColor: Colors.red);
               }
-
-              double monthGrandTotal = servicesSum + (isCurrent ? (electricityBill + mDuesSum) : 0);
-
-              Map<String, dynamic> virtualData = {
-                'status': 'Due',
-                'monthYear': month,
-                'subItemName': subName,
-                'TenantName': TenantName,
-                'services': virtualServices,
-                'electricityDetails': isCurrent ? ed : null, // Only show readings for current month estimation
-                'electricityBill': isCurrent ? electricityBill : 0,
-                'totalAmount': monthGrandTotal,
-                'createdAt': Timestamp.now(), // Placeholder for "Recorded at"
-                'paymentNotes': 'Estimation based on current settings',
-              };
-
-              UserReportPage.showDetailsDialog(context, virtualData);
             }
 
             return SingleChildScrollView(
@@ -620,6 +639,25 @@ class _UserDashboardState extends State<UserDashboard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        GestureDetector(
+                          onTap: subData['profilePictureUrl'] != null ? () => _showFullScreenImage(context, subData['profilePictureUrl'], "Profile Picture") : null,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 2),
+                              boxShadow: [
+                                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4)),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.white,
+                              backgroundImage: subData['profilePictureUrl'] != null ? NetworkImage(subData['profilePictureUrl']) : null,
+                              child: subData['profilePictureUrl'] == null ? Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)) : null,
+                            ),
+                          ),
+                        ),
                         // Line 1: Category Name
                         Text(
                           _categoryName.toUpperCase(),
@@ -636,10 +674,22 @@ class _UserDashboardState extends State<UserDashboard> {
                         // Line 3: NID Number
                         if (nidNumber.isNotEmpty) ...[
                           const SizedBox(height: 12),
-                          Text(
-                            "NID: $nidNumber",
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.bold),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "NID: $nidNumber",
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.bold),
+                              ),
+                              if (subData['nidPictureUrl'] != null) ...[
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () => _showFullScreenImage(context, subData['nidPictureUrl'], "NID Picture"),
+                                  child: Icon(Icons.badge_outlined, color: Theme.of(context).colorScheme.onPrimary, size: 16),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ],
@@ -660,53 +710,63 @@ class _UserDashboardState extends State<UserDashboard> {
                       ],
                     ),
                     child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          if (pendingMonths.isNotEmpty) {
+                            showUnpaidDetails(pendingMonths.first);
+                          } else {
+                            showUnpaidDetails(currentMonthYear);
+                          }
+                        },
+                        child: Column(
                           children: [
-                            Icon(pendingMonths.isEmpty ? Icons.check_circle : Icons.pending_actions, color: pendingMonths.isEmpty ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.error, size: 20),
-                            const SizedBox(width: 8),
-                            Text(pendingMonths.isEmpty ? "MONTHLY BILL (PAID)" : "CURRENT OUTSTANDING", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "৳${totalOutstanding.toStringAsFixed(2)}",
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: pendingMonths.isEmpty ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
-                        ),
-                        const SizedBox(height: 4),
-                        Text("Last Paid: $lastPaidMonth", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
-                        
-                        if (pendingMonths.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Wrap(
-                              alignment: WrapAlignment.center,
-                              crossAxisAlignment: WrapCrossAlignment.center,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text("Due: ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
-                                ...pendingMonths.asMap().entries.map((entry) {
-                                  int idx = entry.key;
-                                  String m = entry.value;
-                                  bool isCurrent = m == currentMonthYear;
-                                  return InkWell(
-                                    onTap: () => showUnpaidDetails(m),
-                                    child: Text(
-                                      "$m${idx == pendingMonths.length - 1 ? '' : ', '}",
-                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.error,
-                                        decoration: TextDecoration.underline,
-                                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500
-                                      ),
-                                    ),
-                                  );
-                                }),
+                                Icon(pendingMonths.isEmpty ? Icons.check_circle : Icons.pending_actions, color: pendingMonths.isEmpty ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.error, size: 20),
+                                const SizedBox(width: 8),
+                                Text(pendingMonths.isEmpty ? "MONTHLY BILL (PAID)" : "CURRENT OUTSTANDING", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                               ],
                             ),
-                          ),
-                      ],
-                    ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "৳${totalOutstanding.toStringAsFixed(2)}",
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: pendingMonths.isEmpty ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
+                            ),
+                            const SizedBox(height: 4),
+                            Text("Last Paid: $lastPaidMonth", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+                            if (pendingMonths.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                children: [
+                                  Text("Due: ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                                  ...pendingMonths.asMap().entries.map((entry) {
+                                    int idx = entry.key;
+                                    String m = entry.value;
+                                    return InkWell(
+                                      onTap: () => showUnpaidDetails(m),
+                                      child: Text(
+                                        "$m${idx < pendingMonths.length - 1 ? ", " : ""}",
+                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: Theme.of(context).colorScheme.error,
+                                          fontWeight: FontWeight.bold,
+                                          decoration: TextDecoration.underline,
+                                          decorationColor: Theme.of(context).colorScheme.error,
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
+                ),
 
               // (REMOVED OLD PENDING MONTHS SECTION FROM HERE)
 

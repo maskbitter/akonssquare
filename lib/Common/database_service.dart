@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:akons_square/Common/storage_service.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -35,6 +36,18 @@ class DatabaseService {
       'timestamp': FieldValue.serverTimestamp(),
       'clientTimestamp': DateTime.now().toIso8601String(),
     });
+  }
+
+  Stream<QuerySnapshot> getActivityLogsStream() {
+    return _db.collection('activity_log').orderBy('timestamp', descending: true).snapshots();
+  }
+
+  Future<void> updateActivityLog(String logId, Map<String, dynamic> data) async {
+    await _db.collection('activity_log').doc(logId).update(data);
+  }
+
+  Future<void> deleteActivityLog(String logId) async {
+    await _db.collection('activity_log').doc(logId).delete();
   }
 
   // ==========================================
@@ -183,7 +196,7 @@ class DatabaseService {
     );
   }
 
-  Future<void> updateSubItemStatus(String subItemId, String status, String actor, {String? TenantName, String? nidNumber}) async {
+  Future<void> updateSubItemStatus(String subItemId, String status, String actor, {String? TenantName, String? nidNumber, String? profilePictureUrl, String? nidPictureUrl}) async {
     DocumentSnapshot old = await _db.collection('sub_items').doc(subItemId).get();
     var oldData = old.data() as Map<String, dynamic>?;
     String unitName = oldData?['subItemName'] ?? 'Unknown';
@@ -200,14 +213,22 @@ class DatabaseService {
           category: "Wifi",
         );
       }
+
+      // Handle Storage Images: Move to history
+      await StorageService().handleTenantVacated(unitName: unitName, subItemId: subItemId);
+
       data['TenantName'] = 'No Name';
       data['nidNumber'] = 'No Number';
+      data['profilePictureUrl'] = null;
+      data['nidPictureUrl'] = null;
       data['occupiedAt'] = null;
       data['macAddresses'] = []; // Clear active list
       data['manualDues'] = [];   // Clear manual dues
     } else {
       if (TenantName != null) data['TenantName'] = TenantName.isEmpty ? 'No Name' : TenantName;
       if (nidNumber != null) data['nidNumber'] = nidNumber.isEmpty ? 'No Number' : nidNumber;
+      if (profilePictureUrl != null) data['profilePictureUrl'] = profilePictureUrl;
+      if (nidPictureUrl != null) data['nidPictureUrl'] = nidPictureUrl;
       data['occupiedAt'] = FieldValue.serverTimestamp();
     }
     data['updatedAt'] = FieldValue.serverTimestamp();
@@ -244,6 +265,21 @@ class DatabaseService {
       String nid = data['nidNumber'] ?? '';
       if (nid.isEmpty) data['nidNumber'] = 'No Number';
     }
+
+    // Handle Image Updates and Deletions
+    if (data.containsKey('profilePictureUrl')) {
+      String? oldUrl = (old.data() as Map?)?['profilePictureUrl'];
+      if (oldUrl != null && oldUrl != data['profilePictureUrl']) {
+        await StorageService().deleteImage(oldUrl);
+      }
+    }
+    if (data.containsKey('nidPictureUrl')) {
+      String? oldUrl = (old.data() as Map?)?['nidPictureUrl'];
+      if (oldUrl != null && oldUrl != data['nidPictureUrl']) {
+        await StorageService().deleteImage(oldUrl);
+      }
+    }
+
     data['updatedAt'] = FieldValue.serverTimestamp();
     data['clientTimestamp'] = DateTime.now().toIso8601String();
     await _db.collection('sub_items').doc(subItemId).update(data);
@@ -840,6 +876,68 @@ class DatabaseService {
         .snapshots();
   }
 
+  Future<double> calculateTotalOutstanding(String subId, double currentMonthAmount, String currentMonthYear) async {
+    QuerySnapshot historySnap = await _db.collection('billing_history').where('subItemId', isEqualTo: subId).get();
+    DocumentSnapshot subSnap = await _db.collection('sub_items').doc(subId).get();
+    
+    if (!subSnap.exists) return currentMonthAmount;
+    var subData = subSnap.data() as Map<String, dynamic>;
+    
+    double totalOutstanding = 0;
+    Set<String> processedMonths = {};
+
+    // 1. Sum recorded dues from history
+    for (var doc in historySnap.docs) {
+      var data = doc.data() as Map<String, dynamic>;
+      String my = data['monthYear'].toString().trim().toLowerCase();
+      if (data['status'] == 'Due') {
+        totalOutstanding += (data['totalAmount'] as num).toDouble();
+      }
+      processedMonths.add(my);
+    }
+
+    // 2. Add current month if it's not already recorded
+    if (!processedMonths.contains(currentMonthYear.trim().toLowerCase())) {
+      totalOutstanding += currentMonthAmount;
+      processedMonths.add(currentMonthYear.trim().toLowerCase());
+    }
+
+    // 3. Estimate missing months (Arrears)
+    Timestamp? occupiedAt = subData['occupiedAt'] as Timestamp?;
+    if (occupiedAt != null) {
+      DateTime start = occupiedAt.toDate();
+      DateTime now = DateTime.now();
+      DateTime current = DateTime(start.year, start.month);
+      DateTime limit = DateTime(now.year, now.month);
+
+      // Pre-calculate fixed services cost
+      String catId = subData['categoryId'] ?? '';
+      double servicesCost = 0;
+      if (catId.isNotEmpty) {
+        DocumentSnapshot catDoc = await getCategoryById(catId);
+        if (catDoc.exists) {
+          List catServices = (catDoc.data() as Map)['assignedServices'] ?? [];
+          List effective = getEffectiveServices(
+            categoryServices: catServices, 
+            excludedServices: subData['excludedServices'] ?? [], 
+            overriddenServices: subData['overriddenServices'] ?? []
+          );
+          servicesCost = effective.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
+        }
+      }
+
+      while (current.isBefore(limit)) {
+        String my = formatMonthYear(current).trim().toLowerCase();
+        if (!processedMonths.contains(my)) {
+          totalOutstanding += servicesCost;
+        }
+        current = DateTime(current.year, current.month + 1);
+      }
+    }
+
+    return totalOutstanding;
+  }
+
 
   Future<void> markMultipleRecordsAsPaid(List<String> recordIds, String actor) async {
     WriteBatch batch = FirebaseFirestore.instance.batch();
@@ -1231,17 +1329,19 @@ class DatabaseService {
     return "${months[date.month - 1]}-${date.year.toString().substring(2)}";
   }
 
+  static num parseNum(dynamic val) => (val is num) ? val : (val is String ? num.tryParse(val) ?? 0 : 0);
+
   static List<Map<String, dynamic>> getEffectiveServices({required List categoryServices, required List excludedServices, required List overriddenServices}) {
     List<Map<String, dynamic>> effectiveList = [];
     Set<String> processedNames = {};
-    num parseNum(dynamic val) => (val is num) ? val : (val is String ? num.tryParse(val) ?? 0 : 0);
 
     for (var service in categoryServices) {
       String originalName = (service is Map) ? (service['name'] ?? service.toString()) : service.toString();
       if (originalName.trim().isEmpty || excludedServices.contains(originalName) || processedNames.contains(originalName)) continue;
       processedNames.add(originalName);
       num defaultAmount = (service is Map) ? parseNum(service['amount']) : 0;
-      var overrideMatch = overriddenServices.firstWhere((element) => element is Map && element['originalName'] == originalName, orElse: () => null);
+      var matches = overriddenServices.where((element) => element is Map && element['originalName'] == originalName);
+      var overrideMatch = matches.isEmpty ? null : matches.first;
       if (overrideMatch != null) {
         effectiveList.add({'name': overrideMatch['name'] ?? originalName, 'amount': parseNum(overrideMatch['amount']), 'isOverridden': true, 'originalName': originalName, 'deviceQuantity': overrideMatch['deviceQuantity'], 'wifiCost': overrideMatch['wifiCost']});
       } else {
@@ -1253,15 +1353,29 @@ class DatabaseService {
     return effectiveList;
   }
 
-  static String formatFullDateTime(Timestamp? timestamp) {
+  static String formatFullDateTime(dynamic timestamp) {
     if (timestamp == null) return "N/A";
-    DateTime dt = timestamp.toDate();
+    DateTime dt;
+    if (timestamp is Timestamp) {
+      dt = timestamp.toDate();
+    } else if (timestamp is DateTime) {
+      dt = timestamp;
+    } else {
+      return "N/A";
+    }
     return "${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
   }
 
-  static String formatDuration(Timestamp? updatedAt) {
+  static String formatDuration(dynamic updatedAt) {
     if (updatedAt == null) return "Never updated";
-    DateTime lastUpdate = updatedAt.toDate();
+    DateTime lastUpdate;
+    if (updatedAt is Timestamp) {
+      lastUpdate = updatedAt.toDate();
+    } else if (updatedAt is DateTime) {
+      lastUpdate = updatedAt;
+    } else {
+      return "N/A";
+    }
     Duration diff = DateTime.now().difference(lastUpdate);
     if (diff.isNegative) diff = Duration.zero;
     return "${diff.inDays} days ${diff.inHours % 24} hours ${diff.inMinutes % 60} mins ${diff.inSeconds % 60} secs";

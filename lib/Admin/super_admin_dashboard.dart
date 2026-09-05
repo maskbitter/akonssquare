@@ -235,114 +235,289 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   @override
   Widget build(BuildContext context) {
     bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary,
-        foregroundColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
-        elevation: isOutline ? 0 : 2,
-        title: Column(
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          toolbarHeight: 70,
+          backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary,
+          foregroundColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
+          elevation: isOutline ? 0 : 2,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _appName.isEmpty ? "Loading..." : _appName,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "System",
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
+                  ),
+                  Text(
+                    " | ", 
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black.withValues(alpha: 0.5) : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7)),
+                  ),
+                  Text(
+                    "Super Admin(Master Access Mode)",
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, 
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          bottom: TabBar(
+            indicatorColor: isOutline ? Colors.black : Colors.white,
+            labelColor: isOutline ? Colors.black : Colors.white,
+            unselectedLabelColor: isOutline ? Colors.black54 : Colors.white70,
+            tabs: const [
+              Tab(icon: Icon(Icons.admin_panel_settings), text: "Permissions"),
+              Tab(icon: Icon(Icons.history), text: "Activity Log"),
+              Tab(icon: Icon(Icons.settings), text: "Settings"),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.share_outlined, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
+              onPressed: () => ShareHelper.shareApp(context),
+              tooltip: "Share App",
+            ),
+            StreamBuilder<DocumentSnapshot>(
+              stream: DatabaseService().getAppConfigStream(),
+              builder: (context, configSnap) {
+                return StreamBuilder<DocumentSnapshot>(
+                  stream: DatabaseService().getDatabaseInfoStream(),
+                  builder: (context, dbInfoSnap) {
+                    String local = appVersion; // Instant update from build_config.dart
+                    final configData = configSnap.data?.data() as Map<String, dynamic>?;
+                    String? remote = configData?['requiredVersion'];
+                    String dbVersion = "...";
+                    if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                      var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                    }
+                    
+                    bool isOutdated = false;
+                    if (remote != null && remote != local) {
+                      try {
+                        List<String> localParts = local.split('+');
+                        List<String> serverParts = remote.split('+');
+                        int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                        int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                        if (serverMain > localMain) {
+                          isOutdated = true;
+                        } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                          int localBuild = int.tryParse(localParts[1]) ?? 0;
+                          int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                          if (serverBuild > localBuild) isOutdated = true;
+                        }
+                      } catch (e) { isOutdated = remote != local; }
+                    }
+                    
+                    return InkWell(
+                      onTap: () {
+                        if (isOutdated) {
+                          String dUrl = configData?['downloadUrl'] ?? "";
+                          showUpdateLogoutDialog(
+                            context: context, 
+                            remoteVersion: remote ?? "Unknown", 
+                            downloadUrl: dUrl, 
+                            onLogout: () => _handleLogout(context)
+                          );
+                        } else {
+                          _showLogoutConfirmationDialog();
+                        }
+                      },
+                      child: AppVersionInfo(
+                        version: local,
+                        dbVersion: dbVersion,
+                        latestVersion: remote,
+                        isOutdated: isOutdated,
+                        color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
+                        secondaryColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
+                        showLogoutIcon: true,
+                      ),
+                    );
+                  }
+                );
+              }
+            ),
+            const SizedBox(width: 16),
+          ],
+        ),
+        body: TabBarView(
+          children: [
+            SingleChildScrollView(child: _buildPermissionManagerSection()),
+            _buildActivityLogSection(),
+            const SettingsPage(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivityLogSection() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _dbService.getActivityLogsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}"));
+        
+        var logs = snapshot.data?.docs ?? [];
+        if (logs.isEmpty) return const Center(child: Text("No activity logs found."));
+
+        return ListView.builder(
+          itemCount: logs.length,
+          padding: const EdgeInsets.all(12),
+          itemBuilder: (context, index) {
+            var doc = logs[index];
+            var data = doc.data() as Map<String, dynamic>;
+            return _buildLogTile(doc.id, data);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLogTile(String logId, Map<String, dynamic> data) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    String actor = data['actor'] ?? 'System';
+    String action = data['action'] ?? 'Unknown';
+    String details = data['details'] ?? 'No details provided';
+    String category = data['category'] ?? 'General';
+    Timestamp? ts = data['timestamp'] as Timestamp?;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: isOutline ? 0 : 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isOutline ? const BorderSide(color: Colors.black, width: 1.5) : BorderSide.none,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              _appName.isEmpty ? "Loading..." : _appName,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
-            ),
             Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "System",
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      child: Text(actor.isNotEmpty ? actor[0].toUpperCase() : 'S', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(actor, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
                 ),
                 Text(
-                  " | ", 
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black.withValues(alpha: 0.5) : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7)),
+                  DatabaseService.formatFullDateTime(ts),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, color: Theme.of(context).colorScheme.outline),
                 ),
-                Text(
-                  "Super Admin(Master Access Mode)",
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, 
-                  ),
+              ],
+            ),
+            const Divider(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(4)),
+                  child: Text(category, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSecondaryContainer)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: Text(action, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(details, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _showEditLogDialog(logId, data),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text("Edit", style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: () => _showDeleteLogConfirm(logId),
+                  icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                  label: const Text("Delete", style: TextStyle(fontSize: 12, color: Colors.red)),
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEditLogDialog(String logId, Map<String, dynamic> data) {
+    final actionCtrl = TextEditingController(text: data['action']);
+    final detailsCtrl = TextEditingController(text: data['details']);
+    final categoryCtrl = TextEditingController(text: data['category']);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Edit Activity Log"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: actionCtrl, decoration: const InputDecoration(labelText: "Action")),
+              TextField(controller: categoryCtrl, decoration: const InputDecoration(labelText: "Category")),
+              TextField(controller: detailsCtrl, decoration: const InputDecoration(labelText: "Details"), maxLines: 3),
+            ],
+          ),
+        ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.share_outlined, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
-            onPressed: () => ShareHelper.shareApp(context),
-            tooltip: "Share App",
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              await _dbService.updateActivityLog(logId, {
+                'action': actionCtrl.text,
+                'details': detailsCtrl.text,
+                'category': categoryCtrl.text,
+              });
+              Navigator.pop(ctx);
+              DatabaseService.showToast(context, "Log updated");
+            },
+            child: const Text("Save"),
           ),
-          StreamBuilder<DocumentSnapshot>(
-            stream: DatabaseService().getAppConfigStream(),
-            builder: (context, configSnap) {
-              return StreamBuilder<DocumentSnapshot>(
-                stream: DatabaseService().getDatabaseInfoStream(),
-                builder: (context, dbInfoSnap) {
-                  String local = appVersion; // Instant update from build_config.dart
-                  final configData = configSnap.data?.data() as Map<String, dynamic>?;
-                  String? remote = configData?['requiredVersion'];
-                  String dbVersion = "...";
-                  if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
-                    var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                    dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
-                  }
-                  
-                  bool isOutdated = false;
-                  if (remote != null && remote != local) {
-                    try {
-                      List<String> localParts = local.split('+');
-                      List<String> serverParts = remote.split('+');
-                      int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
-                      int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
-                      if (serverMain > localMain) {
-                        isOutdated = true;
-                      } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
-                        int localBuild = int.tryParse(localParts[1]) ?? 0;
-                        int serverBuild = int.tryParse(serverParts[1]) ?? 0;
-                        if (serverBuild > localBuild) isOutdated = true;
-                      }
-                    } catch (e) { isOutdated = remote != local; }
-                  }
-                  
-                  return InkWell(
-                    onTap: () {
-                      if (isOutdated) {
-                        String dUrl = configData?['downloadUrl'] ?? "";
-                        showUpdateLogoutDialog(
-                          context: context, 
-                          remoteVersion: remote ?? "Unknown", 
-                          downloadUrl: dUrl, 
-                          onLogout: () => _handleLogout(context)
-                        );
-                      } else {
-                        _showLogoutConfirmationDialog();
-                      }
-                    },
-                    child: AppVersionInfo(
-                      version: local,
-                      dbVersion: dbVersion,
-                      latestVersion: remote,
-                      isOutdated: isOutdated,
-                      color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
-                      secondaryColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
-                      showLogoutIcon: true,
-                    ),
-                  );
-                }
-              );
-            }
-          ),
-          const SizedBox(width: 16),
         ],
       ),
-      body: Column(
-        children: [
-          _buildPermissionManagerSection(),
-          const Divider(height: 1),
-          const Expanded(child: SettingsPage()),
+    );
+  }
+
+  void _showDeleteLogConfirm(String logId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Log?"),
+        content: const Text("Are you sure you want to permanently delete this activity record?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              await _dbService.deleteActivityLog(logId);
+              Navigator.pop(ctx);
+              DatabaseService.showToast(context, "Log deleted");
+            },
+            child: const Text("Delete"),
+          ),
         ],
       ),
     );

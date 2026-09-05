@@ -8,6 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:akons_square/Common/theme_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:akons_square/Common/ui_helper.dart';
+import 'package:akons_square/Common/storage_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 part 'dialogs/meter_dialogs.dart';
 part 'dialogs/service_billing_dialogs.dart';
@@ -30,8 +33,8 @@ class CategoryDialogs {
       const CategoryDialogs().showEditGlobalServiceDialog(context: context, serviceId: serviceId, currentName: currentName, currentAmount: currentAmount);
   static void showElectricityDialog({required BuildContext context, required String subItemId, required String subItemName, Map<String, dynamic>? existingData, bool isOperator = false, DateTime? initialDate}) => 
       const CategoryDialogs().showElectricityDialog(context: context, subItemId: subItemId, subItemName: subItemName, existingData: existingData, isOperator: isOperator, initialDate: initialDate);
-  static void showMarkAsPaidDialog({required BuildContext context, required String subItemId, required String subItemName, required String TenantName, required String nidNumber, required double houseRentTotal, required double electricityBill, required List<Map<String, dynamic>> services, required Map<String, dynamic>? electricityDetails, required String mainCategoryName, required List manualDues, String? notes}) => 
-      const CategoryDialogs().showMarkAsPaidDialog(context: context, subItemId: subItemId, subItemName: subItemName, TenantName: TenantName, nidNumber: nidNumber, houseRentTotal: houseRentTotal, electricityBill: electricityBill, services: services, electricityDetails: electricityDetails, mainCategoryName: mainCategoryName, manualDues: manualDues, notes: notes);
+  static void showMarkAsPaidDialog({required BuildContext context, required String subItemId, required String subItemName, required String TenantName, required String nidNumber, required double houseRentTotal, required double electricityBill, required List<Map<String, dynamic>> services, required Map<String, dynamic>? electricityDetails, required String mainCategoryName, required List manualDues, String? notes, String? profilePictureUrl}) => 
+      const CategoryDialogs().showMarkAsPaidDialog(context: context, subItemId: subItemId, subItemName: subItemName, TenantName: TenantName, nidNumber: nidNumber, houseRentTotal: houseRentTotal, electricityBill: electricityBill, services: services, electricityDetails: electricityDetails, mainCategoryName: mainCategoryName, manualDues: manualDues, notes: notes, profilePictureUrl: profilePictureUrl);
   static void showManualDueDialog({required BuildContext context, required String subItemId, required String subItemName, required List manualDues}) => 
       const CategoryDialogs().showManualDueDialog(context: context, subItemId: subItemId, subItemName: subItemName, manualDues: manualDues);
   static void showWifiServiceEditDialog({required BuildContext context, required String subItemId, required String subItemName, required Map<String, dynamic> serviceMap, required List overriddenServices, required List macAddresses}) => 
@@ -431,12 +434,91 @@ class CategoryDialogs {
     );
   }
 
-  static void showEditSubItemDetailsDialog({required BuildContext context, required String subItemId, required String currentName, required String currentTenantName, required String currentNidNumber, required String currentNotes}) {
+  static Widget _buildModernImagePicker({
+    required BuildContext context,
+    required String label,
+    required VoidCallback onTap,
+    String? currentUrl,
+    File? newFile,
+  }) {
+    final bool hasImage = newFile != null || currentUrl != null;
+    return Column(
+      children: [
+        Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          child: Stack(
+            children: [
+              Container(
+                height: 100,
+                width: 100,
+                decoration: BoxDecoration(
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                  image: newFile != null 
+                      ? DecorationImage(image: FileImage(newFile), fit: BoxFit.cover) 
+                      : (currentUrl != null ? DecorationImage(image: NetworkImage(currentUrl), fit: BoxFit.cover) : null),
+                ),
+                child: !hasImage 
+                    ? Icon(Icons.add_a_photo_outlined, size: 32, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)) 
+                    : null,
+              ),
+              if (hasImage)
+                Positioned(
+                  right: 4,
+                  bottom: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.edit, size: 14, color: Colors.white),
+                  ),
+                ),
+              if (hasImage)
+                Positioned(
+                  left: 4,
+                  bottom: 4,
+                  child: InkWell(
+                    onTap: () {
+                      if (newFile != null) {
+                        AppImageHelper.showInteractiveImage(context, file: newFile, title: label);
+                      } else if (currentUrl != null) {
+                        AppImageHelper.showInteractiveImage(context, url: currentUrl, title: label);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.tertiary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.zoom_in, size: 14, color: Colors.white),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  static void showEditSubItemDetailsDialog({required BuildContext context, required String subItemId, required String currentName, required String currentTenantName, required String currentNidNumber, required String currentNotes, String? currentProfileUrl, String? currentNidUrl}) {
     final subItemController = TextEditingController(text: currentName); 
     final tenantController = TextEditingController(text: currentTenantName == "No Name" ? "" : currentTenantName);
     final nidController = TextEditingController(text: currentNidNumber == "No Number" ? "" : currentNidNumber); 
     final notesController = TextEditingController(text: currentNotes);
+    File? newProfileImage;
+    File? newNidImage;
     bool isLoading = false;
+    final ImagePicker picker = ImagePicker();
 
     showDialog(
       context: context,
@@ -444,6 +526,17 @@ class CategoryDialogs {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           int letterCount = _getLetterCount(notesController.text);
+          
+          Future<void> pickImage(bool isProfile) async {
+            final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+            if (image != null) {
+              setDialogState(() {
+                if (isProfile) newProfileImage = File(image.path);
+                else newNidImage = File(image.path);
+              });
+            }
+          }
+
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)), 
             title: Column(
@@ -492,6 +585,26 @@ class CategoryDialogs {
                     ), 
                     maxLines: 3
                   ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildModernImagePicker(
+                        context: context, 
+                        label: "Profile Picture", 
+                        onTap: () => pickImage(true),
+                        currentUrl: currentProfileUrl,
+                        newFile: newProfileImage,
+                      ),
+                      _buildModernImagePicker(
+                        context: context, 
+                        label: "NID Picture", 
+                        onTap: () => pickImage(false),
+                        currentUrl: currentNidUrl,
+                        newFile: newNidImage,
+                      ),
+                    ],
+                  ),
                 ]
               ),
             ),
@@ -520,16 +633,39 @@ class CategoryDialogs {
                                 (subItemController.text == currentName &&
                                  tenantController.text == (currentTenantName == "No Name" ? "" : currentTenantName) &&
                                  nidController.text == (currentNidNumber == "No Number" ? "" : currentNidNumber) &&
-                                 notesController.text == currentNotes)) ? null : () async {
+                                 notesController.text == currentNotes && 
+                                 newProfileImage == null && newNidImage == null)) ? null : () async {
                       setDialogState(() => isLoading = true);
                       try {
+                        String? profileUrl = currentProfileUrl;
+                        String? nidUrl = currentNidUrl;
+
+                        if (newProfileImage != null) {
+                          profileUrl = await StorageService().uploadTenantImage(
+                            imageFile: newProfileImage!, 
+                            unitName: currentName, 
+                            subItemId: subItemId, 
+                            imageType: 'profile'
+                          );
+                        }
+                        if (newNidImage != null) {
+                          nidUrl = await StorageService().uploadTenantImage(
+                            imageFile: newNidImage!, 
+                            unitName: currentName, 
+                            subItemId: subItemId, 
+                            imageType: 'nid'
+                          );
+                        }
+
                         SharedPreferences prefs = await SharedPreferences.getInstance();
                         String actor = prefs.getString('username') ?? "Admin";
                         await _dbService.updateSubItemDetails(subItemId, {
                           'subItemName': subItemController.text.trim(), 
                           'TenantName': tenantController.text.trim(), 
                           'nidNumber': nidController.text.trim(), 
-                          'notes': notesController.text.trim()
+                          'notes': notesController.text.trim(),
+                          'profilePictureUrl': profileUrl,
+                          'nidPictureUrl': nidUrl,
                         }, actor);
                         if (context.mounted) {
                           Navigator.pop(ctx);
@@ -537,6 +673,7 @@ class CategoryDialogs {
                         }
                       } catch (e) {
                          setDialogState(() => isLoading = false);
+                         if (context.mounted) DatabaseService.showToast(context, "Update failed: $e", backgroundColor: Colors.red);
                       }
                     }, 
                     child: isLoading 
@@ -556,13 +693,27 @@ class CategoryDialogs {
     if (currentStatus == 'Vacant') {
       final tenantController = TextEditingController();
       final nidController = TextEditingController();
+      File? profileImage;
+      File? nidImage;
       bool isLoading = false;
+      final ImagePicker picker = ImagePicker();
 
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => StatefulBuilder(
           builder: (context, setDialogState) {
+          
+          Future<void> pickImage(bool isProfile) async {
+            final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+            if (image != null) {
+              setDialogState(() {
+                if (isProfile) profileImage = File(image.path);
+                else nidImage = File(image.path);
+              });
+            }
+          }
+
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             title: Column(
@@ -586,35 +737,55 @@ class CategoryDialogs {
             ),
             content: SizedBox(
               width: MediaQuery.of(context).size.width * 0.95,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                Text("Enter tenant details to proceed", style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: tenantController,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  onChanged: (val) => setDialogState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: "Tenant Name", 
-                    hintText: "Enter full name",
-                    prefixIcon: Icon(Icons.person_outline),
-                    isDense: true
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                  Text("Enter tenant details to proceed", style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: tenantController,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    onChanged: (val) => setDialogState(() {}),
+                    decoration: const InputDecoration(
+                      labelText: "Tenant Name", 
+                      hintText: "Enter full name",
+                      prefixIcon: Icon(Icons.person_outline),
+                      isDense: true
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: nidController,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  onChanged: (val) => setDialogState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: "NID Number", 
-                    hintText: "Enter NID (for password)",
-                    prefixIcon: Icon(Icons.badge_outlined),
-                    isDense: true
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: nidController,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    onChanged: (val) => setDialogState(() {}),
+                    decoration: const InputDecoration(
+                      labelText: "NID Number", 
+                      hintText: "Enter NID (for password)",
+                      prefixIcon: Icon(Icons.badge_outlined),
+                      isDense: true
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildModernImagePicker(
+                        context: context, 
+                        label: "Profile Picture", 
+                        onTap: () => pickImage(true),
+                        newFile: profileImage,
+                      ),
+                      _buildModernImagePicker(
+                        context: context, 
+                        label: "NID Picture", 
+                        onTap: () => pickImage(false),
+                        newFile: nidImage,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         actions: [
@@ -644,15 +815,43 @@ class CategoryDialogs {
                         return;
                       }
                       setDialogState(() => isLoading = true);
-                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                      await _dbService.updateSubItemStatus(
-                        subItemId, 
-                        'Occupied', 
-                        prefs.getString('username') ?? "Admin",
-                        TenantName: name,
-                        nidNumber: nid,
-                      );
-                      if (context.mounted) Navigator.pop(ctx);
+                      
+                      String? profileUrl;
+                      String? nidUrl;
+                      
+                      try {
+                        if (profileImage != null) {
+                          profileUrl = await StorageService().uploadTenantImage(
+                            imageFile: profileImage!, 
+                            unitName: subItemName, 
+                            subItemId: subItemId, 
+                            imageType: 'profile'
+                          );
+                        }
+                        if (nidImage != null) {
+                          nidUrl = await StorageService().uploadTenantImage(
+                            imageFile: nidImage!, 
+                            unitName: subItemName, 
+                            subItemId: subItemId, 
+                            imageType: 'nid'
+                          );
+                        }
+
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        await _dbService.updateSubItemStatus(
+                          subItemId, 
+                          'Occupied', 
+                          prefs.getString('username') ?? "Admin",
+                          TenantName: name,
+                          nidNumber: nid,
+                          profilePictureUrl: profileUrl,
+                          nidPictureUrl: nidUrl,
+                        );
+                        if (context.mounted) Navigator.pop(ctx);
+                      } catch (e) {
+                         setDialogState(() => isLoading = false);
+                         if (context.mounted) DatabaseService.showToast(context, "Upload failed: $e", backgroundColor: Colors.red);
+                      }
                     },
                     child: isLoading 
                       ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground))
@@ -665,7 +864,8 @@ class CategoryDialogs {
           }
         ),
       );
-    } else {
+    }
+else {
       double eBillAmount = 0;
       double units = 0;
       if (electricityDetails != null && electricityDetails['isStopped'] != true) {

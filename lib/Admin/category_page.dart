@@ -384,16 +384,11 @@ class _CategoryPageState extends State<CategoryPage> {
                             return const SizedBox.shrink();
                           }
 
-                          double catTotal = 0;
-                          for (var doc in subDocs) {
-                            if (paidIds.contains(doc.id)) continue; // Don't count paid units in category total
-
+                          double _calculateUnitMonthTotal(QueryDocumentSnapshot doc) {
                             var existingRecord = historyMap[doc.id];
                             if (existingRecord != null) {
-                               catTotal += ((existingRecord.data() as Map)['totalAmount'] as num).toDouble();
-                               continue;
+                               return ((existingRecord.data() as Map)['totalAmount'] as num).toDouble();
                             }
-
                             var d = doc.data() as Map<String, dynamic>;
                             var ed = d['electricityDetails'];
                             double eBillVal = 0;
@@ -404,16 +399,30 @@ class _CategoryPageState extends State<CategoryPage> {
                             List manualDues = d['manualDues'] ?? [];
                             double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
                             
-                            catTotal += (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal + mDuesSum);
+                            // Include electricity and manual dues if we are viewing this month in the UI
+                            return (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal + mDuesSum);
                           }
 
-                      bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
-                      
-                      final Color accentColor = ThemeManager.getCardColor(i);
-                      final Color bgColor = ThemeManager.getCardContainerColor(i);
-                      final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
+                          return FutureBuilder<Map<String, double>>(
+                            future: Future.wait(subDocs.map((doc) async {
+                              double monthAmt = _calculateUnitMonthTotal(doc);
+                              double outstanding = await _dbService.calculateTotalOutstanding(doc.id, paidIds.contains(doc.id) ? 0 : monthAmt, _selectedMonthStr);
+                              return {'outstanding': outstanding, 'target': monthAmt};
+                            })).then((vals) {
+                              double out = vals.fold(0.0, (a, b) => a + b['outstanding']!);
+                              double tar = vals.fold(0.0, (a, b) => a + b['target']!);
+                              return {'outstanding': out, 'target': tar};
+                            }),
+                            builder: (context, catTotalSnap) {
+                              double catOutstanding = catTotalSnap.data?['outstanding'] ?? 0;
+                              double catTarget = catTotalSnap.data?['target'] ?? 0;
+                              bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
+                              
+                              final Color accentColor = ThemeManager.getCardColor(i);
+                              final Color bgColor = ThemeManager.getCardContainerColor(i);
+                              final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
 
-                      return Card(
+                              return Card(
                         elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
                         color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : bgColor,
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -501,14 +510,29 @@ class _CategoryPageState extends State<CategoryPage> {
                                   ),
                                   Row(
                                     children: [
-                                      if (hasElectric) Icon(Icons.electric_bolt, color: context.electric, size: 18),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        "৳${catTotal.toStringAsFixed(2)}",
-                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                          fontWeight: FontWeight.w900, 
-                                          color: onBgColor
-                                        ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              if (hasElectric) Icon(Icons.electric_bolt, color: context.electric, size: 14),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                "Balance: ৳${catOutstanding.toStringAsFixed(0)}",
+                                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.w900, 
+                                                  color: onBgColor
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Text(
+                                            "Target: ৳${catTarget.toStringAsFixed(0)}",
+                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              color: onBgColor.withValues(alpha: 0.6),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -526,17 +550,19 @@ class _CategoryPageState extends State<CategoryPage> {
                               String tenant = d['TenantName'] ?? 'No Name';
                               var ed = d['electricityDetails'];
                               var existingRecord = historyMap[subId];
+                              double monthTotal = 0;
                               double servicesTotal = 0;
                               double eBillAmount = 0;
                               double mDuesSum = 0;
-                              double total = 0;
+                              List? historicalServices;
 
                               if (existingRecord != null) {
                                 var hData = existingRecord.data() as Map<String, dynamic>;
-                                total = (hData['totalAmount'] as num).toDouble();
+                                monthTotal = (hData['totalAmount'] as num).toDouble();
                                 servicesTotal = (hData['houseRentTotal'] as num).toDouble();
                                 eBillAmount = (hData['electricityBill'] as num).toDouble();
-                                mDuesSum = total - (servicesTotal + eBillAmount);
+                                mDuesSum = monthTotal - (servicesTotal + eBillAmount);
+                                historicalServices = hData['services'];
                               } else {
                                 List overridden = d['overriddenServices'] ?? [];
                                 List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: overridden);
@@ -546,17 +572,29 @@ class _CategoryPageState extends State<CategoryPage> {
                                 }
                                 List manualDues = d['manualDues'] ?? [];
                                 mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
-                                total = servicesTotal + eBillAmount + mDuesSum;
+                                monthTotal = servicesTotal + eBillAmount + mDuesSum;
                               }
 
-                              // Use nested index for sub-item coloring to make them different from category
-                              int itemIndex = i + entry.key + 1;
-                              final Color itemAccentColor = ThemeManager.getCardColor(itemIndex, isSubCard: true);
-                              final Color itemBgColor = ThemeManager.getCardContainerColor(itemIndex, isSubCard: true);
-                              final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex, isSubCard: true);
+                              bool isPaid = paidIds.contains(subId);
+                              bool isOccupied = status == 'Occupied';
+
+                              return FutureBuilder<double>(
+                                future: _dbService.calculateTotalOutstanding(subId, isPaid ? 0 : monthTotal, _selectedMonthStr),
+                                builder: (context, outstandingSnap) {
+                                  double totalBalance = isPaid ? (outstandingSnap.data ?? 0) : (outstandingSnap.data ?? monthTotal);
+                                  bool hasArrears = isPaid 
+                                      ? (totalBalance > 0.1) 
+                                      : (totalBalance - monthTotal).abs() > 0.1;
+
+                                  int itemIndex = i + entry.key + 1;
+                                  final Color itemAccentColor = ThemeManager.getCardColor(itemIndex, isSubCard: true);
+                                  final Color itemBgColor = ThemeManager.getCardContainerColor(itemIndex, isSubCard: true);
+                                  final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex, isSubCard: true);
 
                               List overridden = d['overriddenServices'] ?? [];
-                              List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: overridden);
+                              List active = historicalServices != null 
+                                  ? List<Map<String, dynamic>>.from(historicalServices)
+                                  : DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: overridden);
                               List manualDues = d['manualDues'] ?? [];
 
                               if (status == 'Vacant') {
@@ -714,7 +752,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                                               const SizedBox(width: 4),
                                               Text(
-                                                "৳${total.toStringAsFixed(2)}",
+                                                "৳${monthTotal.toStringAsFixed(2)}",
                                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                                   fontWeight: FontWeight.w900, 
                                                   color: itemOnBgColor, 
@@ -772,6 +810,14 @@ class _CategoryPageState extends State<CategoryPage> {
 
                                               ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
 
+                                              _buildSectionBox(
+                                                "Monthly Bill Summary", 
+                                                "This includes Rent, Water, Wifi, and other services billed for this cycle.", 
+                                                Icons.summarize_outlined, 
+                                                amount: servicesTotal + eBillAmount, 
+                                                color: isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
+                                              ),
+
                                               if (manualDues.isNotEmpty) ...[
                                                 const SizedBox(height: 12),
                                                 Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
@@ -801,37 +847,43 @@ class _CategoryPageState extends State<CategoryPage> {
                                 ),
                               );
                             }
-                              bool isPaid = paidIds.contains(subId);
                               
-                              // Always show the current calculated total (Usage-based Elec + Fixed Services + Manual Dues)
-                              double displayTotal = total; 
-
-                              bool isOccupied = status == 'Occupied';
-
                               return InkWell(
-                                onTap: () {
-                                  Map<String, dynamic> reportData;
-                                  if (existingRecord != null) {
-                                    reportData = existingRecord.data() as Map<String, dynamic>;
-                                  } else {
-                                    reportData = {
-                                      'status': 'Due',
-                                      'monthYear': _selectedMonthStr,
-                                      'subItemName': subName,
-                                      'TenantName': tenant,
-                                      'nidNumber': d['nidNumber'] ?? '',
-                                      'services': active,
-                                      'electricityDetails': ed,
-                                      'electricityBill': eBillAmount,
-                                      'totalAmount': total,
-                                      'houseRentTotal': servicesTotal,
-                                      'createdAt': Timestamp.now(),
-                                      'paymentNotes': 'Current selection report (Estimated)',
-                                    };
-                                  }
-                                  UserReportPage.showDetailsDialog(context, reportData);
-                                },
-                                onLongPress: () {
+                                    onTap: () {
+                                      String targetMonth = _selectedMonthStr;
+                                      var records = historyMap.values.where((doc) => doc['subItemId'] == subId).toList();
+                                      var recordedDoc = records.isEmpty ? null : records.first;
+
+                                      Map<String, dynamic> reportData;
+                                      if (recordedDoc != null) {
+                                        reportData = {
+                                          ...recordedDoc.data() as Map<String, dynamic>,
+                                          'docId': recordedDoc.id,
+                                        };
+                                      } else {
+                                        reportData = {
+                                          'status': 'Due',
+                                          'monthYear': targetMonth,
+                                          'subItemName': subName,
+                                          'TenantName': tenant,
+                                          'subItemId': subId,
+                                          'profilePictureUrl': d['profilePictureUrl'],
+                                          'categoryId': catId,
+                                          'mainCategoryName': catName,
+                                          'manualDues': d['manualDues'] ?? [],
+                                          'nidNumber': d['nidNumber'] ?? '',
+                                          'services': active,
+                                          'electricityDetails': ed,
+                                          'electricityBill': eBillAmount,
+                                          'totalAmount': monthTotal,
+                                          'houseRentTotal': servicesTotal,
+                                          'createdAt': Timestamp.now(),
+                                          'paymentNotes': 'Monthly breakdown (Estimated)',
+                                        };
+                                      }
+                                      UserReportPage.showDetailsDialog(context, reportData);
+                                    },
+                                    onLongPress: () {
                                       HapticFeedback.heavyImpact();
                                       CategoryDialogs.showSubItemStatusDialog(
                                         context: context, 
@@ -868,6 +920,19 @@ class _CategoryPageState extends State<CategoryPage> {
                                         children: [
                                           Row(
                                             children: [
+                                              if (isOccupied)
+                                                GestureDetector(
+                                                  onTap: d['profilePictureUrl'] != null ? () => _showFullScreenImage(context, d['profilePictureUrl'], "Tenant Profile") : null,
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.only(right: 8),
+                                                    child: CircleAvatar(
+                                                      radius: 14,
+                                                      backgroundImage: d['profilePictureUrl'] != null ? NetworkImage(d['profilePictureUrl']) : null,
+                                                      backgroundColor: Theme.of(context).colorScheme.surface,
+                                                      child: d['profilePictureUrl'] == null ? const Icon(Icons.person, size: 18, color: Colors.grey) : null,
+                                                    ),
+                                                  ),
+                                                ),
                                               Icon(
                                                 isOccupied ? (isPaid ? Icons.check_circle : Icons.door_front_door_outlined) : Icons.meeting_room_outlined,
                                                 color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? (isPaid ? Colors.green : (isOccupied ? Colors.black : Colors.red)) : (isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error),
@@ -902,7 +967,9 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   currentName: subName, 
                                                   currentTenantName: tenant, 
                                                   currentNidNumber: d['nidNumber'] ?? 'No Number', 
-                                                  currentNotes: d['notes'] ?? ''
+                                                  currentNotes: d['notes'] ?? '',
+                                                  currentProfileUrl: d['profilePictureUrl'],
+                                                  currentNidUrl: d['nidPictureUrl'],
                                                 ),
                                               ),
                                               if ((d['notes'] ?? '').toString().isNotEmpty)
@@ -931,7 +998,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                                       electricityDetails: ed, 
                                                       mainCategoryName: catName, 
                                                       manualDues: d['manualDues'] ?? [],
-                                                      notes: d['notes'] ?? ''
+                                                      notes: d['notes'] ?? '',
+                                                      profilePictureUrl: d['profilePictureUrl']
                                                     )
                                                   ),
                                                 ),
@@ -1035,7 +1103,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                                               const SizedBox(width: 4),
                                               Text(
-                                                "৳${displayTotal.toStringAsFixed(2)}",
+                                                "৳${totalBalance.toStringAsFixed(2)}",
                                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                                   fontWeight: FontWeight.w900, 
                                                   color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, 
@@ -1047,7 +1115,9 @@ class _CategoryPageState extends State<CategoryPage> {
                                             padding: const EdgeInsets.only(left: 30, top: 1),
                                             child: Text(
                                               isOccupied 
-                                                ? (isPaid ? "${active.length} Services | Payment Clear" : "${active.length} Services | Due") 
+                                                ? (isPaid 
+                                                    ? (hasArrears ? "Arrears Pending | Payment Clear (${DatabaseService.formatMonthYear(DateTime.now())})" : "${active.length} Services | Payment Clear") 
+                                                    : "${active.length} Services | Due${hasArrears ? ' + Arrears' : ''}") 
                                                 : "${active.length} Services | Ready for new tenant",
                                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                                 color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
@@ -1064,127 +1134,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                             children: [
                                               if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
                                                 _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
-
-                                              // Dynamic Due Months Row
-                                              StreamBuilder<QuerySnapshot>(
-                                                stream: _dbService.getAllBillingRecordsStream(subId),
-                                                builder: (context, snapshot) {
-                                                  if (!snapshot.hasData) return const SizedBox.shrink();
-                                                  
-                                                  var historyDocs = snapshot.data!.docs;
-                                                  DateTime? unitCreatedAt = (d['createdAt'] as Timestamp?)?.toDate();
-                                                  if (unitCreatedAt == null) return const SizedBox.shrink();
-
-                                                  // Logic to find all pending months (same as UserDashboard)
-                                                  List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                                                  DateTime nowTime = DateTime.now();
-                                                  
-                                                  List<String> paidMonths = historyDocs
-                                                      .where((doc) => (doc.data() as Map)['status'] == 'Paid')
-                                                      .map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
-                                                  
-                                                  List<String> dueMonthsFromHistory = historyDocs
-                                                      .where((doc) => (doc.data() as Map)['status'] == 'Due')
-                                                      .map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
-
-                                                  List<String> pendingMonths = [];
-                                                  pendingMonths.addAll(dueMonthsFromHistory);
-
-                                                  DateTime current = DateTime(unitCreatedAt.year, unitCreatedAt.month);
-                                                  // Only add months BEFORE the current month (stop before the current month we are in)
-                                                  while (current.isBefore(DateTime(nowTime.year, nowTime.month))) {
-                                                    String mYear = "${months[current.month - 1]}-${current.year.toString().substring(2)}";
-                                                    if (!paidMonths.contains(mYear) && !dueMonthsFromHistory.contains(mYear)) {
-                                                      pendingMonths.add(mYear);
-                                                    }
-                                                    current = DateTime(current.year, current.month + 1);
-                                                  }
-
-                                                  if (pendingMonths.isEmpty) return const SizedBox.shrink();
-
-                                                  // Helper to parse Month-Year for sorting
-                                                  DateTime parseMY(String my) {
-                                                    List<String> parts = my.split('-');
-                                                    int m = months.indexOf(parts[0]) + 1;
-                                                    int y = 2000 + (int.tryParse(parts[1]) ?? 0);
-                                                    return DateTime(y, m);
-                                                  }
-                                                  pendingMonths.sort((a, b) => parseMY(a).compareTo(parseMY(b)));
-
-                                                  return _buildSectionBox(
-                                                    "Due Months (Pending)", 
-                                                    "", 
-                                                    Icons.history_toggle_off, 
-                                                    color: Theme.of(context).colorScheme.error,
-                                                    customContent: Padding(
-                                                      padding: const EdgeInsets.only(top: 4),
-                                                      child: Wrap(
-                                                        spacing: 8,
-                                                        runSpacing: 8,
-                                                        children: pendingMonths.map((m) {
-                                                          return InkWell(
-                                                            onTap: () {
-                                                              // Find recorded doc or estimate
-                                                              var recordedDoc = historyDocs.firstWhere(
-                                                                (doc) => (doc.data() as Map)['monthYear'] == m && (doc.data() as Map)['status'] == 'Due',
-                                                                orElse: () => null as dynamic,
-                                                              );
-
-                                                              if (recordedDoc != null) {
-                                                                UserReportPage.showDetailsDialog(context, recordedDoc.data() as Map<String, dynamic>);
-                                                              } else {
-                                                                // Estimate (virtual data)
-                                                                double eVal = 0;
-                                                                if (ed != null && ed['isStopped'] != true) {
-                                                                  eVal = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
-                                                                }
-                                                                List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: d['overriddenServices'] ?? []);
-                                                                double sSum = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
-                                                                List manualDues = d['manualDues'] ?? [];
-                                                                double mSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
-                                                                
-                                                                bool isCurrentMonth = m == DatabaseService.getCurrentMonthYear();
-                                                                double monthTotal = sSum + (isCurrentMonth ? (eVal + mSum) : 0);
-
-                                                                Map<String, dynamic> virtualData = {
-                                                                  'status': 'Due',
-                                                                  'monthYear': m,
-                                                                  'subItemName': subName,
-                                                                  'TenantName': tenant,
-                                                                  'services': active,
-                                                                  'electricityDetails': isCurrentMonth ? ed : null,
-                                                                  'electricityBill': isCurrentMonth ? eVal : 0,
-                                                                  'totalAmount': monthTotal,
-                                                                  'createdAt': Timestamp.now(),
-                                                                  'paymentNotes': 'Auto-pending month (Estimated)',
-                                                                };
-                                                                UserReportPage.showDetailsDialog(context, virtualData);
-                                                              }
-                                                            },
-                                                            child: Container(
-                                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                              decoration: BoxDecoration(
-                                                                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
-                                                                borderRadius: BorderRadius.circular(6),
-                                                                border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3)),
-                                                              ),
-                                                              child: Text(
-                                                                m,
-                                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                                  color: Theme.of(context).colorScheme.error,
-                                                                  fontWeight: FontWeight.bold,
-                                                                  decoration: TextDecoration.underline,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          );
-                                                        }).toList(),
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                              ),
-
+                                              
                                               if ((d['notes'] ?? '').toString().isNotEmpty)
                                                 _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
                                                   icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
@@ -1205,7 +1155,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   "Sub-Meter Bills", 
                                                   "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
                                                   Icons.electric_bolt, 
-                                                  amount: eBillAmount, 
+                                                  amount: (existingRecord != null || isPaid) ? 0.0 : eBillAmount, 
                                                   color: context.electric,
                                                   trailing: IconButton(
                                                     icon: Icon(Icons.edit_note, color: context.electric, size: 22), 
@@ -1214,6 +1164,14 @@ class _CategoryPageState extends State<CategoryPage> {
                                                 ),
 
                                               ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
+
+                                              _buildSectionBox(
+                                                "Monthly Bill Summary", 
+                                                "This includes Rent, Water, Wifi, and other services billed for this cycle.", 
+                                                Icons.summarize_outlined, 
+                                                amount: servicesTotal + eBillAmount, 
+                                                color: isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
+                                              ),
 
                                               if (manualDues.isNotEmpty) ...[
                                                 const SizedBox(height: 12),
@@ -1243,6 +1201,10 @@ class _CategoryPageState extends State<CategoryPage> {
                                     ),
                                   ),
                                 );
+                                },
+                              );
+
+
                             }),
                             if (status == 'Vacant') ...[
                               const SizedBox(height: 12),
@@ -1264,18 +1226,20 @@ class _CategoryPageState extends State<CategoryPage> {
                           ],
                         ),
                       );
+                            },
+                          );
+                        },
+                      );
                     },
                   );
                 },
               );
             },
-          );
-        },
-      ),
-    ),
-  ],
-);
-}
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color? color, Widget? trailing, Widget? customContent}) {
     final effectiveColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
@@ -1811,12 +1775,7 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  Widget _buildMeterStat(String label, double val, {bool isBold = false}) {
-    return Column(
-      children: [
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
-        Text(val.toStringAsFixed(1), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: isBold ? FontWeight.w900 : FontWeight.bold)),
-      ],
-    );
+  void _showFullScreenImage(BuildContext context, String imageUrl, String title) {
+    AppImageHelper.showInteractiveImage(context, url: imageUrl, title: title);
   }
 }

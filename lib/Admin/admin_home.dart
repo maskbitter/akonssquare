@@ -150,7 +150,7 @@ class _AdminHomeState extends State<AdminHome> {
                                   ],
                                 ),
                               ),
-                              _buildFinancialHeader(),
+                              _buildFinancialHeader(catSnap.data!.docs, serviceSnap.data!.docs),
                             ],
 
                             if (settings['showElectricity']!)
@@ -259,7 +259,7 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _buildFinancialHeader() {
+  Widget _buildFinancialHeader(List<QueryDocumentSnapshot> categories, List<QueryDocumentSnapshot> services) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('billing_history')
@@ -296,7 +296,7 @@ class _AdminHomeState extends State<AdminHome> {
             }
 
             return FutureBuilder<double>(
-              future: _calculateDueTotal(occupiedSnapshot.data?.docs ?? [], receivedSnapshot.data!.docs),
+              future: _calculateDueTotal(occupiedSnapshot.data?.docs ?? [], receivedSnapshot.data!.docs, categories),
               builder: (context, dueSnapshot) {
                 double dueTotal = dueSnapshot.data ?? 0;
                 double grandTotal = receivedTotal + dueTotal;
@@ -891,7 +891,7 @@ class _AdminHomeState extends State<AdminHome> {
               ),
               const SizedBox(height: 2),
               Text(
-                "৳${amount.toStringAsFixed(0)}",
+                "৳${amount.toStringAsFixed(2)}",
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : color, fontWeight: FontWeight.bold),
               ),
             ],
@@ -1364,12 +1364,20 @@ class _AdminHomeState extends State<AdminHome> {
                                 paidBy: data['paidBy'],
                                 paidAt: data['paidAt'],
                                 notes: data['paymentNotes'],
-                                onTap: () => UserReportPage.showDetailsDialog(context, {
-                                  ...data,
-                                  'subItemName': resolvedSubName,
-                                  'TenantName': tName,
-                                  'categoryName': categoryName,
-                                }),
+                                onTap: () {
+                                  try {
+                                    UserReportPage.showDetailsDialog(context, {
+                                      'docId': receivedDocs[index].id,
+                                      'subItemName': resolvedSubName,
+                                      'TenantName': tName,
+                                      'categoryName': categoryName,
+                                      'profilePictureUrl': snapData?['profilePictureUrl'],
+                                    });
+                                  } catch (e, stack) {
+                                    debugPrint("ERROR in admin_home recentPayments onTap: $e\n$stack");
+                                    DatabaseService.showToast(context, "Error: $e", backgroundColor: Colors.red);
+                                  }
+                                },
                               );
                             },
                           );
@@ -1435,12 +1443,21 @@ class _AdminHomeState extends State<AdminHome> {
                     paidBy: data['paidBy'],
                     paidAt: data['paidAt'],
                     notes: data['paymentNotes'],
-                    onTap: () => UserReportPage.showDetailsDialog(context, {
-                      ...data,
-                      'subItemName': resolvedSubName,
-                      'TenantName': tName,
-                      'categoryName': categoryName,
-                    }),
+                    profilePictureUrl: data['profilePictureUrl'] ?? snapData?['profilePictureUrl'],
+                    onTap: () {
+                      try {
+                        UserReportPage.showDetailsDialog(context, {
+                          ...data,
+                          'docId': actualReceived[index].id,
+                          'subItemName': resolvedSubName,
+                          'TenantName': tName,
+                          'categoryName': categoryName,
+                        });
+                      } catch (e, stack) {
+                        debugPrint("ERROR in admin_home verifiedPayments onTap: $e\n$stack");
+                        DatabaseService.showToast(context, "Error: $e", backgroundColor: Colors.red);
+                      }
+                    },
                   );
                 },
               );
@@ -1461,82 +1478,68 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildDueList(List<QueryDocumentSnapshot> occupiedDocs, List<QueryDocumentSnapshot> receivedDocs) {
-    if (_selectedDate.isAfter(DateTime.now())) return _buildEmptyState("Future bills are not generated yet.");
-
-    List<String> paidSubIds = receivedDocs
-        .where((doc) => (doc.data() as Map)['status'] != 'Due')
-        .map((doc) => doc['subItemId'].toString()).toList();
-
-    DateTime monthEnd = DateTime(_selectedDate.year, _selectedDate.month + 1, 0, 23, 59, 59);
-
-    // Strictly filter by Occupied status per instructions
-    var dueItems = occupiedDocs.where((doc) {
-      var data = doc.data() as Map<String, dynamic>;
-      String status = data['status'] ?? '';
-      Timestamp? occupiedAt = data['occupiedAt'] as Timestamp?;
-      bool wasOccupiedInOrBeforeSelectedMonth = occupiedAt != null && occupiedAt.toDate().isBefore(monthEnd);
-      return status == 'Occupied' && wasOccupiedInOrBeforeSelectedMonth && !paidSubIds.contains(doc.id);
-    }).toList();
-
-    Map<String, QueryDocumentSnapshot> historyMap = {
-      for (var d in receivedDocs) (d.data() as Map)['subItemId'].toString(): d
-    };
+    var dueItems = receivedDocs.where((d) => (d.data() as Map)['status'] == 'Due').toList();
+    if (dueItems.isEmpty) return _buildEmptyState("No pending dues for $_selectedMonthStr.");
 
     return ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: dueItems.length,
       itemBuilder: (context, index) {
-        var doc = dueItems[index];
-        var data = doc.data() as Map<String, dynamic>;
-        String catId = data['categoryId'] ?? '';
+        var data = dueItems[index].data() as Map<String, dynamic>;
+        String subId = data['subItemId'];
 
         return FutureBuilder<DocumentSnapshot>(
-          future: _dbService.getCategoryById(catId),
-          builder: (context, catSnap) {
-            String categoryName = (catSnap.data?.data() as Map?)?['categoryName'] ?? 'Loading...';
-            return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance.collection('sub_items').doc(doc.id).get(),
-              builder: (context, subSnap) {
-                String tName = 'No Name';
-                if (subSnap.hasData && subSnap.data!.exists) {
-                  tName = (subSnap.data!.data() as Map<String, dynamic>?)?['TenantName'] ?? 'No Name';
-                }
-                return FutureBuilder<double>(
-                  future: _calculateSingleDue(doc, existingRecord: historyMap[doc.id]),
-                  builder: (context, amountSnap) {
-                    double amount = amountSnap.data ?? 0;
-                    return _buildBillingTile(
-                      index: index,
-                      title: "${data['subItemName']} ($tName)",
-                      subtitle: categoryName,
-                      amount: amount,
-                      color: dueColor,
-                      icon: Icons.pending_actions,
-                      onTap: () async {
-                        var catDoc = await _dbService.getCategoryById(catId);
-                        List catServices = (catDoc.data() as Map<String, dynamic>?)?['assignedServices'] ?? [];
-                        List excluded = data['excludedServices'] ?? [];
-                        List overridden = data['overriddenServices'] ?? [];
-                        List active = DatabaseService.getEffectiveServices(categoryServices: catServices, excludedServices: excluded, overriddenServices: overridden);
-                        
-                        Map<String, dynamic> virtualData = {
-                          'status': 'Due',
-                          'monthYear': _selectedMonthStr,
-                          'subItemName': data['subItemName'] ?? 'Unnamed',
+          future: FirebaseFirestore.instance.collection('sub_items').doc(subId).get(),
+          builder: (context, snap) {
+            String categoryName = "Loading...";
+            String resolvedSubName = data['subItemName'] ?? '...';
+
+            if (snap.hasData && snap.data!.exists) {
+              final snapData = snap.data!.data() as Map<String, dynamic>?;
+              if (data['subItemName'] == null) {
+                resolvedSubName = snapData?['subItemName'] ?? 'Unnamed';
+              }
+              String catId = snapData?['categoryId'] ?? '';
+              return FutureBuilder<DocumentSnapshot>(
+                future: _dbService.getCategoryById(catId),
+                builder: (context, catSnap) {
+                  categoryName = (catSnap.data?.data() as Map?)?['categoryName'] ?? 'Unknown';
+                  String tName = data['TenantName'] ?? snapData?['TenantName'] ?? 'No Name';
+
+                  return _buildBillingTile(
+                    index: index,
+                    title: "$resolvedSubName ($tName)",
+                    subtitle: categoryName,
+                    amount: (data['totalAmount'] as num).toDouble(),
+                    color: dueColor,
+                    icon: Icons.pending_actions,
+                    profilePictureUrl: data['profilePictureUrl'] ?? snapData?['profilePictureUrl'],
+                    onTap: () {
+                      try {
+                        UserReportPage.showDetailsDialog(context, {
+                          ...data,
+                          'docId': dueItems[index].id,
+                          'subItemName': resolvedSubName,
                           'TenantName': tName,
-                          'nidNumber': data['nidNumber'] ?? '',
-                          'services': active,
-                          'electricityDetails': data['electricityDetails'],
-                          'electricityBill': (amount - active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble())),
-                          'totalAmount': amount,
-                          'houseRentTotal': amount - (amount - active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble())),
-                        };
-                        if (context.mounted) UserReportPage.showDetailsDialog(context, virtualData);
-                      },
-                    );
-                  },
-                );
-              },
+                          'categoryName': categoryName,
+                        });
+                      } catch (e, stack) {
+                        debugPrint("ERROR in admin_home dueList onTap: $e\n$stack");
+                        DatabaseService.showToast(context, "Error: $e", backgroundColor: Colors.red);
+                      }
+                    },
+                  );
+                },
+              );
+            }
+            String tName = data['TenantName'] ?? 'No Name';
+            return _buildBillingTile(
+              index: index,
+              title: "$resolvedSubName ($tName)",
+              subtitle: categoryName,
+              amount: (data['totalAmount'] as num).toDouble(),
+              color: dueColor,
+              icon: Icons.pending_actions,
             );
           },
         );
@@ -1555,6 +1558,7 @@ class _AdminHomeState extends State<AdminHome> {
     String? paidBy,
     Timestamp? paidAt,
     String? notes,
+    String? profilePictureUrl,
   }) {
     // Soft-coded, readable background based on theme
     Color itemColor = ThemeManager.getCardContainerColor(index + 7, alpha: 0.8, isSubCard: true);
@@ -1575,11 +1579,20 @@ class _AdminHomeState extends State<AdminHome> {
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        leading: CircleAvatar(
-          backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : color.withOpacity(0.15),
-          child: Icon(icon, color: color, size: 22),
-          foregroundColor: color,
-        ),
+        leading: profilePictureUrl != null 
+          ? GestureDetector(
+              onTap: () => AppImageHelper.showInteractiveImage(context, url: profilePictureUrl, title: title),
+              child: CircleAvatar(
+                radius: 20,
+                backgroundImage: NetworkImage(profilePictureUrl),
+                backgroundColor: isOutline ? ThemeManager.outlineBackground : color.withOpacity(0.1),
+              ),
+            )
+          : CircleAvatar(
+              radius: 20,
+              backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : color.withOpacity(0.15),
+              child: const Icon(Icons.person, size: 24, color: Colors.grey),
+            ),
         title: Text(title, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: textColor)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1640,33 +1653,31 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Future<double> _calculateDueTotal(List<QueryDocumentSnapshot> occupied, List<QueryDocumentSnapshot> received) async {
-    if (_selectedDate.isAfter(DateTime.now())) return 0;
-
-    List<String> paidIds = received
-        .where((d) => (d.data() as Map)['status'] != 'Due')
-        .map((d) => d['subItemId'].toString()).toList();
-
-    Map<String, QueryDocumentSnapshot> historyMap = {
-      for (var d in received) (d.data() as Map)['subItemId'].toString(): d
+  Future<double> _calculateDueTotal(List<QueryDocumentSnapshot> occupied, List<QueryDocumentSnapshot> records, List<QueryDocumentSnapshot> categories) async {
+    double totalDue = 0;
+    
+    // Map to quickly find existing records for the selected month
+    Map<String, QueryDocumentSnapshot> recordMap = {
+      for (var doc in records) (doc.data() as Map)['subItemId']: doc
     };
 
-    double totalDue = 0;
-    DateTime monthEnd = DateTime(_selectedDate.year, _selectedDate.month + 1, 0, 23, 59, 59);
-
-    for (var doc in occupied) {
-      var data = doc.data() as Map<String, dynamic>;
-      Timestamp? occupiedAt = data['occupiedAt'] as Timestamp?;
-      bool wasOccupiedInOrBeforeSelectedMonth = occupiedAt != null && occupiedAt.toDate().isBefore(monthEnd);
-
-      if (wasOccupiedInOrBeforeSelectedMonth && !paidIds.contains(doc.id)) {
-        totalDue += await _calculateSingleDue(doc, existingRecord: historyMap[doc.id]);
+    for (var subDoc in occupied) {
+      String subId = subDoc.id;
+      if (recordMap.containsKey(subId)) {
+        // Use recorded status
+        var data = recordMap[subId]!.data() as Map<String, dynamic>;
+        if (data['status'] == 'Due') {
+          totalDue += (data['totalAmount'] as num).toDouble();
+        }
+      } else {
+        // No record for this month? Estimate "Live Due"
+        totalDue += await _calculateSingleDue(subDoc, categories: categories);
       }
     }
     return totalDue;
   }
 
-  Future<double> _calculateSingleDue(QueryDocumentSnapshot subDoc, {QueryDocumentSnapshot? existingRecord}) async {
+  Future<double> _calculateSingleDue(QueryDocumentSnapshot subDoc, {List<QueryDocumentSnapshot>? categories, QueryDocumentSnapshot? existingRecord, bool isCurrentMonth = false}) async {
     // Priority: If a record (Due/Paid) already exists for this month, use its stored total.
     if (existingRecord != null) {
       return ((existingRecord.data() as Map)['totalAmount'] as num).toDouble();
@@ -1676,10 +1687,23 @@ class _AdminHomeState extends State<AdminHome> {
     String catId = subData['categoryId'] ?? '';
     if (catId.isEmpty) return 0;
 
-    DocumentSnapshot catDoc = await _dbService.getCategoryById(catId);
-    if (!catDoc.exists) return 0;
+    // Use pre-fetched categories list if available to avoid Firestore calls
+    Map<String, dynamic>? catData;
+    if (categories != null) {
+      try {
+        catData = categories.firstWhere((c) => c.id == catId).data() as Map<String, dynamic>?;
+      } catch (_) {
+        DocumentSnapshot catDoc = await _dbService.getCategoryById(catId);
+        catData = catDoc.data() as Map<String, dynamic>?;
+      }
+    } else {
+      DocumentSnapshot catDoc = await _dbService.getCategoryById(catId);
+      catData = catDoc.data() as Map<String, dynamic>?;
+    }
+    
+    if (catData == null) return 0;
 
-    List categoryServices = (catDoc.data() as Map)['assignedServices'] ?? [];
+    List categoryServices = catData['assignedServices'] ?? [];
     List excluded = subData['excludedServices'] ?? [];
     List overridden = subData['overriddenServices'] ?? [];
 
@@ -1704,6 +1728,10 @@ class _AdminHomeState extends State<AdminHome> {
       eBill = (present - last) * rate;
     }
 
-    return servicesSum + eBill + mDuesSum;
+    // Only count eBill and manualDues if we are estimating the selected month's due
+    // calculateTotalOutstanding handles arrears separately.
+    double estimatedMonthAmount = servicesSum + eBill + mDuesSum;
+    
+    return await _dbService.calculateTotalOutstanding(subDoc.id, estimatedMonthAmount, _selectedMonthStr);
   }
 }

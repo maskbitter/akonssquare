@@ -418,7 +418,9 @@ extension BillingServiceDialogs on CategoryDialogs {
                       )).toList(),
                       onChanged: isOperator ? null : (v) => setDialogState(() {
                         selectedSubMeter = v;
-                        var match = available.firstWhere((d) => d['subMeterNo'] == v);
+                        var matches = available.where((d) => d['subMeterNo'] == v);
+                        if (matches.isEmpty) return;
+                        var match = matches.first;
                         selectedMainMeter = match['mainMeterNo']?.toString();
                         
                         var mData = match.data() as Map<String, dynamic>;
@@ -591,7 +593,8 @@ extension BillingServiceDialogs on CategoryDialogs {
     required Map<String, dynamic>? electricityDetails,
     required String mainCategoryName,
     required List manualDues,
-    String? notes
+    String? notes,
+    String? profilePictureUrl,
   }) {
     final noteController = TextEditingController(); 
     final presentUnitsController = TextEditingController(text: (electricityDetails?['presentReading'] ?? 0).toString());
@@ -1009,6 +1012,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                                   'subItemName': subItemName, 
                                   'TenantName': TenantName, 
                                   'nidNumber': nidNumber,
+                                  'profilePictureUrl': profilePictureUrl,
                                   'monthYear': monthYear, 
                                   'houseRentTotal': houseRentTotal,
                                   'electricityBill': dynamicElecBill,
@@ -1062,7 +1066,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                           foregroundColor: Theme.of(context).colorScheme.onTertiary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        onPressed: (isLoading || letterCount > 100 || (isPaid && selectedMonthIds.isEmpty) || (!isPaid && !isCurrentSelected && selectedMonthIds.isEmpty)) ? null : () {
+                        onPressed: (isLoading || letterCount > 100 || (isPaid && selectedMonthIds.isEmpty && !hasDue) || (!isPaid && !isCurrentSelected && selectedMonthIds.isEmpty)) ? null : () {
                           if (isCurrentSelected && electricityDetails != null && currentRead < lastRead) {
                             CategoryDialogs._showValidationWarning(context, "Reading cannot be lower than previous for final payment.");
                             return;
@@ -1101,6 +1105,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                                     'subItemName': subItemName, 
                                     'TenantName': TenantName, 
                                     'nidNumber': nidNumber,
+                                    'profilePictureUrl': profilePictureUrl,
                                     'monthYear': monthYear, 
                                     'houseRentTotal': houseRentTotal,
                                     'electricityBill': dynamicElecBill,
