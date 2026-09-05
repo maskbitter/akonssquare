@@ -620,16 +620,11 @@ class _LoginPageState extends State<LoginPage> {
           builder: (context, dbInfoSnap) {
             String serverStatus = 'completed';
             String dbVersion = "...";
-            String bnText = "BN$buildNumber"; // Default to local BN
+            String bnText = "BN$buildNumber"; // Strictly show local BN
             if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
               var info = dbInfoSnap.data!.data() as Map<String, dynamic>;
               serverStatus = info['serverStatus'] ?? 'completed';
               dbVersion = (info['dbVersion'] ?? DatabaseService.defaultDbVersion).toStringAsFixed(1);
-              int firestoreBN = info['buildNumber']?.toInt() ?? 0;
-              // If server has a newer BN, show that, otherwise show local
-              if (firestoreBN > buildNumber) {
-                bnText = "BN$firestoreBN";
-              }
               
               if (serverStatus == 'completed' && _temporaryMessage != null && _temporaryMessage!.contains("Updating")) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -111,9 +111,6 @@ class _UpdateGuardState extends State<UpdateGuard> {
         _remoteVersion = data['requiredVersion'];
         _isPopupEnabled = data['isPopupEnabled'] ?? true;
         _processVersioning();
-      } else {
-        // If config doc doesn't exist, create it with local version
-        _dbService.updateRequiredVersion(_localVersion!);
       }
     });
   }
@@ -123,15 +120,11 @@ class _UpdateGuardState extends State<UpdateGuard> {
 
     int cmp = _compareVersions(_localVersion!, _remoteVersion!);
 
-    if (cmp > 0) {
-      // Local is higher (developer built a new version) -> Update Firestore
-      _dbService.updateRequiredVersion(_localVersion!);
-      _stopNagging();
-    } else if (cmp < 0 && _isPopupEnabled) {
+    if (cmp < 0 && _isPopupEnabled) {
       // Local is lower AND popup is enabled -> Start nagging
       _startNagging();
     } else {
-      // Version match or popup disabled -> Stop any nagging
+      // Version match or popup disabled or local is higher -> Stop any nagging
       _stopNagging();
     }
   }

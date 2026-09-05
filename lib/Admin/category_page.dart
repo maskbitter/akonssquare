@@ -1190,25 +1190,27 @@ class _CategoryPageState extends State<CategoryPage> {
           visualDensity: VisualDensity.compact,
           dense: true,
           title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.wifi, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
-              const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  displayName, 
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, height: 1.2)
+                child: Row(
+                  children: [
+                    Icon(Icons.wifi, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        displayName, 
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, height: 1.2)
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
               trailing,
-              const SizedBox(width: 4),
-              Icon(Icons.expand_more, size: 16, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
             ],
           ),
+          iconColor: Theme.of(context).colorScheme.primary,
+          collapsedIconColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
           children: [
             Align(
               alignment: Alignment.centerLeft,
@@ -1228,7 +1230,7 @@ class _CategoryPageState extends State<CategoryPage> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
       child: Row(
         children: [
           Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),

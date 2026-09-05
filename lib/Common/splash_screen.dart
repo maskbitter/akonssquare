@@ -85,6 +85,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         DatabaseService.cachedDBVersion = data?['dbVersion']?.toDouble();
       }
 
+      /* 
       // Sync local build number to Firestore ONLY on emulator/AVD
       if (Platform.isAndroid) {
         var deviceInfo = await DeviceInfoPlugin().androidInfo;
@@ -96,6 +97,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           await DatabaseService().updateRequiredVersion(appVersion);
         }
       }
+      */
 
       // Fetch Occupied Sub-items for Login Page
       QuerySnapshot subItemsSnap = await FirebaseFirestore.instance.collection('sub_items').get();

@@ -13,13 +13,15 @@ $projectDir = Get-Location
 Write-Host "`n>>> [START] AkonsSquare Master Deployment Process" -ForegroundColor Magenta
 Write-Host "==========================================================" -ForegroundColor Magenta
 
-# 1. Read Current Version from pubspec.yaml
-$pubspec = Get-Content "pubspec.yaml" -Raw
-if ($pubspec -match "version: ([^\s]+)") {
-    $currentVersion = $Matches[1]
-} else {
-    Write-Error "Could not find version in pubspec.yaml"
+# 1. Helper to Read Current Version from build_config.dart
+function Get-FullVersion {
+    $config = Get-Content "lib/Common/build_config.dart" -Raw
+    if ($config -match "const String appVersion = `"([^`"]+)`"") {
+        return $Matches[1]
+    }
+    return ""
 }
+
 
 # 2. Read Last Released Version
 $lastVersion = ""
@@ -27,7 +29,7 @@ if (Test-Path $lastReleaseFile) {
     $lastVersion = (Get-Content $lastReleaseFile).Trim()
 }
 
-$isNewVersion = ($currentVersion -ne $lastVersion)
+$isNewVersion = $false # Will be calculated after build
 
 # 3. Build Release APK
 Write-Host "`n>>> Step 1: Building Release APK..." -ForegroundColor Yellow
@@ -38,10 +40,13 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# 4. Sync Build Number (BN)
+# 4. Read Final Version \u0026 Sync Build Number (BN)
+$currentVersion = Get-FullVersion
+$isNewVersion = ($currentVersion -ne $lastVersion)
+
 $counterPath = "android/app/build_counter.txt"
 $newBN = [int](Get-Content $counterPath).Trim()
-Write-Host ">>> Build Complete. Version: $currentVersion (BN$newBN)" -ForegroundColor Cyan
+Write-Host ">>> Build Complete. Full Version: $currentVersion" -ForegroundColor Cyan
 
 # 5. Prepare APK for Distribution
 $sourceApk = "build/app/outputs/flutter-apk/app-release.apk"
@@ -79,6 +84,10 @@ Write-Host "`n>>> Step 3: Firebase Deployment & Updates..." -ForegroundColor Yel
 try {
     # Deploy to Firebase Hosting (for version.json/index.html)
     firebase.cmd deploy --only hosting --project "akons-square"
+
+    # Update Firestore version metadata (NEW STEP)
+    Write-Host ">>> Updating Firestore version metadata..." -ForegroundColor Cyan
+    node scripts/update_firestore_version.js
 
     if ($isNewVersion) {
         Write-Host ">>> NEW VERSION DETECTED! Triggering update notifications..." -ForegroundColor Magenta

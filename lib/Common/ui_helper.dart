@@ -368,7 +368,11 @@ class _UpdateProgressDialogState extends State<UpdateProgressDialog> {
     try {
       final String filename = "update_${DateTime.now().millisecondsSinceEpoch}.apk";
       print("OTA: Starting download from ${widget.url} to $filename");
-      OtaUpdate().execute(widget.url, destinationFilename: filename).listen(
+      OtaUpdate().execute(
+        widget.url, 
+        destinationFilename: filename,
+        usePackageInstaller: true, // Required for Android 14+
+      ).listen(
         (OtaEvent event) {
           print("OTA Status: ${event.status}, Value: ${event.value}");
           setState(() {

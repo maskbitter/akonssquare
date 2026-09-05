@@ -34,6 +34,15 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Required for PackageInstaller method result handling on Android 14+ -->
+        <receiver
+            android:name="sk.fourq.otaupdate.OtaUpdateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="sk.fourq.ota_update.INSTALL_COMPLETE" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="sk.fourq.otaupdate.OtaUpdateFileProvider"
             android:authorities="com.example.akonssquare.ota_update_provider"

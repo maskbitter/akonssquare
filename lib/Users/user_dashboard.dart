@@ -583,7 +583,7 @@ class _UserDashboardState extends State<UserDashboard> {
               if (ed != null && !isElectricStopped)
                 Card(
                   elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                   color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : null,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -592,6 +592,9 @@ class _UserDashboardState extends State<UserDashboard> {
                   child: ExpansionTile(
                     backgroundColor: ThemeManager.outlineBackground,
                     collapsedBackgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : null,
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                    visualDensity: VisualDensity.compact,
+                    dense: true,
                     shape: const Border(),
                     collapsedShape: const Border(),
                     iconColor: context.electric,
@@ -636,7 +639,7 @@ class _UserDashboardState extends State<UserDashboard> {
                     wifiService: s
                   ) : null,
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                     decoration: BoxDecoration(
                       color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
@@ -655,25 +658,35 @@ class _UserDashboardState extends State<UserDashboard> {
                             childrenPadding: const EdgeInsets.only(left: 56, bottom: 8),
                             shape: const Border(),
                             collapsedShape: const Border(),
+                            iconColor: Theme.of(context).colorScheme.primary,
+                            collapsedIconColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                             title: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                CircleAvatar(
-                                  backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                  child: Container(
-                                    decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
-                                    child: Icon(Icons.wifi, color: Theme.of(context).colorScheme.primary, size: 20)
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
                                 Expanded(
-                                  child: Text(
-                                    "$name (৳${s['wifiCost'] ?? 0} / device) (x${s['deviceQuantity'] ?? 1})",
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 16,
+                                        backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                        child: Container(
+                                          decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                                          child: Icon(Icons.wifi, color: Theme.of(context).colorScheme.primary, size: 16)
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          "$name (৳${s['wifiCost'] ?? 0} / device) (x${s['deviceQuantity'] ?? 1})",
+                                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
+                                Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                               ],
                             ),
-                            trailing: Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                             children: [
                               Align(
                                 alignment: Alignment.centerLeft,
@@ -693,14 +706,15 @@ class _UserDashboardState extends State<UserDashboard> {
                       : ListTile(
                           dense: true,
                           visualDensity: VisualDensity.compact,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                           title: Row(
                             children: [
                               CircleAvatar(
+                                radius: 16,
                                 backgroundColor: isOutline ? ThemeManager.outlineBackground : (isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary).withValues(alpha: 0.1),
                                 child: Container(
                                   decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
-                                  child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary, size: 20)
+                                  child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary, size: 16)
                                 ),
                               ),
                               const SizedBox(width: 12),
