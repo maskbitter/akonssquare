@@ -1,15 +1,16 @@
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const fs = require('fs');
 const path = require('path');
 
 // 1. Initialize Firebase Admin
 const serviceAccount = require('../service-account.json');
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+initializeApp({
+  credential: cert(serviceAccount)
 });
 
-const db = admin.firestore();
+const db = getFirestore();
 
 // 2. Read build_config.dart
 const buildConfigPath = path.join(__dirname, '../lib/Common/build_config.dart');
@@ -33,13 +34,13 @@ async function updateFirestore() {
     // Update database_info
     await db.collection('app_config').doc('database_info').set({
       buildNumber: buildNumber,
-      bnUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
+      bnUpdatedAt: FieldValue.serverTimestamp()
     }, { merge: true });
 
     // Update settings (requiredVersion)
     await db.collection('app_config').doc('settings').set({
       requiredVersion: appVersion,
-      versionUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
+      versionUpdatedAt: FieldValue.serverTimestamp()
     }, { merge: true });
 
     console.log('Successfully updated Firestore version metadata.');

@@ -396,10 +396,12 @@ class _CategoryPageState extends State<CategoryPage> {
                               eBillVal = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
                             }
                             List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: d['overriddenServices'] ?? []);
-                            List manualDues = d['manualDues'] ?? [];
-                            double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
                             
-                            // Include electricity and manual dues if we are viewing this month in the UI
+                            // Filter manual dues by selected month
+                            List allManualDues = d['manualDues'] ?? [];
+                            List filteredManualDues = allManualDues.where((m) => (m is Map && m['monthYear'] == _selectedMonthStr)).toList();
+                            double mDuesSum = filteredManualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+                            
                             return (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal + mDuesSum);
                           }
 
@@ -697,7 +699,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   } else if (val == 'services') {
                                                     CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
                                                   } else if (val == 'dues') {
-                                                    CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? []);
+                                                    CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? [], monthYear: _selectedMonthStr);
                                                   } else if (val == 'remove') {
                                                      CategoryDialogs.showConfirmDialog(
                                                       context: context, 
@@ -752,7 +754,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                                               const SizedBox(width: 4),
                                               Text(
-                                                "৳${monthTotal.toStringAsFixed(2)}",
+                                                "৳${monthTotal.toStringAsFixed(0)}",
                                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                                   fontWeight: FontWeight.w900, 
                                                   color: itemOnBgColor, 
@@ -810,34 +812,35 @@ class _CategoryPageState extends State<CategoryPage> {
 
                                               ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
 
-                                              _buildSectionBox(
-                                                "Monthly Bill Summary", 
-                                                "This includes Rent, Water, Wifi, and other services billed for this cycle.", 
-                                                Icons.summarize_outlined, 
-                                                amount: servicesTotal + eBillAmount, 
-                                                color: isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
-                                              ),
-
                                               if (manualDues.isNotEmpty) ...[
                                                 const SizedBox(height: 12),
-                                                Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
-                                                const SizedBox(height: 4),
-                                                ...manualDues.map((m) => Container(
-                                                  margin: const EdgeInsets.only(bottom: 4),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                  decoration: BoxDecoration(
-                                                    color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                Builder(builder: (context) {
+                                                  var filtered = manualDues.where((m) => (m is Map && m['monthYear'] == _selectedMonthStr)).toList();
+                                                  if (filtered.isEmpty) return const SizedBox.shrink();
+                                                  return Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
-                                                      Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodySmall)),
-                                                      Text("৳${(m['amount'] as num).toDouble().toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                                                      Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                                                      const SizedBox(height: 4),
+                                                      ...filtered.map((m) => Container(
+                                                        margin: const EdgeInsets.only(bottom: 4),
+                                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                        decoration: BoxDecoration(
+                                                          color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
+                                                          borderRadius: BorderRadius.circular(8),
+                                                          border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                          children: [
+                                                            Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodySmall)),
+                                                            Text("৳${(m['amount'] as num).toDouble().toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                                                          ],
+                                                        ),
+                                                      )),
                                                     ],
-                                                  ),
-                                                )),
+                                                  );
+                                                }),
                                               ],
                                           ],
                                         ),
@@ -1048,7 +1051,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                                   } else if (val == 'services') {
                                                      CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
                                                   } else if (val == 'dues') {
-                                                     CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? []);
+                                                     CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? [], monthYear: _selectedMonthStr);
                                                   } else if (val == 'remove') {
                                                      CategoryDialogs.showConfirmDialog(
                                                       context: context, 
@@ -1103,7 +1106,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                                               const SizedBox(width: 4),
                                               Text(
-                                                "৳${totalBalance.toStringAsFixed(2)}",
+                                                "৳${(isPaid ? 0 : monthTotal).toStringAsFixed(0)}",
                                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                                   fontWeight: FontWeight.w900, 
                                                   color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, 
@@ -1165,34 +1168,35 @@ class _CategoryPageState extends State<CategoryPage> {
 
                                               ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
 
-                                              _buildSectionBox(
-                                                "Monthly Bill Summary", 
-                                                "This includes Rent, Water, Wifi, and other services billed for this cycle.", 
-                                                Icons.summarize_outlined, 
-                                                amount: servicesTotal + eBillAmount, 
-                                                color: isPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
-                                              ),
-
                                               if (manualDues.isNotEmpty) ...[
                                                 const SizedBox(height: 12),
-                                                Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
-                                                const SizedBox(height: 4),
-                                                ...manualDues.map((m) => Container(
-                                                  margin: const EdgeInsets.only(bottom: 4),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                  decoration: BoxDecoration(
-                                                    color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                Builder(builder: (context) {
+                                                  var filtered = manualDues.where((m) => (m is Map && m['monthYear'] == _selectedMonthStr)).toList();
+                                                  if (filtered.isEmpty) return const SizedBox.shrink();
+                                                  return Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
-                                                      Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodySmall)),
-                                                      Text("৳${(m['amount'] as num).toDouble().toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                                                      Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                                                      const SizedBox(height: 4),
+                                                      ...filtered.map((m) => Container(
+                                                        margin: const EdgeInsets.only(bottom: 4),
+                                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                        decoration: BoxDecoration(
+                                                          color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
+                                                          borderRadius: BorderRadius.circular(8),
+                                                          border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                          children: [
+                                                            Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodySmall)),
+                                                            Text("৳${(m['amount'] as num).toDouble().toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                                                          ],
+                                                        ),
+                                                      )),
                                                     ],
-                                                  ),
-                                                )),
+                                                  );
+                                                }),
                                               ],
                                             ],
                                           ),

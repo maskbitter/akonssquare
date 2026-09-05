@@ -770,26 +770,32 @@ extension BillingServiceDialogs on CategoryDialogs {
                     const Divider(height: 16),
 
                     // Manual Dues/Advances Breakdown
-                    if (manualDues.isNotEmpty) ...[
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text("Adjust Dues/Adv:", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
-                      ),
-                      ...manualDues.map((d) {
-                        double amt = (d['amount'] as num).toDouble();
-                        bool isAdv = amt < 0;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: CategoryDialogs._buildRow(
-                            context, 
-                            "${d['reason']}${isAdv ? ' (Adv)' : ''}:", 
-                            "৳${amt.abs().toStringAsFixed(1)}", 
-                            color: isAdv ? Colors.green : Colors.red
+                    Builder(builder: (context) {
+                      var filtered = manualDues.where((d) => d['monthYear'] == monthYear || d['monthYear'] == null).toList();
+                      if (filtered.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text("Adjust Dues/Adv ($monthYear):", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
                           ),
-                        );
-                      }),
-                      const Divider(height: 16),
-                    ],
+                          ...filtered.map((d) {
+                            double amt = (d['amount'] as num).toDouble();
+                            bool isAdv = amt < 0;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: CategoryDialogs._buildRow(
+                                context, 
+                                "${d['reason']}${isAdv ? ' (Adv)' : ''}:", 
+                                "৳${amt.abs().toStringAsFixed(1)}", 
+                                color: isAdv ? Colors.green : Colors.red
+                              ),
+                            );
+                          }),
+                          const Divider(height: 16),
+                        ],
+                      );
+                    }),
 
                     // Previous Dues from Billing History
                     if (otherDues.isNotEmpty) ...[
@@ -839,7 +845,8 @@ extension BillingServiceDialogs on CategoryDialogs {
                 
                 // Calculate Total Payable including manual dues AND selected previous dues
                 Builder(builder: (context) {
-                  double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+                  var filtered = manualDues.where((d) => d['monthYear'] == monthYear || d['monthYear'] == null).toList();
+                  double mDuesSum = filtered.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
                   double currentTotal = houseRentTotal + dynamicElecBill + mDuesSum;
                   double grandTotal = (isCurrentSelected ? currentTotal : 0) + otherDuesSelectedSum;
                   return CategoryDialogs._buildRow(context, "Total Payable:", "৳${grandTotal.toStringAsFixed(1)}", isBold: true, fontSize: 18);
@@ -1005,7 +1012,8 @@ extension BillingServiceDialogs on CategoryDialogs {
                                   finalElecDetails['presentReading'] = currentRead;
                                 }
 
-                                double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+                                var relevantDues = manualDues.where((d) => d['monthYear'] == monthYear || d['monthYear'] == null).toList();
+                                double mDuesSum = relevantDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
 
                                 await CategoryDialogs._dbService.addBillingRecord({
                                   'subItemId': subItemId, 
@@ -1017,7 +1025,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                                   'houseRentTotal': houseRentTotal,
                                   'electricityBill': dynamicElecBill,
                                   'electricityDetails': finalElecDetails,
-                                  'manualDues': manualDues,
+                                  'manualDues': relevantDues,
                                   'totalAmount': houseRentTotal + dynamicElecBill + mDuesSum, 
                                   'services': services, 
                                   'paymentNotes': note,
@@ -1025,8 +1033,9 @@ extension BillingServiceDialogs on CategoryDialogs {
                                   'paidAt': null
                                 }, actor);
 
-                                if (clearManualDues && manualDues.isNotEmpty) {
-                                  await CategoryDialogs._dbService.updateSubItemManualDues(subItemId, [], actor);
+                                if (clearManualDues && relevantDues.isNotEmpty) {
+                                  List remaining = manualDues.where((d) => !relevantDues.contains(d)).toList();
+                                  await CategoryDialogs._dbService.updateSubItemManualDues(subItemId, remaining, actor);
                                 }
 
                                 if (finalElecDetails != null) {
@@ -1098,7 +1107,9 @@ extension BillingServiceDialogs on CategoryDialogs {
                                     finalElecDetails = Map<String, dynamic>.from(electricityDetails);
                                     finalElecDetails['presentReading'] = currentRead;
                                   }
-                                  double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+                                  
+                                  var relevantDues = manualDues.where((d) => d['monthYear'] == monthYear || d['monthYear'] == null).toList();
+                                  double mDuesSum = relevantDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
 
                                   await CategoryDialogs._dbService.addBillingRecord({
                                     'subItemId': subItemId, 
@@ -1110,7 +1121,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                                     'houseRentTotal': houseRentTotal,
                                     'electricityBill': dynamicElecBill,
                                     'electricityDetails': finalElecDetails,
-                                    'manualDues': manualDues,
+                                    'manualDues': relevantDues,
                                     'totalAmount': houseRentTotal + dynamicElecBill + mDuesSum, 
                                     'services': services, 
                                     'paymentNotes': note,
@@ -1118,8 +1129,9 @@ extension BillingServiceDialogs on CategoryDialogs {
                                     'paidAt': FieldValue.serverTimestamp()
                                   }, actor);
 
-                                  if (clearManualDues && manualDues.isNotEmpty) {
-                                    await CategoryDialogs._dbService.updateSubItemManualDues(subItemId, [], actor);
+                                  if (clearManualDues && relevantDues.isNotEmpty) {
+                                    List remaining = manualDues.where((d) => !relevantDues.contains(d)).toList();
+                                    await CategoryDialogs._dbService.updateSubItemManualDues(subItemId, remaining, actor);
                                   }
                                   
                                   if (finalElecDetails != null) {
@@ -1169,7 +1181,7 @@ extension BillingServiceDialogs on CategoryDialogs {
 
   }
 
-  void showManualDueDialog({required BuildContext context, required String subItemId, required String subItemName, required List manualDues}) {
+  void showManualDueDialog({required BuildContext context, required String subItemId, required String subItemName, required List manualDues, required String monthYear}) {
     final amountController = TextEditingController();
     final reasonController = TextEditingController();
     List<Map<String, dynamic>> currentDues = List<Map<String, dynamic>>.from(manualDues.map((e) => Map<String, dynamic>.from(e)));
@@ -1200,6 +1212,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                 ),
                 const SizedBox(height: 16),
                 Text("Adjust Dues/Adv: $subItemName", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                Text("Tagging for: $monthYear", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
               ],
             ),
             content: SizedBox(
@@ -1254,7 +1267,12 @@ extension BillingServiceDialogs on CategoryDialogs {
                           if (amt != null && reason.isNotEmpty) {
                             setDialogState(() {
                               double finalAmt = isAdvance ? -amt.abs() : amt.abs();
-                              currentDues.add({'amount': finalAmt, 'reason': reason, 'date': DateTime.now().toIso8601String()});
+                              currentDues.add({
+                                'amount': finalAmt, 
+                                'reason': reason, 
+                                'date': DateTime.now().toIso8601String(),
+                                'monthYear': monthYear, // Tagging with month
+                              });
                               amountController.clear();
                               reasonController.clear();
                             });
@@ -1278,10 +1296,11 @@ extension BillingServiceDialogs on CategoryDialogs {
                           var due = currentDues[index];
                           double amt = (due['amount'] as num).toDouble();
                           bool isAdv = amt < 0;
+                          String tag = due['monthYear'] ?? "Global";
                           return ListTile(
                             dense: true,
                             title: Text("${due['reason']} ${isAdv ? '(Advance)' : ''}"),
-                            subtitle: Text("Added: ${due['date'].toString().split('T')[0]}"),
+                            subtitle: Text("For: $tag | ${due['date'].toString().split('T')[0]}"),
                             trailing: Text(
                               "৳${amt.abs().toStringAsFixed(1)}", 
                               style: TextStyle(fontWeight: FontWeight.bold, color: isAdv ? Colors.green : Colors.red)
