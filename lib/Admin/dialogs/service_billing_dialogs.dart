@@ -488,7 +488,7 @@ extension BillingServiceDialogs on CategoryDialogs {
     final noteController = TextEditingController(); 
     final presentUnitsController = TextEditingController(text: (electricityDetails?['presentReading'] ?? 0).toString());
     DateTime now = DateTime.now(); 
-    DateTime selectedDate = DateTime(now.year, now.month);
+    DateTime selectedDate = DateTime(now.year, now.month - 1);
     final List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     bool isLoading = false;
     bool clearManualDues = true; // Default to clear manual dues on payment

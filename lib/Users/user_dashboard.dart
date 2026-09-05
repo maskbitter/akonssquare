@@ -171,6 +171,37 @@ class _UserDashboardState extends State<UserDashboard> {
     }
   }
 
+  Widget _buildDetailRow(BuildContext context, String label, String value, {String? subtitle, Color? valueColor, bool isBold = false}) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: subtitle != null ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant)),
+                if (subtitle != null)
+                  Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic)),
+              ],
+            ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+              color: isOutline ? Colors.black : valueColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfoRow(String label, String value, {bool isBold = false, IconData? icon}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 8.0),
@@ -407,24 +438,224 @@ class _UserDashboardState extends State<UserDashboard> {
 
         double servicesSum = activeServices.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
         double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
-        double totalBill = servicesSum + electricityBill + mDuesSum;
 
-        // --- PAYMENT CHECK FOR CURRENT MONTH ---
+        // --- BILLING HISTORY FETCH (CONSOLIDATED) ---
         List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         DateTime nowTime = DateTime.now();
+        DateTime prevMonth = DateTime(nowTime.year, nowTime.month - 1);
+        String prevMonthYear = "${months[prevMonth.month - 1]}-${prevMonth.year.toString().substring(2)}";
         String currentMonthYear = "${months[nowTime.month - 1]}-${nowTime.year.toString().substring(2)}";
 
         return StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance.collection('billing_history')
               .where('subItemId', isEqualTo: widget.subItemId)
-              .where('monthYear', isEqualTo: currentMonthYear)
               .snapshots(),
-          builder: (context, paySnap) {
-            bool isPaidThisMonth = paySnap.hasData && paySnap.data!.docs.isNotEmpty;
+          builder: (context, historySnapshot) {
+            if (!historySnapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+            var historyDocs = historySnapshot.data!.docs;
             
-            // Keep the totalBill (Fixed + Elec Usage). 
-            // Electricity resets to 0 on payment, so total will show fixed services.
-            double displayTotal = totalBill;
+            // Helper to parse Month-Year for sorting
+            DateTime parseMY(String my) {
+              List<String> parts = my.split('-');
+              int m = months.indexOf(parts[0]) + 1;
+              int y = 2000 + (int.tryParse(parts[1]) ?? 0);
+              return DateTime(y, m);
+            }
+
+            String lastPaidMonth = "None";
+            if (historyDocs.isNotEmpty) {
+              var sortedPaid = historyDocs.map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
+              sortedPaid.sort((a, b) => parseMY(b).compareTo(parseMY(a)));
+              lastPaidMonth = sortedPaid.first;
+            }
+
+            List<String> paidMonths = historyDocs.map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
+            bool isPrevPaid = paidMonths.contains(prevMonthYear);
+            
+            List<String> pendingMonths = [];
+            if (createdAt != null) {
+              DateTime current = DateTime(createdAt.year, createdAt.month);
+              while (current.isBefore(nowTime) || (current.year == nowTime.year && current.month == nowTime.month)) {
+                String mYear = "${months[current.month - 1]}-${current.year.toString().substring(2)}";
+                if (!paidMonths.contains(mYear)) pendingMonths.add(mYear);
+                current = DateTime(current.year, current.month + 1);
+              }
+            }
+
+            // Total Outstanding: Sum of fixed services for all unpaid months + current variable dues
+            double totalOutstanding = (servicesSum * pendingMonths.length) + electricityBill + mDuesSum;
+
+            void showUnpaidDetails(String month) {
+              bool isCurrent = month == currentMonthYear;
+              bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+              
+              double rentAmount = 0;
+              List<Map<String, dynamic>> otherServices = [];
+              for (var s in activeServices) {
+                if (s['name'].toString().toLowerCase().contains('rent')) {
+                  rentAmount += (s['amount'] as num?)?.toDouble() ?? 0;
+                } else {
+                  otherServices.add(Map<String, dynamic>.from(s));
+                }
+              }
+              double rentAndServicesSubtotal = rentAmount + otherServices.fold(0.0, (sum, s) => sum + (s['amount'] as num).toDouble());
+              double monthGrandTotal = rentAndServicesSubtotal + (isCurrent ? (electricityBill + mDuesSum) : 0);
+
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: isOutline ? ThemeManager.outlineBackground : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
+                  ),
+                  title: Column(
+                    children: [
+                      Text("Due: $month", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)),
+                      const SizedBox(height: 4),
+                      Text("$subName ($TenantName)", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary)),
+                      const Divider(height: 24),
+                    ],
+                  ),
+                  content: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.95,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDetailRow(context, "Payment Status:", "Unpaid", isBold: true, valueColor: Theme.of(context).colorScheme.error),
+                          const SizedBox(height: 16),
+                          
+                          Row(
+                            children: [
+                              Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary, size: 18),
+                              const SizedBox(width: 8),
+                              Text("Rent & Services", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          _buildDetailRow(context, "House Rent", "৳${rentAmount.toStringAsFixed(2)}"),
+                          ...otherServices.map((s) {
+                            String name = s['name'] ?? 'Service';
+                            return _buildDetailRow(context, name, "৳${(s['amount'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'}");
+                          }),
+                          const Divider(),
+                          _buildDetailRow(
+                            context,
+                            "Subtotal (Rent & Services)",
+                            "৳${rentAndServicesSubtotal.toStringAsFixed(2)}",
+                            isBold: true,
+                          ),
+
+                          if (isCurrent && (ed != null || electricityBill > 0)) ...[
+                            const SizedBox(height: 24),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: isOutline ? Theme.of(context).colorScheme.primary : context.electric.withValues(alpha: 0.1)),
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.electric_bolt, color: context.electric, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : context.electric)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  if (ed != null) ...[
+                                    _buildDetailRow(context, "Meter No:", ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'),
+                                    _buildDetailRow(context, "Last Units:", "${(ed['lastReading'] as num?)?.toDouble().toStringAsFixed(1) ?? '0.0'}"),
+                                    _buildDetailRow(context, "Present Units:", "${(ed['presentReading'] as num?)?.toDouble().toStringAsFixed(1) ?? '0.0'}"),
+                                    _buildDetailRow(context, "Used Units:", "${(((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)).toDouble().toStringAsFixed(2)}", isBold: true),
+                                    _buildDetailRow(context, "Price per Unit:", "৳${(ed['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'}"),
+                                  ],
+                                  const Divider(height: 20),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text("Electric Bill", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)),
+                                      Text("৳${electricityBill.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: context.electric)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          if (isCurrent && manualDues.isNotEmpty) ...[
+                             const SizedBox(height: 16),
+                             Text("Adjust Dues/Adv", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                             const SizedBox(height: 8),
+                             ...manualDues.map((d) {
+                               double amt = (d['amount'] as num).toDouble();
+                               bool isAdv = amt < 0;
+                               return _buildDetailRow(
+                                 context, 
+                                 "${d['reason']}${isAdv ? ' (Adv)' : ''}", 
+                                 "৳${amt.abs().toStringAsFixed(2)}", 
+                                 valueColor: isAdv ? Colors.green : Theme.of(context).colorScheme.error
+                               );
+                             }),
+                          ],
+
+                          const SizedBox(height: 24),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary,
+                              borderRadius: BorderRadius.circular(16),
+                              border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    "Grand Total", 
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: isOutline ? Colors.black : Colors.white, 
+                                      fontWeight: FontWeight.bold
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text("৳${monthGrandTotal.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.w900)),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: Text("Note: Payment pending", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: isOutline ? Colors.black : null)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    AppDialogActions(
+                      actions: [
+                        AppButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.error,
+                            foregroundColor: isOutline ? Colors.black : Colors.white,
+                            side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                          ),
+                          onPressed: () => Navigator.pop(ctx), 
+                          child: const Text("Close")
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }
 
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -503,46 +734,45 @@ class _UserDashboardState extends State<UserDashboard> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(isPaidThisMonth ? Icons.check_circle : Icons.pending_actions, color: isPaidThisMonth ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.error, size: 20),
+                            Icon(isPrevPaid ? Icons.check_circle : Icons.pending_actions, color: isPrevPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.error, size: 20),
                             const SizedBox(width: 8),
-                            Text(isPaidThisMonth ? "MONTHLY BILL (PAID)" : "CURRENT OUTSTANDING", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                            Text(isPrevPaid ? "MONTHLY BILL (PAID)" : "CURRENT OUTSTANDING", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "৳${displayTotal.toStringAsFixed(2)}",
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: isPaidThisMonth ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
+                          "৳${totalOutstanding.toStringAsFixed(2)}",
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: isPrevPaid ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 4),
-                        if (createdAt != null)
-                          Text(isPaidThisMonth ? "Current month paid: $currentMonthYear" : "Active since: ${DatabaseService.formatMonthYear(createdAt)}", style: Theme.of(context).textTheme.labelSmall),
+                        Text("Last Paid: $lastPaidMonth", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
                         
-                        // --- COMPACT PENDING MONTHS (Moved here) ---
-                        if (!isPaidThisMonth)
-                          StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance.collection('billing_history').where('subItemId', isEqualTo: widget.subItemId).snapshots(),
-                            builder: (context, historySnapshot) {
-                              if (!historySnapshot.hasData) return const SizedBox.shrink();
-                              List<String> paidMonths = historySnapshot.data!.docs.map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
-                              List<String> pendingMonths = [];
-                              if (createdAt != null) {
-                                DateTime now = DateTime.now();
-                                DateTime current = DateTime(createdAt.year, createdAt.month);
-                                List<String> monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                                while (current.isBefore(now) || (current.year == now.year && current.month == now.month)) {
-                                  String mYear = "${monthNames[current.month - 1]}-${current.year.toString().substring(2)}";
-                                  if (!paidMonths.contains(mYear)) pendingMonths.add(mYear);
-                                  current = DateTime(current.year, current.month + 1);
-                                }
-                              }
-                              if (pendingMonths.isEmpty) return const SizedBox.shrink();
-                              return Column(
-                                children: [
-                                  const Divider(height: 24, indent: 40, endIndent: 40),
-                                  Text("UNPAID: ${pendingMonths.join(', ')}", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, fontSize: 10)),
-                                ],
-                              );
-                            }
+                        if (pendingMonths.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text("Due: ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                                ...pendingMonths.asMap().entries.map((entry) {
+                                  int idx = entry.key;
+                                  String m = entry.value;
+                                  bool isCurrent = m == currentMonthYear;
+                                  return InkWell(
+                                    onTap: isCurrent ? null : () => showUnpaidDetails(m),
+                                    child: Text(
+                                      "$m${idx == pendingMonths.length - 1 ? '' : ', '}",
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.error,
+                                        decoration: isCurrent ? TextDecoration.none : TextDecoration.underline,
+                                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
                           ),
                       ],
                     ),
@@ -632,7 +862,7 @@ class _UserDashboardState extends State<UserDashboard> {
                 bool isWifi = name.toLowerCase().contains("wifi");
                 bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
                 return GestureDetector(
-                  onTap: isWifi ? () => CategoryDialogs.showUserMacDetailsDialog(
+                  onTap: (isWifi && macAddresses.isNotEmpty) ? () => CategoryDialogs.showUserMacDetailsDialog(
                     context: context, 
                     subItemName: subName, 
                     macAddresses: macAddresses, 
@@ -719,17 +949,11 @@ class _UserDashboardState extends State<UserDashboard> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      isWifi 
-                                          ? "$name (৳${s['wifiCost'] ?? 0} / device) (x${s['deviceQuantity'] ?? 1})" 
-                                          : name,
-                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
-                                    ),
-                                    if (isWifi) Text("৳${s['wifiCost'] ?? 0} per device", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : null)),
-                                  ],
+                                child: Text(
+                                  isWifi 
+                                      ? "$name (৳${s['wifiCost'] ?? 0} / device) (x${s['deviceQuantity'] ?? 1})" 
+                                      : name,
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
                                 ),
                               ),
                             ],
@@ -743,31 +967,35 @@ class _UserDashboardState extends State<UserDashboard> {
               if (manualDues.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text("ADDITIONAL DUES", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                  child: Text("ADJUST DUES/ADVANCES", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                 ),
                 ...manualDues.map((d) {
+                  double amt = (d['amount'] as num).toDouble();
+                  bool isAdv = amt < 0;
                   bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+                  Color itemColor = isAdv ? Colors.green : Theme.of(context).colorScheme.error;
+                  
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
-                      color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.05),
+                      color: isOutline ? ThemeManager.outlineBackground : itemColor.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3), width: 1.5),
+                      border: Border.all(color: itemColor.withValues(alpha: 0.3), width: 1.5),
                     ),
                     child: ListTile(
                       dense: true,
                       visualDensity: VisualDensity.compact,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                       leading: CircleAvatar(
-                        backgroundColor: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
-                        child: Icon(Icons.money_off, color: Theme.of(context).colorScheme.error, size: 20),
+                        backgroundColor: itemColor.withValues(alpha: 0.1),
+                        child: Icon(isAdv ? Icons.account_balance_wallet_outlined : Icons.money_off, color: itemColor, size: 20),
                       ),
                       title: Text(
-                        d['reason'],
+                        "${d['reason']}${isAdv ? ' (Adv)' : ''}",
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
                       ),
                       subtitle: Text("Added: ${d['date']?.toString().split('T')[0] ?? ''}", style: Theme.of(context).textTheme.bodySmall),
-                      trailing: Text("৳${(d['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                      trailing: Text("৳${amt.abs().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: itemColor)),
                     ),
                   );
                 }),

@@ -29,7 +29,8 @@ class _AdminHomeState extends State<AdminHome> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now();
+    DateTime now = DateTime.now();
+    _selectedDate = DateTime(now.year, now.month - 1);
     _loadRole();
   }
 

@@ -26,7 +26,8 @@ class _CategoryPageState extends State<CategoryPage> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now();
+    DateTime now = DateTime.now();
+    _selectedDate = DateTime(now.year, now.month - 1);
   }
 
   String get _selectedMonthStr => DatabaseService.formatMonthYear(_selectedDate);
