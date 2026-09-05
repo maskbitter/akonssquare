@@ -7,6 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  static const double defaultDbVersion = 0.0;
+
+  // --- Normalization Helper ---
+  String _normalize(String input) => input.toLowerCase().replaceAll(' ', '');
+
   // --- Static Cache for Pre-fetching ---
   static List<Map<String, dynamic>> cachedSubItems = [];
   static Map<String, dynamic>? cachedAppConfig;
@@ -47,15 +52,24 @@ class DatabaseService {
     return await _db.collection('categories').doc(categoryId).get();
   }
 
-  Future<bool> checkCategoryExists(String lowerName) async {
-    var existingDocs = await _db.collection('categories').where('categoryNameLower', isEqualTo: lowerName).get();
+  Stream<DocumentSnapshot> getCategoryStream(String categoryId) {
+    return _db.collection('categories').doc(categoryId).snapshots();
+  }
+
+  Future<bool> checkCategoryExists(String name) async {
+    String normalized = _normalize(name);
+    var existingDocs = await _db.collection('categories').where('categoryNameNormalized', isEqualTo: normalized).get();
     return existingDocs.docs.isNotEmpty;
   }
 
   Future<void> addCategory(String name, String actor) async {
+    if (await checkCategoryExists(name)) {
+      throw Exception("DuplicateFound:Category");
+    }
     DocumentReference doc = await _db.collection('categories').add({
       'categoryName': name,
       'categoryNameLower': name.toLowerCase(),
+      'categoryNameNormalized': _normalize(name),
       'assignedServices': [],
       'createdAt': FieldValue.serverTimestamp(),
       'clientTimestamp': DateTime.now().toIso8601String(),
@@ -94,9 +108,19 @@ class DatabaseService {
     return _db.collection('services').orderBy('createdAt', descending: true).snapshots();
   }
 
+  Future<bool> checkServiceExists(String name) async {
+    String normalized = _normalize(name);
+    var existingDocs = await _db.collection('services').where('serviceNameNormalized', isEqualTo: normalized).get();
+    return existingDocs.docs.isNotEmpty;
+  }
+
   Future<void> addService(String name, double amount, String actor) async {
+    if (await checkServiceExists(name)) {
+      throw Exception("DuplicateFound:Service");
+    }
     DocumentReference doc = await _db.collection('services').add({
       'serviceName': name,
+      'serviceNameNormalized': _normalize(name),
       'amount': amount,
       'createdAt': FieldValue.serverTimestamp(),
       'clientTimestamp': DateTime.now().toIso8601String(),
@@ -123,18 +147,23 @@ class DatabaseService {
   }
 
   Future<bool> checkSubItemExists(String categoryId, String name) async {
+    String normalized = _normalize(name);
     var duplicateCheck = await _db
         .collection('sub_items')
         .where('categoryId', isEqualTo: categoryId)
-        .where('subItemName', isEqualTo: name)
+        .where('subItemNameNormalized', isEqualTo: normalized)
         .get();
     return duplicateCheck.docs.isNotEmpty;
   }
 
   Future<void> addSubItem(String categoryId, String name, String actor) async {
+    if (await checkSubItemExists(categoryId, name)) {
+      throw Exception("DuplicateFound:Unit");
+    }
     DocumentReference doc = await _db.collection('sub_items').add({
       'categoryId': categoryId,
       'subItemName': name,
+      'subItemNameNormalized': _normalize(name),
       'TenantName': 'No Name',
       'nidNumber': 'No Number',
       'notes': '',
@@ -156,13 +185,26 @@ class DatabaseService {
 
   Future<void> updateSubItemStatus(String subItemId, String status, String actor, {String? TenantName, String? nidNumber}) async {
     DocumentSnapshot old = await _db.collection('sub_items').doc(subItemId).get();
-    String unitName = (old.data() as Map?)?['subItemName'] ?? 'Unknown';
+    var oldData = old.data() as Map<String, dynamic>?;
+    String unitName = oldData?['subItemName'] ?? 'Unknown';
 
     Map<String, dynamic> data = {'status': status};
     if (status == 'Vacant') {
+      // Archive MAC addresses before clearing
+      List macs = oldData?['macAddresses'] ?? [];
+      if (macs.isNotEmpty) {
+        await logActivity(
+          actor: actor,
+          action: "Archive MAC Addresses",
+          details: "Unit '$unitName' became Vacant. Archived MACs: ${macs.join(', ')}",
+          category: "Wifi",
+        );
+      }
       data['TenantName'] = 'No Name';
       data['nidNumber'] = 'No Number';
       data['occupiedAt'] = null;
+      data['macAddresses'] = []; // Clear active list
+      data['manualDues'] = [];   // Clear manual dues
     } else {
       if (TenantName != null) data['TenantName'] = TenantName.isEmpty ? 'No Name' : TenantName;
       if (nidNumber != null) data['nidNumber'] = nidNumber.isEmpty ? 'No Number' : nidNumber;
@@ -212,6 +254,90 @@ class DatabaseService {
       details: "Updated info for unit '$unitName'. Fields changed: ${data.keys.join(', ')}",
       category: "Units",
     );
+  }
+
+  Future<void> updateSubItemManualDues(String subItemId, List dues, String actor) async {
+    DocumentSnapshot old = await _db.collection('sub_items').doc(subItemId).get();
+    String unitName = (old.data() as Map?)?['subItemName'] ?? 'Unknown';
+
+    await _db.collection('sub_items').doc(subItemId).update({
+      'manualDues': dues,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
+    });
+
+    await logActivity(
+      actor: actor,
+      action: "Update Manual Dues",
+      details: "Updated manual dues for '$unitName'. Total entries: ${dues.length}",
+      category: "Billing",
+    );
+  }
+
+  Future<void> updateSubItemMacAddresses(String subItemId, List macs, String actor) async {
+    DocumentSnapshot old = await _db.collection('sub_items').doc(subItemId).get();
+    String unitName = (old.data() as Map?)?['subItemName'] ?? 'Unknown';
+
+    await _db.collection('sub_items').doc(subItemId).update({
+      'macAddresses': macs,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
+    });
+
+    await logActivity(
+      actor: actor,
+      action: "Update MAC Addresses",
+      details: "Updated MAC addresses for '$unitName'. Devices: ${macs.length}",
+      category: "Wifi",
+    );
+  }
+
+  Future<String> generateNextSerialNumber() async {
+    var snap = await _db.collection('sub_items').get();
+    int maxSN = 0;
+    for (var doc in snap.docs) {
+      List macs = (doc.data() as Map)['macAddresses'] ?? [];
+      for (var m in macs) {
+        if (m is Map && m['sn'] != null) {
+          String snStr = m['sn'].toString();
+          int? val = int.tryParse(snStr);
+          if (val != null && val > maxSN) maxSN = val;
+        }
+      }
+    }
+    // Standard starting point 1, or next sequential
+    return (maxSN == 0 ? 1 : maxSN + 1).toString();
+  }
+
+  Future<List<Map<String, dynamic>>> getAllActiveMacAddresses() async {
+    var snap = await _db.collection('sub_items').where('status', isEqualTo: 'Occupied').get();
+    List<Map<String, dynamic>> allMacs = [];
+    for (var doc in snap.docs) {
+      var data = doc.data();
+      List macs = data['macAddresses'] ?? [];
+      for (var m in macs) {
+        // Handle both string and structured data
+        String mac = "";
+        String sn = "";
+        if (m is Map) {
+          mac = m['mac']?.toString() ?? "";
+          sn = m['sn']?.toString() ?? "";
+        } else {
+          mac = m.toString();
+        }
+        
+        if (mac.isNotEmpty) {
+          allMacs.add({
+            'mac': mac,
+            'sn': sn,
+            'subItemName': data['subItemName'] ?? 'Unknown',
+            'tenantName': data['TenantName'] ?? 'No Name',
+            'subItemId': doc.id,
+          });
+        }
+      }
+    }
+    return allMacs;
   }
 
   Future<void> updateSubItemExcludedServices(String subItemId, List excludedServices, String actor) async {
@@ -286,6 +412,46 @@ class DatabaseService {
     );
   }
 
+  Future<void> removeSubItemElectricity(String subItemId, String actor) async {
+    DocumentSnapshot doc = await _db.collection('sub_items').doc(subItemId).get();
+    if (!doc.exists) return;
+
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    String unitName = data['subItemName'] ?? 'Unknown';
+    var ed = data['electricityDetails'];
+
+    if (ed != null) {
+      String? subMeterNo = ed['subMeterNo'];
+      double presentReading = (ed['presentReading'] ?? 0).toDouble();
+
+      if (subMeterNo != null) {
+        // 1. Free the sub-meter and save its last reading
+        var meterSnap = await _db.collection('sub_meters').where('subMeterNo', isEqualTo: subMeterNo).limit(1).get();
+        if (meterSnap.docs.isNotEmpty) {
+          await meterSnap.docs.first.reference.update({
+            'isAssigned': false,
+            'presentReading': presentReading,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      // 2. Remove electricityDetails from sub_item
+      await _db.collection('sub_items').doc(subItemId).update({
+        'electricityDetails': FieldValue.delete(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'clientTimestamp': DateTime.now().toIso8601String(),
+      });
+
+      await logActivity(
+        actor: actor,
+        action: "Remove Unit Electricity",
+        details: "Disconnected meter '$subMeterNo' from '$unitName'. Last reading $presentReading carried forward.",
+        category: "Electricity",
+      );
+    }
+  }
+
   // ==========================================
   // 5. MAIN METER METHODS
   // ==========================================
@@ -298,7 +464,26 @@ class DatabaseService {
     return _db.collection('sub_items').where('electricityDetails.mainMeterNo', isEqualTo: mainMeterNo).snapshots();
   }
 
+  Stream<QuerySnapshot> getSubItemsBySubMeter(String subMeterNo) {
+    return _db.collection('sub_items').where('electricityDetails.subMeterNo', isEqualTo: subMeterNo).snapshots();
+  }
+
+  Stream<QuerySnapshot> getSubMetersByMainMeter(String mainMeterNo) {
+    return _db.collection('sub_meters').where('mainMeterNo', isEqualTo: mainMeterNo).snapshots();
+  }
+
+  Future<bool> checkMainMeterExists(String meterNo) async {
+    String normalized = _normalize(meterNo);
+    var existingDocs = await _db.collection('main_meters').where('meterNoNormalized', isEqualTo: normalized).get();
+    return existingDocs.docs.isNotEmpty;
+  }
+
   Future<void> addMainMeter(Map<String, dynamic> data, String actor) async {
+    String meterNo = data['meterNo'] ?? '';
+    if (await checkMainMeterExists(meterNo)) {
+      throw Exception("DuplicateFound:MainMeter");
+    }
+    data['meterNoNormalized'] = _normalize(meterNo);
     data['createdAt'] = FieldValue.serverTimestamp();
     data['updatedAt'] = FieldValue.serverTimestamp();
     data['clientTimestamp'] = DateTime.now().toIso8601String();
@@ -347,7 +532,18 @@ class DatabaseService {
     return _db.collection('sub_meters').orderBy('createdAt', descending: true).snapshots();
   }
 
+  Future<bool> checkSubMeterExists(String subMeterNo) async {
+    String normalized = _normalize(subMeterNo);
+    var existingDocs = await _db.collection('sub_meters').where('subMeterNoNormalized', isEqualTo: normalized).get();
+    return existingDocs.docs.isNotEmpty;
+  }
+
   Future<void> addSubMeter(Map<String, dynamic> data, String actor) async {
+    String subMeterNo = data['subMeterNo'] ?? '';
+    if (await checkSubMeterExists(subMeterNo)) {
+      throw Exception("DuplicateFound:SubMeter");
+    }
+    data['subMeterNoNormalized'] = _normalize(subMeterNo);
     data['createdAt'] = FieldValue.serverTimestamp();
     data['updatedAt'] = FieldValue.serverTimestamp();
     data['clientTimestamp'] = DateTime.now().toIso8601String();
@@ -423,12 +619,44 @@ class DatabaseService {
     });
   }
 
-  Future<void> updateRequiredVersion(String version) async {
-    await _db.collection('app_config').doc('settings').set({
-      'requiredVersion': version,
-      'updatedAt': FieldValue.serverTimestamp(),
-      'clientTimestamp': DateTime.now().toIso8601String(),
-    }, SetOptions(merge: true));
+  Future<void> updateRequiredVersion(String newVersion) async {
+    // Only update if the new version is higher or if the document doesn't exist/is empty
+    DocumentSnapshot snap = await _db.collection('app_config').doc('settings').get();
+    bool shouldUpdate = true;
+    
+    if (snap.exists) {
+      String currentServerV = snap['requiredVersion'] ?? "";
+      if (currentServerV.isNotEmpty) {
+        try {
+          // Compare versions (e.g., 1.0.0+7 vs 1.0.0+6)
+          List<String> currentParts = currentServerV.split('+');
+          List<String> nextParts = newVersion.split('+');
+          
+          int currentMain = int.tryParse(currentParts[0].replaceAll('.', '')) ?? 0;
+          int nextMain = int.tryParse(nextParts[0].replaceAll('.', '')) ?? 0;
+          
+          if (nextMain < currentMain) {
+            shouldUpdate = false;
+          } else if (nextMain == currentMain && nextParts.length > 1 && currentParts.length > 1) {
+            int currentBuild = int.tryParse(currentParts[1]) ?? 0;
+            int nextBuild = int.tryParse(nextParts[1]) ?? 0;
+            if (nextBuild <= currentBuild) shouldUpdate = false;
+          }
+        } catch (e) {
+          // If parsing fails, allow update if it's just different
+          shouldUpdate = currentServerV != newVersion;
+        }
+      }
+    }
+
+    if (shouldUpdate) {
+      await _db.collection('app_config').doc('settings').set({
+        'requiredVersion': newVersion,
+        'downloadUrl': snap.exists ? (snap['downloadUrl'] ?? "") : "", 
+        'updatedAt': FieldValue.serverTimestamp(),
+        'clientTimestamp': DateTime.now().toIso8601String(),
+      }, SetOptions(merge: true));
+    }
   }
 
   Future<void> updatePopupStatus(bool isEnabled) async {
@@ -451,12 +679,68 @@ class DatabaseService {
     return _db.collection('app_config').doc('visibility_$role').snapshots();
   }
 
-  Future<void> setServerStatus(String status) async {
+  Future<void> setServerStatus(String status, {double progress = 0.0}) async {
     await _db.collection('app_config').doc('database_info').set({
       'serverStatus': status,
+      'progress': progress,
       'statusUpdatedAt': FieldValue.serverTimestamp(),
       'clientTimestamp': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
+  }
+
+  Future<void> updateSystemBuildNumber(int localBN) async {
+    // Only update if the local build number is higher than what's on the server
+    DocumentSnapshot snap = await _db.collection('app_config').doc('database_info').get();
+    if (snap.exists) {
+      int serverBN = (snap.data() as Map<String, dynamic>)['buildNumber']?.toInt() ?? 0;
+      if (localBN > serverBN) {
+        await _db.collection('app_config').doc('database_info').update({
+          'buildNumber': localBN,
+          'bnUpdatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } else {
+      await _db.collection('app_config').doc('database_info').set({
+        'buildNumber': localBN,
+      }, SetOptions(merge: true));
+    }
+  }
+
+  // --- ROLLBACK SYSTEM ---
+
+  Future<void> createRollbackSnapshot(String actor) async {
+    // 1. Get current server version to keep it in snapshot
+    double currentVer = await getDBVersion();
+    // 2. Export current data with current version
+    Map<String, dynamic> currentData = await exportDatabase(actor, forcedVersion: currentVer);
+    // 3. Store in a dedicated doc
+    await _db.collection('app_config').doc('rollback_snapshot').set({
+      'snapshot': currentData,
+      'createdAt': FieldValue.serverTimestamp(),
+      'actor': actor,
+    });
+  }
+
+  Future<void> restoreFromRollback(String actor, {Function(double)? onProgress}) async {
+    DocumentSnapshot snap = await _db.collection('app_config').doc('rollback_snapshot').get();
+    if (!snap.exists) return;
+
+    Map<String, dynamic> data = snap.data() as Map<String, dynamic>;
+    Map<String, dynamic> snapshot = data['snapshot'];
+
+    await setServerStatus('uploading', progress: 0.0);
+    await importDatabase(snapshot, actor, onProgress: onProgress);
+    await clearRollbackSnapshot();
+    await setServerStatus('completed');
+  }
+
+  Future<void> clearRollbackSnapshot() async {
+    await _db.collection('app_config').doc('rollback_snapshot').delete();
+  }
+
+  Future<bool> hasRollbackSnapshot() async {
+    DocumentSnapshot snap = await _db.collection('app_config').doc('rollback_snapshot').get();
+    return snap.exists;
   }
 
   // ==========================================
@@ -466,15 +750,57 @@ class DatabaseService {
   Future<void> addBillingRecord(Map<String, dynamic> data, String actor) async {
     data['createdAt'] = FieldValue.serverTimestamp();
     data['clientTimestamp'] = DateTime.now().toIso8601String();
+    String status = data['status'] ?? 'Paid';
+    // Ensure status is explicitly in the map
+    data['status'] = status;
     await _db.collection('billing_history').add(data);
 
     await logActivity(
       actor: actor,
-      action: "Accept Payment",
-      details: "Marked as paid for '${data['subItemName']}' month ${data['monthYear']}. Amount: ৳${data['totalAmount']}",
+      action: status == 'Due' ? "Marked as Due" : "Accept Payment",
+      details: "${status == 'Due' ? 'Marked as due' : 'Marked as paid'} for '${data['subItemName']}' month ${data['monthYear']}. Amount: ৳${data['totalAmount']}",
       category: "Billing",
     );
   }
+
+  Future<void> updateDueRecordElectricity({
+    required String recordId,
+    required double newEBill,
+    required double newTotal,
+    required Map<String, dynamic> newElecDetails,
+  }) async {
+    await _db.collection('billing_history').doc(recordId).update({
+      'electricityBill': newEBill,
+      'totalAmount': newTotal,
+      'electricityDetails': newElecDetails,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+
+  Future<void> updateBillingRecordStatus(String recordId, String status, String actor, {String? newNote}) async {
+    Map<String, dynamic> updateData = {
+      'status': status,
+      'paidAt': status == 'Paid' ? FieldValue.serverTimestamp() : null,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (newNote != null) {
+      updateData['paymentNotes'] = newNote;
+    }
+
+    await _db.collection('billing_history').doc(recordId).update(updateData);
+
+    DocumentSnapshot snap = await _db.collection('billing_history').doc(recordId).get();
+    var data = snap.data() as Map<String, dynamic>?;
+
+    await logActivity(
+      actor: actor,
+      action: "Update Payment Status",
+      details: "Payment status for '${data?['subItemName']}' month ${data?['monthYear']} updated to '$status'",
+      category: "Billing",
+    );
+  }
+
 
   Future<bool> checkPaymentExists(String subItemId, String monthYear) async {
     var snap = await _db.collection('billing_history').where('subItemId', isEqualTo: subItemId).where('monthYear', isEqualTo: monthYear).limit(1).get();
@@ -494,15 +820,60 @@ class DatabaseService {
     return null;
   }
 
+  Future<QuerySnapshot> getAllDueRecords(String subItemId) async {
+    return await _db.collection('billing_history')
+        .where('subItemId', isEqualTo: subItemId)
+        .where('status', isEqualTo: 'Due')
+        .get();
+  }
+
+  Stream<QuerySnapshot> getAllDueRecordsStream(String subItemId) {
+    return _db.collection('billing_history')
+        .where('subItemId', isEqualTo: subItemId)
+        .where('status', isEqualTo: 'Due')
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getAllBillingRecordsStream(String subItemId) {
+    return _db.collection('billing_history')
+        .where('subItemId', isEqualTo: subItemId)
+        .snapshots();
+  }
+
+
+  Future<void> markMultipleRecordsAsPaid(List<String> recordIds, String actor) async {
+    WriteBatch batch = FirebaseFirestore.instance.batch();
+    for (String id in recordIds) {
+      batch.update(FirebaseFirestore.instance.collection('billing_history').doc(id), {
+        'status': 'Paid',
+        'paidAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+
+    await logActivity(
+      actor: actor,
+      action: "Batch Payment",
+      details: "Updated ${recordIds.length} records to 'Paid' status.",
+      category: "Billing",
+    );
+  }
+
+
   Stream<QuerySnapshot> getBillingHistory(String subItemId, {int limit = 2}) {
     return _db.collection('billing_history').where('subItemId', isEqualTo: subItemId).orderBy('createdAt', descending: true).limit(limit).snapshots();
+  }
+
+  Stream<QuerySnapshot> getBillingHistoryByMonth(String monthYear) {
+    return _db.collection('billing_history').where('monthYear', isEqualTo: monthYear).snapshots();
   }
 
   Stream<QuerySnapshot> getUsersStream() {
     return _db.collection('users').snapshots();
   }
 
-  Future<void> saveUser(String username, String password, String role, String actor, {String? docId}) async {
+  Future<void> saveUser(String username, String password, String role, String actor, {String? docId, Map<String, bool>? permissions}) async {
     Map<String, dynamic> data = {
       'username': username,
       'password': password,
@@ -511,13 +882,33 @@ class DatabaseService {
       'clientTimestamp': DateTime.now().toIso8601String(),
     };
 
+    if (permissions != null) {
+      data['permissions'] = permissions;
+    } else if (docId == null && role == 'admin') {
+      // Default permissions for new Admin
+      data['permissions'] = {
+        'canSeeSecurityLogs': false,
+        'canControlVisibility': false,
+        'canManageData': false,
+        'canManageAccounts': false,
+      };
+    }
+
     if (docId == null) {
       await _db.collection('users').add(data);
       await logActivity(actor: actor, action: "Create User", details: "Created new $role account: $username", category: "Security");
     } else {
       await _db.collection('users').doc(docId).update(data);
-      await logActivity(actor: actor, action: "Update User", details: "Updated credentials for $role: $username", category: "Security");
+      await logActivity(actor: actor, action: "Update User", details: "Updated credentials/permissions for $role: $username", category: "Security");
     }
+  }
+
+  Future<void> updateUserPermissions(String docId, Map<String, bool> permissions, String actor) async {
+    await _db.collection('users').doc(docId).update({
+      'permissions': permissions,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    await logActivity(actor: actor, action: "Update Permissions", details: "Updated permissions for user ID: $docId", category: "Security");
   }
 
   // ==========================================
@@ -564,6 +955,48 @@ class DatabaseService {
     await archiveAndRemove(collection: 'services', docId: serviceId, removedBy: removedBy, reason: 'Admin removed global service');
   }
 
+  Future<void> updateService({
+    required String serviceId,
+    required String oldName,
+    required String newName,
+    required double newAmount,
+    required String actor,
+  }) async {
+    // 1. Update Global Service
+    await _db.collection('services').doc(serviceId).update({
+      'serviceName': newName,
+      'serviceNameNormalized': _normalize(newName),
+      'amount': newAmount,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    });
+
+    // 2. Update Categories that have this service assigned
+    var categories = await _db.collection('categories').get();
+    for (var catDoc in categories.docs) {
+      List assigned = List.from(catDoc.data()['assignedServices'] ?? []);
+      bool changed = false;
+      for (int i = 0; i < assigned.length; i++) {
+        if (assigned[i]['name'] == oldName) {
+          assigned[i]['name'] = newName;
+          assigned[i]['amount'] = newAmount;
+          changed = true;
+        }
+      }
+      if (changed) {
+        await _db.collection('categories').doc(catDoc.id).update({
+          'assignedServices': assigned,
+        });
+      }
+    }
+
+    await logActivity(
+      actor: actor,
+      action: "Update Global Service",
+      details: "Updated service '$oldName' to '$newName' with rate ৳$newAmount",
+      category: "Configuration",
+    );
+  }
+
   Future<void> removeSubItem(String subItemId, String removedBy) async {
     await archiveAndRemove(collection: 'sub_items', docId: subItemId, removedBy: removedBy, reason: 'Admin/Operator removed unit');
   }
@@ -584,19 +1017,20 @@ class DatabaseService {
   Future<double> getDBVersion() async {
     DocumentSnapshot snap = await _db.collection('app_config').doc('database_info').get();
     if (snap.exists) {
-      return (snap.data() as Map<String, dynamic>)['dbVersion']?.toDouble() ?? 1.0;
+      return (snap.data() as Map<String, dynamic>)['dbVersion']?.toDouble() ?? defaultDbVersion;
     }
-    return 1.0;
+    return defaultDbVersion;
   }
 
   // Export all data to Map for JSON
-  Future<Map<String, dynamic>> exportDatabase(String actor, {Function(double)? onProgress}) async {
+  Future<Map<String, dynamic>> exportDatabase(String actor, {Function(double)? onProgress, double? forcedVersion}) async {
     double currentVersion = await getDBVersion();
-    double nextVersion = currentVersion + 1.0;
+    double nextVersion = forcedVersion ?? (currentVersion + 1.0);
 
+    // List of all collections to backup
     List<String> collections = [
-      'categories', 'services', 'sub_items', 'main_meters', 
-      'billing_history', 'users', 'activity_log', 'removed_history'
+      'categories', 'services', 'sub_items', 'main_meters', 'sub_meters',
+      'billing_history', 'users', 'activity_log', 'removed_history', 'app_config'
     ];
 
     Map<String, dynamic> exportData = {
@@ -615,7 +1049,7 @@ class DatabaseService {
       totalDocs += snap.docs.length;
     }
 
-    if (totalDocs == 0) totalDocs = 1; // Avoid div by zero
+    if (totalDocs == 0) totalDocs = 1;
 
     // 2. Process documents
     int processedCount = 0;
@@ -632,119 +1066,138 @@ class DatabaseService {
       }).toList();
     }
 
-    // Note: We no longer update server version during export. 
-    // Server version ONLY increases when a higher-version backup is Restored.
-
     await logActivity(
       actor: actor,
-      action: "Database Backup",
-      details: "Full database backup generated. Version: $nextVersion",
+      action: "Full Database Backup",
+      details: "Full backup (including Users and Logs) generated. Version: $nextVersion",
       category: "System",
     );
 
     return exportData;
   }
 
-  // Wipe all administrative data EXCEPT users with countdown progress
+  // Wipe administrative data EXCEPT users
   Future<void> wipeDatabase(String actor, {Function(double)? onProgress}) async {
-    List<String> collections = [
+    // List of collections to wipe
+    List<String> collectionsToWipe = [
       'categories', 'services', 'sub_items', 'main_meters', 
-      'billing_history', 'activity_log', 'removed_history'
+      'sub_meters', 'billing_history', 'activity_log', 'removed_history'
     ];
 
-    // 1. Count total documents
+    // 1. Calculate Total Documents
     int totalDocs = 0;
-    Map<String, List<DocumentReference>> docRefs = {};
-    
-    for (String col in collections) {
+    Map<String, List<QueryDocumentSnapshot>> snapsToWipe = {};
+
+    for (String col in collectionsToWipe) {
       QuerySnapshot snap = await _db.collection(col).get();
       totalDocs += snap.docs.length;
-      docRefs[col] = snap.docs.map((d) => d.reference).toList();
+      snapsToWipe[col] = snap.docs;
     }
 
     if (totalDocs == 0) {
-      if (onProgress != null) onProgress(0.0); // End at 0%
+      // Still need to reset version
+      await _resetAppConfigAfterWipe();
+      if (onProgress != null) onProgress(1.0);
       return;
     }
 
-    // 2. Delete with countdown progress (1.0 -> 0.0)
-    int deletedCount = 0;
-    for (String col in collections) {
-      for (var ref in docRefs[col]!) {
-        await ref.delete();
-        deletedCount++;
-        if (onProgress != null) {
-          // Progress starts at 1.0 (100%) and goes down to 0.0 (0%)
-          onProgress(1.0 - (deletedCount / totalDocs));
-        }
+    // 2. Process Deletion
+    int processedCount = 0;
+    for (String col in collectionsToWipe) {
+      for (var doc in snapsToWipe[col]!) {
+        await doc.reference.delete();
+        processedCount++;
+        if (onProgress != null) onProgress(processedCount / totalDocs);
       }
     }
 
+    // 3. Reset App Config (Keep important settings, reset version)
+    await _resetAppConfigAfterWipe();
+
     await logActivity(
       actor: actor,
-      action: "Database Wipe",
-      details: "All administrative collections were wiped from the server.",
+      action: "System Data Wipe",
+      details: "All data collections were wiped except for 'users'.",
       category: "Danger Zone",
     );
   }
 
+  Future<void> _resetAppConfigAfterWipe() async {
+    // Reset database info to version 0.0 without deleting the config doc itself
+    await _db.collection('app_config').doc('database_info').set({
+      'dbVersion': defaultDbVersion,
+      'serverStatus': 'wipe_completed',
+      'statusUpdatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
   // Import data from Map (Restore)
   Future<void> importDatabase(Map<String, dynamic> importData, String actor, {Function(double)? onProgress}) async {
-    // 1. Wipe first (Stage 1: 10%)
-    await wipeDatabase(actor);
-    if (onProgress != null) onProgress(0.1);
+    try {
+      // 1. Wipe first (Stage 1: 10%)
+      await wipeDatabase(actor);
+      if (onProgress != null) onProgress(0.1);
 
-    // 2. Restore collections (Stage 2: 90%)
-    Map<String, dynamic> collectionsData = importData['data'];
-    
-    // Calculate total documents for granular progress
-    int totalDocs = 0;
-    for (var colList in collectionsData.values) {
-      if (colList is List) totalDocs += colList.length;
-    }
+      // 2. Restore collections (Stage 2: 90%)
+      Map<String, dynamic> collectionsData = importData['data'];
+      
+      // Calculate total documents for granular progress
+      int totalDocs = 0;
+      for (var colList in collectionsData.values) {
+        if (colList is List) totalDocs += colList.length;
+      }
 
-    if (totalDocs == 0) totalDocs = 1;
+      if (totalDocs == 0) totalDocs = 1;
 
-    int processedCount = 0;
-    for (String col in collectionsData.keys) {
-      List docs = collectionsData[col];
-      for (var docData in docs) {
-        Map<String, dynamic> data = Map<String, dynamic>.from(docData);
-        String? docId = data['_docId'];
-        data.remove('_docId');
+      int processedCount = 0;
+      for (String col in collectionsData.keys) {
+        List docs = collectionsData[col];
+        for (var docData in docs) {
+          Map<String, dynamic> data = Map<String, dynamic>.from(docData);
+          String? docId = data['_docId'];
+          data.remove('_docId');
 
-        // Clean up Timestamps
-        Map<String, dynamic> cleanedData = Map<String, dynamic>.from(_fromJsonDecodable(data));
+          // Clean up Timestamps
+          Map<String, dynamic> cleanedData = Map<String, dynamic>.from(_fromJsonDecodable(data));
 
-        if (docId != null) {
-          await _db.collection(col).doc(docId).set(cleanedData);
-        } else {
-          await _db.collection(col).add(cleanedData);
-        }
+          if (docId != null) {
+            await _db.collection(col).doc(docId).set(cleanedData);
+          } else {
+            await _db.collection(col).add(cleanedData);
+          }
 
-        processedCount++;
-        if (onProgress != null) {
-          // Range 0.1 to 1.0 based on doc count
-          onProgress(0.1 + (0.9 * (processedCount / totalDocs)));
+          processedCount++;
+          if (onProgress != null) {
+            // Range 0.1 to 1.0 based on doc count
+            double p = 0.1 + (0.9 * (processedCount / totalDocs));
+            onProgress(p);
+            // Update firestore progress so login page sees it
+            await setServerStatus('uploading', progress: p);
+          }
         }
       }
+
+      // 3. Update server version
+      num restoredVersion = importData['dbVersion'] ?? 1.0;
+      await _db.collection('app_config').doc('database_info').set({
+        'dbVersion': restoredVersion,
+        'lastRestoreAt': FieldValue.serverTimestamp(),
+        'clientTimestamp': DateTime.now().toIso8601String(),
+        'lastRestoreBy': actor,
+        'serverStatus': 'completed',
+        'progress': 1.0,
+      }, SetOptions(merge: true));
+
+      await logActivity(
+        actor: actor,
+        action: "Database Restore",
+        details: "Database restored to version $restoredVersion",
+        category: "System",
+      );
+    } catch (e) {
+      await setServerStatus('failed');
+      rethrow;
     }
-
-    // 3. Update server version
-    num restoredVersion = importData['dbVersion'] ?? 1.0;
-    await _db.collection('app_config').doc('database_info').set({
-      'dbVersion': restoredVersion,
-      'lastRestoreAt': FieldValue.serverTimestamp(),
-      'clientTimestamp': DateTime.now().toIso8601String(),
-      'lastRestoreBy': actor,
-    }, SetOptions(merge: true));
-
-    await logActivity(
-      actor: actor,
-      action: "Database Restore",
-      details: "Database restored to version $restoredVersion",
-      category: "System",
-    );
   }
 
   // Static Helpers
@@ -761,9 +1214,9 @@ class DatabaseService {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+        content: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: backgroundColor ?? Colors.blue.shade800,
+        backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.primary,
         width: 280,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         duration: const Duration(seconds: 3),

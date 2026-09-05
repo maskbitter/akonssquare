@@ -63,5 +63,17 @@ out/
 *.swp
 .DS_Store
 
+# GitHub Token & Service Account
+github-token.txt
+service-account.json
+
+# Node Modules
+node_modules/
+
 # Local Agent Artifacts
 .artifacts/
+
+# Build Release APKs
+# release/  <-- Commented out to allow GitHub hosting
+# *.apk     <-- Commented out to allow GitHub hosting
+

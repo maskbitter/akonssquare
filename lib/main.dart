@@ -1,28 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Admin/admin_dashboard.dart';
+import 'package:akons_square/Admin/super_admin_dashboard.dart';
+import 'package:akons_square/Operator/operator_dashboard.dart';
+import 'package:akons_square/Viewer/viewer_dashboard.dart';
+import 'package:akons_square/Users/user_dashboard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:akons_square/Common/splash_screen.dart';
+import 'package:akons_square/Common/theme_manager.dart';
 import 'package:flutter/services.dart';
+import 'package:akons_square/Common/build_config.dart';
+import 'package:akons_square/Common/game_zone.dart';
 
-import 'package:akonssquare/Admin/admin_dashboard.dart';
-import 'package:akonssquare/Users/user_dashboard.dart';
-import 'package:akonssquare/Operator/operator_dashboard.dart';
-import 'package:akonssquare/Viewer/viewer_dashboard.dart';
-import 'package:akonssquare/Admin/super_admin_dashboard.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/Common/splash_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:akons_square/Common/firebase_options.dart';
+
+import 'dart:async';
+import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:akons_square/Common/ui_helper.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+bool isUserLoggedIn = false; // গ্লোবাল ফ্ল্যাগ
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  
-  // Explicitly enable and configure persistence
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
-
+  await ThemeManager.init();
   runApp(const MyApp());
 }
 
@@ -31,22 +40,153 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'AkonsSquare',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.indigo,
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        dialogTheme: DialogThemeData(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    return ValueListenableBuilder<String>(
+      valueListenable: ThemeManager.appThemeNotifier,
+      builder: (context, themeName, child) {
+        return ValueListenableBuilder<String>(
+          valueListenable: ThemeManager.appFontNotifier,
+          builder: (context, fontName, child) {
+            return ValueListenableBuilder<Color>(
+              valueListenable: ThemeManager.appOutlineBgNotifier,
+              builder: (context, outlineBg, child) {
+                return ConnectivityWrapper(
+                  child: MaterialApp(
+                    navigatorKey: navigatorKey,
+                    title: 'AkonsSquare',
+                    debugShowCheckedModeBanner: false,
+                    theme: ThemeManager.getThemeByName(themeName, fontName: fontName),
+                    home: const SplashScreen(),
+                  ),
+                );
+              }
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+
+class ConnectivityWrapper extends StatefulWidget {
+  final Widget child;
+  const ConnectivityWrapper({super.key, required this.child});
+
+  @override
+  State<ConnectivityWrapper> createState() => _ConnectivityWrapperState();
+}
+
+class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
+  bool _isOffline = false;
+  bool _dialogShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialConnectivity();
+    _subscription = Connectivity().onConnectivityChanged.listen((results) {
+      bool offline = results.contains(ConnectivityResult.none);
+      if (offline != _isOffline) {
+        setState(() {
+          _isOffline = offline;
+        });
+        if (_isOffline) {
+          _showOfflineDialog();
+        } else {
+          if (_dialogShowing) {
+            final context = navigatorKey.currentContext;
+            if (context != null) {
+              Navigator.of(context, rootNavigator: true).pop();
+            }
+            _dialogShowing = false;
+          }
+        }
+      }
+    });
+  }
+
+  void _checkInitialConnectivity() async {
+    final results = await Connectivity().checkConnectivity();
+    bool offline = results.contains(ConnectivityResult.none);
+    if (offline) {
+      if (mounted) {
+        setState(() {
+          _isOffline = true;
+        });
+        _showOfflineDialog();
+      }
+    }
+  }
+
+  void _showOfflineDialog() {
+    if (_dialogShowing) return;
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    
+    // শুধুমাত্র লগইন করার পর ডায়ালগ দেখাবে
+    if (!isUserLoggedIn) return;
+
+    _dialogShowing = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false, 
+      builder: (ctx) => PopScope(
+        canPop: false, 
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? ThemeManager.outlineBackground 
+                      : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) 
+                      : null,
+                ),
+                child: Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.error, size: 40),
+              ),
+              const SizedBox(height: 16),
+              const Text("Offline", style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: const Text(
+              "You are offline. Please check your internet connection to continue using the app.",
+              textAlign: TextAlign.center,
+            ),
+          ),
+          actions: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  "Waiting for connection...",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 12),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-      home: const SplashScreen(),
-    );
+    ).then((_) => _dialogShowing = false);
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }
 
@@ -58,64 +198,198 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final DatabaseService _dbService = DatabaseService();
+  String _appName = "";
+  String _currentVersion = "...";
+  String? _selectedSubItemId;
+  String? _temporaryMessage;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool _isOffline = false;
+  String? _connectionStatus;
+  Color? _connectionColor;
+
   bool _isLoading = false;
-  String _appName = ""; 
-  String _currentVersion = "";
-  List<Map<String, dynamic>> _subItems = DatabaseService.cachedSubItems;
-  Map<String, dynamic>? _selectedSubItem;
 
   @override
   void initState() {
     super.initState();
-    _fetchAppDetails();
-    if (_subItems.isEmpty) {
-      _fetchSubItems();
+    _loadAppConfig();
+    _checkConnectivity();
+  }
+
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
+  }
+
+  void _checkConnectivity() async {
+    // Check initial state
+    final initial = await Connectivity().checkConnectivity();
+    _updateConnectivityState(initial);
+
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(_updateConnectivityState);
+  }
+
+  void _updateConnectivityState(List<ConnectivityResult> results) {
+    bool offline = results.contains(ConnectivityResult.none);
+    if (offline != _isOffline) {
+      if (mounted) {
+        setState(() { 
+          _isOffline = offline; 
+          if (_isOffline) {
+            _connectionStatus = "Offline";
+            _connectionColor = Colors.red;
+          } else {
+            _connectionStatus = "Online";
+            _connectionColor = Colors.green;
+            // Clear "Online" after 2 seconds
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) setState(() { _connectionStatus = null; });
+            });
+          }
+        });
+      }
+      if (!offline) {
+        final context = navigatorKey.currentContext;
+        if (context != null && Navigator.canPop(context)) {
+          // Check if the current dialog is the offline dialog before popping
+          // For now, simple pop is okay if we are careful
+        }
+      }
     }
   }
 
-  Future<void> _fetchSubItems() async {
+  void _checkInitialConnectivity() async {
+    final results = await Connectivity().checkConnectivity();
+    bool offline = results.contains(ConnectivityResult.none);
+    if (offline) {
+      if (mounted) {
+        setState(() {
+          _isOffline = true;
+        });
+        _showOfflineDialog();
+      }
+    }
+  }
+
+  void _showOfflineDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => PopScope(
+        canPop: true,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? ThemeManager.outlineBackground 
+                      : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) 
+                      : null,
+                ),
+                child: Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.error, size: 40),
+              ),
+              const SizedBox(height: 16),
+              const Text("No Internet", style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Text("Device is offline. Please check your internet connection to resume using the app.", textAlign: TextAlign.center),
+          actions: [
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  onPressed: () {
+                    // Just a visual cue, the listener handles reconnect
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  child: const Text("Waiting for connection..."),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadAppConfig() async {
     try {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('sub_items').get();
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      var doc = await _dbService.getAppConfigStream().first;
       setState(() {
-        _subItems = snapshot.docs.map((doc) {
-          var data = doc.data() as Map<String, dynamic>;
-          data['id'] = doc.id;
-          return data;
-        }).where((item) {
-          String tenant = item['TenantName'] ?? '';
-          String status = item['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
-          return status == 'Occupied';
-        }).toList();
-        _subItems.sort((a, b) => (a['subItemName'] ?? '').toString().compareTo((b['subItemName'] ?? '').toString()));
+        _currentVersion = "${packageInfo.version}+${packageInfo.buildNumber}";
+        if (doc.exists) {
+          _appName = doc['appName'] ?? "AkonsSquare";
+        }
       });
     } catch (e) {
-      debugPrint("Error: $e");
+      setState(() { 
+        _appName = "AkonsSquare"; 
+        _currentVersion = appVersion; // Fallback to build_config.dart
+      });
     }
   }
 
-  Future<void> _fetchAppDetails() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    setState(() { 
-      _appName = packageInfo.appName; 
-      _currentVersion = "${packageInfo.version}+${packageInfo.buildNumber}";
+  void _showTemporaryMessage(String msg) {
+    setState(() { _temporaryMessage = msg; });
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() { _temporaryMessage = null; });
     });
   }
 
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Center(child: Text("Login Failed!", style: TextStyle(fontWeight: FontWeight.bold))),
-        content: Text(message, textAlign: TextAlign.center),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, side: BorderSide(color: Colors.grey.shade300)),
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text("OK"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                    ? ThemeManager.outlineBackground 
+                    : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                    ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) 
+                    : null,
+              ),
+              child: Icon(Icons.lock_person_outlined, color: Theme.of(context).colorScheme.error, size: 40),
             ),
+            const SizedBox(height: 16),
+            Text("Login Failed!", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+        ),
+        actions: [
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error, 
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text("OK"),
+              ),
+            ],
           ),
         ],
       ),
@@ -123,50 +397,111 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _loginBasicUser() async {
-    if (_selectedSubItem == null) { _showErrorDialog("Please select your name!"); return; }
+    if (_selectedSubItemId == null) { _showErrorDialog("Please select your name!"); return; }
+    
+    // Set global loading to prevent multiple clicks
+    setState(() { _isOffline = _isOffline; }); // Dummy setstate to ensure context
+
+    var snap = await FirebaseFirestore.instance.collection('sub_items').doc(_selectedSubItemId).get();
+    if (!snap.exists) { _showErrorDialog("User not found!"); return; }
+    var subData = snap.data() as Map<String, dynamic>;
+
     final passController = TextEditingController(); bool isAuthenticating = false;
+    if (!mounted) return;
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          String tName = _selectedSubItem!['TenantName'] ?? 'No Name';
-          String unitName = _selectedSubItem!['subItemName'] ?? 'Unit';
+        builder: (context, setST) {
+          String tName = subData['TenantName'] ?? 'No Name';
+          String unitName = subData['subItemName'] ?? 'Unit';
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(unitName, style: const TextStyle(fontWeight: FontWeight.bold)), Text("($tName)", style: const TextStyle(fontSize: 14, color: Colors.blueGrey, fontStyle: FontStyle.italic))])),
-            content: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Text("Enter last 4 digits of your NID:", textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
-              const SizedBox(height: 12),
-              TextField(controller: passController, obscureText: true, keyboardType: TextInputType.number, maxLength: 4, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock_outline), border: OutlineInputBorder(), counterText: "")),
-            ]),
-            actions: [
-              Row(children: [
-                Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)), onPressed: isAuthenticating ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
-                const SizedBox(width: 12),
-                Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, textStyle: const TextStyle(fontWeight: FontWeight.bold)), onPressed: isAuthenticating ? null : () async {
-                  String input = passController.text.trim(); String storedNid = (_selectedSubItem!['nidNumber'] ?? '').toString();
-                  if (input.isEmpty || input.length != 4) { DatabaseService.showToast(context, "Enter 4 digits!", backgroundColor: Colors.orange); return; }
-                  setDialogState(() => isAuthenticating = true);
-                  String last4 = storedNid.length >= 4 ? storedNid.substring(storedNid.length - 4) : storedNid;
-                  if (input == last4 && storedNid.isNotEmpty && storedNid != "No Number") {
-                    String subId = _selectedSubItem!['id']; String catId = _selectedSubItem!['categoryId'] ?? '';
-                    String sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-                    
-                    await DatabaseService().updateUserSession('sub_items', subId, sessionId);
-
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                    await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'user');
-                    await prefs.setString('subItemId', subId); await prefs.setString('categoryId', catId);
-                    await prefs.setString('sessionId', sessionId);
-
-                    if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboard(subItemId: subId, categoryId: catId))); }
-                  } else {
-                    if (context.mounted) DatabaseService.showToast(context, "Incorrect password!", backgroundColor: Colors.red);
-                    setDialogState(() => isAuthenticating = false);
-                  }
-                }, child: isAuthenticating ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Verify"))),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                        ? ThemeManager.outlineBackground 
+                        : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                        ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) 
+                        : null,
+                  ),
+                  child: Icon(Icons.meeting_room_outlined, color: Theme.of(context).colorScheme.primary, size: 40),
+                ),
+                const SizedBox(height: 16),
+                Text(unitName, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                Text("($tName)", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic)),
+              ],
+            ),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.95,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text("Enter last 4 digits of your NID:", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passController, 
+                  obscureText: true, 
+                  keyboardType: TextInputType.number, 
+                  maxLength: 4, 
+                  style: Theme.of(context).textTheme.bodyLarge, 
+                  onChanged: (v) => setST((){}), 
+                  decoration: const InputDecoration(
+                    labelText: "Password", 
+                    hintText: "Last 4 digits of NID",
+                    prefixIcon: Icon(Icons.lock_outline), 
+                    counterText: ""
+                  )
+                ),
               ]),
+            ),
+            actions: [
+              AppDialogActions(
+                actions: [
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ), 
+                    onPressed: isAuthenticating ? null : () => Navigator.pop(ctx), 
+                    child: const Text("Cancel")
+                  ),
+                  AppButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                      foregroundColor: Theme.of(context).colorScheme.onTertiary, 
+                      textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ), 
+                    onPressed: (isAuthenticating || passController.text.length != 4) ? null : () async {
+                      String input = passController.text.trim(); String storedNid = (subData['nidNumber'] ?? '').toString();
+                      if (input.isEmpty || input.length != 4) { DatabaseService.showToast(context, "Enter 4 digits!", backgroundColor: Theme.of(context).colorScheme.secondary); return; }
+                      setST(() => isAuthenticating = true);
+                      String last4 = storedNid.length >= 4 ? storedNid.substring(storedNid.length - 4) : storedNid;
+                      if (input == last4 && storedNid.isNotEmpty && storedNid != "No Number") {
+                        String subId = snap.id; String catId = subData['categoryId'] ?? '';
+                        String sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+                        await DatabaseService().updateUserSession('sub_items', subId, sessionId);
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'user');
+                        await prefs.setString('subItemId', subId); await prefs.setString('categoryId', catId);
+                        await prefs.setString('sessionId', sessionId);
+                        isUserLoggedIn = true; // লগইন সফল
+                        if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboard(subItemId: subId, categoryId: catId))); }
+                      } else {
+                        if (context.mounted) DatabaseService.showToast(context, "Incorrect password!", backgroundColor: Theme.of(context).colorScheme.error);
+                        setST(() => isAuthenticating = false);
+                      }
+                    }, 
+                    child: isAuthenticating ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary)) : const Text("Verify")
+                  ),
+                ],
+              ),
             ],
           );
         },
@@ -175,63 +510,117 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showHiddenLoginDialog() {
-    final userController = TextEditingController(); final passController = TextEditingController(); bool isVerifying = false;
+    final uC = TextEditingController(); final pC = TextEditingController(); bool isVerifying = false;
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Center(child: Text("Access Login", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: userController, decoration: const InputDecoration(labelText: "Username", prefixIcon: Icon(Icons.person))),
-            const SizedBox(height: 10),
-            TextField(controller: passController, obscureText: true, decoration: const InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock))),
-          ]),
-          actions: [
-            Row(children: [
-              Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)), onPressed: isVerifying ? null : () => Navigator.pop(ctx), child: const Text("Cancel"))),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, textStyle: const TextStyle(fontWeight: FontWeight.bold)), onPressed: isVerifying ? null : () async {
-                String u = userController.text.trim(); String p = passController.text.trim(); if (u.isEmpty || p.isEmpty) return;
-                setDialogState(() => isVerifying = true);
-                try {
-                  if (u == 'admin' && p == 'admin') {
-                     var adminCheck = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'admin').get();
-                     if (adminCheck.docs.isEmpty) {
-                        SharedPreferences prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'admin');
-                        await prefs.setString('username', u); await prefs.setString('savedPassword', p);
-                        if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard())); }
-                        return;
-                     }
-                  }
-                  QuerySnapshot userQuery = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: u).where('password', isEqualTo: p).limit(1).get();
-                  if (userQuery.docs.isNotEmpty) {
-                    var userDoc = userQuery.docs.first;
-                    var userData = userDoc.data() as Map<String, dynamic>; String role = (userData['role'] ?? 'viewer').toString();
-                    String sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-                    
-                    await DatabaseService().updateUserSession('users', userDoc.id, sessionId);
-
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                    await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', role);
-                    await prefs.setString('username', u); await prefs.setString('savedPassword', p);
-                    await prefs.setString('userDocId', userDoc.id);
-                    await prefs.setString('sessionId', sessionId);
-
-                    if (mounted) {
-                      Navigator.pop(ctx);
-                      if (role == 'admin') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
-                      else if (role == 'operator') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OperatorDashboard(username: u)));
-                      else Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ViewerDashboard()));
-                    }
-                    return;
-                  }
-                  if (context.mounted) DatabaseService.showToast(context, "Incorrect details!", backgroundColor: Colors.red);
-                } catch (e) { /* ignore */ } finally { if (ctx.mounted) setDialogState(() => isVerifying = false); }
-              }, child: isVerifying ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text("Login"))),
+        builder: (context, setST) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? ThemeManager.outlineBackground 
+                      : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) 
+                      : null,
+                ),
+                child: Icon(Icons.admin_panel_settings_outlined, color: Theme.of(context).colorScheme.primary, size: 40),
+              ),
+              const SizedBox(height: 16),
+              const Text("Access Login", style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(
+                controller: uC, 
+                decoration: const InputDecoration(
+                  labelText: "Username", 
+                  hintText: "Enter username",
+                  prefixIcon: Icon(Icons.person)
+                ), 
+                onChanged: (v) => setST((){})
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: pC, 
+                obscureText: true, 
+                decoration: const InputDecoration(
+                  labelText: "Password", 
+                  hintText: "Enter password",
+                  prefixIcon: Icon(Icons.lock)
+                ), 
+                onChanged: (v) => setST((){})
+              ),
             ]),
+          ),
+          actions: [
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ), 
+                  onPressed: isVerifying ? null : () => Navigator.pop(ctx), child: const Text("Cancel")),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                    foregroundColor: Theme.of(context).colorScheme.onTertiary, 
+                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ), 
+                  onPressed: (isVerifying || uC.text.trim().isEmpty || pC.text.trim().isEmpty) ? null : () async {
+                    String u = uC.text.trim(); String p = pC.text.trim(); if (u.isEmpty || p.isEmpty) return;
+                    setST(() => isVerifying = true);
+                    try {
+                      if (u == 'admin' && p == 'admin') {
+                         var adminCheck = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'admin').get();
+                         if (adminCheck.docs.isEmpty) {
+                            SharedPreferences prefs = await SharedPreferences.getInstance();
+                            await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'admin');
+                            await prefs.setString('username', u); await prefs.setString('savedPassword', p);
+                            isUserLoggedIn = true; // Admin Login
+                            if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard())); }
+                            return;
+                         }
+                      }
+                      QuerySnapshot userQuery = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: u).where('password', isEqualTo: p).limit(1).get();
+                      if (userQuery.docs.isNotEmpty) {
+                        var userDoc = userQuery.docs.first;
+                        var userData = userDoc.data() as Map<String, dynamic>; String role = (userData['role'] ?? 'viewer').toString();
+                        String sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+                        await DatabaseService().updateUserSession('users', userDoc.id, sessionId);
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', role);
+                        await prefs.setString('username', u); await prefs.setString('savedPassword', p);
+                        await prefs.setString('userDocId', userDoc.id);
+                        await prefs.setString('sessionId', sessionId);
+                        isUserLoggedIn = true; // ইউজার লগইন
+                        if (mounted) {
+                          Navigator.pop(ctx);
+                          if (role == 'admin') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
+                          else if (role == 'operator') Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OperatorDashboard(username: u)));
+                          else Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ViewerDashboard()));
+                        }
+                        return;
+                      }
+                      if (context.mounted) DatabaseService.showToast(context, "Incorrect details!", backgroundColor: Theme.of(context).colorScheme.error);
+                    } catch (e) { /* ignore */ } finally { if (ctx.mounted) setST(() => isVerifying = false); }
+                  }, 
+                  child: isVerifying ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: ThemeManager.outlineBackground)) : const Text("Login")
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -240,29 +629,83 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showMasterKeyDialog() {
     final keyController = TextEditingController();
+    bool isLoading = false;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Center(child: Text("Master Access", style: TextStyle(fontWeight: FontWeight.bold))),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text("Enter secret key:", style: TextStyle(fontSize: 12)),
-          const SizedBox(height: 12),
-          TextField(controller: keyController, obscureText: true, decoration: const InputDecoration(labelText: "Secret Key", border: OutlineInputBorder(), prefixIcon: Icon(Icons.vpn_key_outlined))),
-        ]),
-        actions: [
-          Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-            const SizedBox(width: 12),
-            Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white), onPressed: () async {
-              if (keyController.text.trim() == 'superadmin') {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'superadmin');
-                if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard())); }
-              } else { if (context.mounted) DatabaseService.showToast(context, "Invalid!", backgroundColor: Colors.red); }
-            }, child: const Text("Authorize"))),
-          ]),
-        ],
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setST) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? ThemeManager.outlineBackground 
+                      : Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? Border.all(color: Theme.of(context).colorScheme.tertiary, width: 1.5) 
+                      : null,
+                ),
+                child: Icon(Icons.key_outlined, color: Theme.of(context).colorScheme.tertiary, size: 40),
+              ),
+              const SizedBox(height: 16),
+              const Text("Master Access", style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text("Enter secret key:", style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 12),
+              TextField(
+                controller: keyController, 
+                obscureText: true, 
+                onChanged: (v) => setST((){}), 
+                decoration: const InputDecoration(
+                  labelText: "Secret Key", 
+                  hintText: "Master password",
+                  prefixIcon: Icon(Icons.vpn_key_outlined)
+                )
+              ),
+            ]),
+          ),
+          actions: [
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ), 
+                  onPressed: () => Navigator.pop(ctx), 
+                  child: const Text("Cancel")
+                ),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.tertiary, 
+                    foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ), 
+                  onPressed: (isLoading || keyController.text.trim().isEmpty) ? null : () async {
+                    if (keyController.text.trim() == 'superadmin') {
+                      setST(() => isLoading = true);
+                      isUserLoggedIn = true; // সুপার অ্যাডমিন লগইন
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('isLoggedIn', true); await prefs.setString('userRole', 'superadmin');
+                      if (mounted) { Navigator.pop(ctx); Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard())); }
+                    } else { if (context.mounted) DatabaseService.showToast(context, "Invalid!", backgroundColor: Theme.of(context).colorScheme.error); }
+                  }, 
+                  child: isLoading ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Authorize")
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -270,119 +713,333 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              child: Column(children: [
-                GestureDetector(onLongPress: _showMasterKeyDialog, child: Text(_appName.isEmpty ? "AKONS SQUARE" : _appName, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue.shade900, letterSpacing: 1.5))),
-                const SizedBox(height: 4),
-                // Version Info moved here
-                StreamBuilder<DocumentSnapshot>(
-                  stream: DatabaseService().getAppConfigStream(),
-                  builder: (context, snapshot) {
-                    String latestVer = "";
-                    if (snapshot.hasData && snapshot.data!.exists) {
-                      latestVer = (snapshot.data!.data() as Map)['requiredVersion'] ?? "";
-                    }
-                    
-                    String versionText = "V: $_currentVersion";
-                    if (latestVer.isNotEmpty && latestVer != _currentVersion) {
-                      versionText += " | Latest: $latestVer";
-                    }
+        child: StreamBuilder<DocumentSnapshot>(
+          stream: _dbService.getDatabaseInfoStream(),
+          builder: (context, dbInfoSnap) {
+            String serverStatus = 'completed';
+            String dbVersion = "...";
+            String bnText = "BN$buildNumber"; // Strictly show local BN
+            if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+              var info = dbInfoSnap.data!.data() as Map<String, dynamic>;
+              serverStatus = info['serverStatus'] ?? 'completed';
+              dbVersion = (info['dbVersion'] ?? DatabaseService.defaultDbVersion).toStringAsFixed(1);
+              
+              if (serverStatus == 'completed' && _temporaryMessage != null && _temporaryMessage!.contains("Updating")) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) _showTemporaryMessage("Update Completed");
+                });
+              } else if (serverStatus == 'wipe_completed' && _temporaryMessage != null && _temporaryMessage!.contains("Deleting")) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) _showTemporaryMessage("Delete Completed");
+                });
+              } else if (serverStatus == 'uploading') {
+                _temporaryMessage = "Updating Database...";
+              } else if (serverStatus == 'wiping') {
+                _temporaryMessage = "Deleting Database...";
+              } else if (serverStatus == 'exporting') {
+                _temporaryMessage = "Backup Processing...";
+              } else if (serverStatus == 'failed') {
+                _temporaryMessage = "Operation Failed!";
+              }
+            }
 
-                    return Text(
-                      versionText,
-                      style: const TextStyle(fontSize: 10, color: Colors.blueGrey, fontWeight: FontWeight.bold),
-                    );
+            return StreamBuilder<DocumentSnapshot>(
+              stream: _dbService.getAppConfigStream(),
+              builder: (context, configSnap) {
+                String latestV = "";
+                if (configSnap.hasData && configSnap.data!.exists) {
+                  latestV = (configSnap.data!.data() as Map<String, dynamic>?)?['requiredVersion'] ?? "";
+                }
+                // SMART COMPARISON: Only show RED Latest V if server version is actually newer
+                bool isOutdated = false;
+                if (latestV.isNotEmpty && latestV != _currentVersion) {
+                  try {
+                    // Simple semantic check for "1.0.0+7" vs "1.0.0+6"
+                    List<String> localParts = _currentVersion.split('+');
+                    List<String> serverParts = latestV.split('+');
+                    
+                    int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                    int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                    
+                    if (serverMain > localMain) {
+                      isOutdated = true;
+                    } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                      int localBuild = int.tryParse(localParts[1]) ?? 0;
+                      int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                      if (serverBuild > localBuild) isOutdated = true;
+                    }
+                  } catch (e) {
+                    // Fallback to basic inequality if parsing fails
+                    isOutdated = latestV != _currentVersion;
                   }
-                ),
-                const SizedBox(height: 2),
-                StreamBuilder<DocumentSnapshot>(
-                  stream: DatabaseService().getDatabaseInfoStream(),
-                  initialData: null,
-                  builder: (context, dbSnap) {
-                    String dbVer = DatabaseService.cachedDBVersion?.toString() ?? "..."; 
-                    if (dbSnap.hasData && dbSnap.data!.exists) { var v = (dbSnap.data!.data() as Map)['dbVersion'] ?? 0; dbVer = v.toString(); }
-                    return Text("DB V-$dbVer", style: TextStyle(fontSize: 10, color: Colors.indigo.shade300, fontWeight: FontWeight.w900));
-                  }
-                ),
-              ]),
-            ),
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center, 
-                    children: [
-                      const Text("Welcome", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 30),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: DropdownButtonFormField<Map<String, dynamic>>(
-                          value: _selectedSubItem,
-                          alignment: Alignment.center,
-                          isExpanded: true,
-                          decoration: InputDecoration(
-                            labelText: "Select User Name", 
-                            prefixIcon: const Icon(Icons.meeting_room_outlined), 
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))
+                }
+
+                return Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: null,
+                      onLongPress: _showMasterKeyDialog,
+                      child: Column(
+                        children: [
+                          Text(
+                            "AkonsSquare",
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary, 
+                              letterSpacing: 0.5
+                            ),
                           ),
-                          items: _subItems.map((item) {
-                            String displayText = "${item['subItemName'] ?? 'Unnamed'} (${item['TenantName'] ?? ''})";
-                            return DropdownMenuItem<Map<String, dynamic>>(
-                              value: item, 
-                              alignment: Alignment.center,
-                              child: Center(child: Text(displayText, textAlign: TextAlign.center))
-                            );
-                          }).toList(),
-                          onChanged: (v) => setState(() => _selectedSubItem = v),
-                          hint: const Center(child: Text("Select User Name")),
+                          const SizedBox(height: 4),
+                          InkWell(
+                            onTap: isOutdated ? () {
+                              String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
+                              if (dUrl.isNotEmpty) {
+                                showUpdateDialog(context: context, remoteVersion: latestV, downloadUrl: dUrl);
+                              }
+                            } : null,
+                            child: AppVersionInfo(
+                              version: _currentVersion,
+                              dbVersion: dbVersion,
+                              latestVersion: latestV,
+                              statusMessage: _temporaryMessage,
+                              isOutdated: isOutdated,
+                              color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.tertiary,
+                              connectionStatus: _connectionStatus,
+                              connectionColor: _connectionColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Card(
+                                elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                                margin: EdgeInsets.zero,
+                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(1),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow,
+                                      borderRadius: BorderRadius.circular(23),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          "Welcome",
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary, 
+                                            fontWeight: FontWeight.bold, 
+                                          ),
+                                        ),
+                                        const SizedBox(height: 48),
+                                        StreamBuilder<QuerySnapshot>(
+                                          stream: FirebaseFirestore.instance.collection('sub_items').snapshots(),
+                                          builder: (context, snapshot) {
+                                            List<Map<String, dynamic>> items = [];
+                                            if (snapshot.hasData) {
+                                              items = snapshot.data!.docs.map((doc) {
+                                                var data = doc.data() as Map<String, dynamic>;
+                                                data['id'] = doc.id;
+                                                return data;
+                                              }).where((d) {
+                                                // Only show units that are strictly 'Occupied'
+                                                String status = d['status'] ?? 'Vacant';
+                                                return status == 'Occupied';
+                                              }).toList();
+                                              items.sort((a, b) => (a['subItemName'] ?? '').compareTo(b['subItemName'] ?? ''));
+                                            }
+
+                                            // Safety check: if selected ID is not in items, clear it
+                                            if (_selectedSubItemId != null && !items.any((i) => i['id'] == _selectedSubItemId)) {
+                                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                                if (mounted) setState(() { _selectedSubItemId = null; });
+                                              });
+                                            }
+
+                                            return DropdownButtonFormField<String>(
+                                              isExpanded: true,
+                                              alignment: Alignment.center,
+                                              decoration: InputDecoration(
+                                                labelText: "Select User Name",
+                                                labelStyle: TextStyle(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant),
+                                                prefixIcon: Icon(Icons.meeting_room_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSurface),
+                                                suffixIcon: const SizedBox(width: 48), // Balancing prefixIcon
+                                                contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+                                              ),
+                                              icon: const Icon(Icons.arrow_drop_down),
+                                              value: _selectedSubItemId,
+                                              selectedItemBuilder: (BuildContext context) {
+                                                return items.map<Widget>((data) {
+                                                  String tName = data['TenantName'] ?? 'No Name';
+                                                  String unit = data['subItemName'] ?? 'Unit';
+                                                  return Center(
+                                                    child: Text(
+                                                      "$unit ($tName)", 
+                                                      textAlign: TextAlign.center,
+                                                      style: TextStyle(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                                                      overflow: TextOverflow.ellipsis
+                                                    ),
+                                                  );
+                                                }).toList();
+                                              },
+                                              items: items.map((data) {
+                                                String tName = data['TenantName'] ?? 'No Name';
+                                                String unit = data['subItemName'] ?? 'Unit';
+                                                return DropdownMenuItem<String>(
+                                                  value: data['id'], 
+                                                  alignment: Alignment.center,
+                                                  child: Text(
+                                                    "$unit ($tName)", 
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                                                    overflow: TextOverflow.ellipsis
+                                                  ),
+                                                );
+                                              }).toList(),
+                                              onChanged: (v) => setState(() => _selectedSubItemId = v),
+                                              hint: Center(child: Text("Select User Name", style: TextStyle(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null))),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(height: 32),
+                                        SizedBox(
+                                          width: double.infinity, height: 65, 
+                                          child: AppButton.icon(
+                                            onLongPress: (_isLoading || _isOffline) ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
+                                            onPressed: _isLoading ? null : () { 
+                                              if (_isOffline) {
+                                                _showOfflineDialog();
+                                                return;
+                                              }
+                                              HapticFeedback.mediumImpact(); 
+                                              setState(() => _isLoading = true);
+                                              _loginBasicUser().then((_) {
+                                                if (mounted) setState(() => _isLoading = false);
+                                              }).catchError((_) {
+                                                if (mounted) setState(() => _isLoading = false);
+                                              });
+                                            },
+                                            icon: _isLoading 
+                                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+                                              : Icon(_isOffline ? Icons.cloud_off_outlined : Icons.dashboard_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                                            child: Text(_isLoading ? "Connecting..." : (_isOffline ? "Offline Mode" : "Login to dashboard"), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary), maxLines: 1),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: _isOffline 
+                                                ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Colors.grey.shade600)
+                                                : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiary),
+                                              foregroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(16),
+                                                side: (ThemeManager.appThemeNotifier.value == "Outline Theme" || _isOffline) ? BorderSide(color: _isOffline ? Colors.grey : Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
+                                              ),
+                                              elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isOutdated) ...[
+                                          const SizedBox(height: 8),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            height: 50,
+                                            child: AppButton.icon(
+                                              onPressed: () {
+                                                String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
+                                                if (dUrl.isNotEmpty) {
+                                                  showUpdateDialog(context: context, remoteVersion: latestV, downloadUrl: dUrl);
+                                                }
+                                              },
+                                              icon: const Icon(Icons.system_update_alt, color: Colors.white),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue,
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                              child: const Text("UPDATE NOW", style: TextStyle(fontWeight: FontWeight.bold)),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: SizedBox(
+                                  width: double.infinity, height: 60,
+                                  child: AppButton.icon(
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const GameZonePage()));
+                                    },
+                                    icon: Icon(Icons.videogame_asset_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.secondary,
+                                      foregroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSecondary,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
+                                      ),
+                                      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                                    ),
+                                    child: Text("Enter GameZone", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSecondary)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 25),
-                      SizedBox(
-                        width: double.infinity, 
-                        height: 55, 
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.login_outlined),
-                          label: const Text("Login to dashboard", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1)),
-                          onPressed: () { HapticFeedback.mediumImpact(); _loginBasicUser(); },
-                          onLongPress: () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.indigo,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        )
-                      ),
-                    ]
-                  )
-                )
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: Column(
-                children: [
-                  Image.asset('assets/images/signature.png', height: 40, errorBuilder: (c, e, s) => const SizedBox.shrink()),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "AkonsAutomation by AkonS",
-                    style: TextStyle(
-                      fontSize: 11, 
-                      fontWeight: FontWeight.bold, 
-                      color: Colors.indigo,
-                      letterSpacing: 0.5,
-                      fontStyle: FontStyle.italic,
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Column(
+                        children: [
+                          Image.asset('assets/images/signature.png', height: 90, errorBuilder: (c, e, s) => const SizedBox.shrink()),
+                          const SizedBox(height: 4),
+                          Text(
+                            "AkonsAutomation by AkonS",
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.bold, 
+                              color: Theme.of(context).colorScheme.primary, 
+                              letterSpacing: 0.5, 
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          // BN Displayed lively at the bottom
+                          Text(
+                            bnText,
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.bold, 
+                              color: Theme.of(context).colorScheme.tertiary,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+            );
+          }
         ),
       ),
     );

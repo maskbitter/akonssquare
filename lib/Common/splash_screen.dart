@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/main.dart';
-import 'package:akonssquare/Admin/admin_dashboard.dart';
-import 'package:akonssquare/Users/user_dashboard.dart';
-import 'package:akonssquare/Operator/operator_dashboard.dart';
-import 'package:akonssquare/Viewer/viewer_dashboard.dart';
-import 'package:akonssquare/Admin/super_admin_dashboard.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/main.dart';
+import 'package:akons_square/Admin/admin_dashboard.dart';
+import 'package:akons_square/Users/user_dashboard.dart';
+import 'package:akons_square/Operator/operator_dashboard.dart';
+import 'package:akons_square/Viewer/viewer_dashboard.dart';
+import 'package:akons_square/Admin/super_admin_dashboard.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:akons_square/Common/build_config.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:async';
+import 'dart:io';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -52,16 +56,15 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Future<void> _startPreFetching() async {
-    // 1. Minimum delay for animation beauty (2.5 seconds)
-    final minDelay = Future.delayed(const Duration(milliseconds: 2500));
+    // 1. Animation beauty delay (2.5 seconds)
+    // We navigate exactly when this finishes, regardless of data fetch speed.
+    await Future.delayed(const Duration(milliseconds: 2500));
 
-    // 2. Data Pre-fetching
-    final dataFetch = _fetchInitialData();
+    // 2. Trigger data pre-fetching in background
+    // We don't await this strictly to prevent hangs during offline mode
+    _fetchInitialData();
 
-    // 3. Wait for both
-    await Future.wait([minDelay, dataFetch]);
-
-    // 4. Navigate based on Auth
+    // 3. Navigate
     if (mounted) {
       _navigateNext();
     }
@@ -78,8 +81,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       // Fetch DB Version
       DocumentSnapshot dbSnap = await FirebaseFirestore.instance.collection('app_config').doc('database_info').get();
       if (dbSnap.exists) {
-        DatabaseService.cachedDBVersion = (dbSnap.data() as Map)['dbVersion']?.toDouble();
+        var data = dbSnap.data() as Map<String, dynamic>?;
+        DatabaseService.cachedDBVersion = data?['dbVersion']?.toDouble();
       }
+
+      /* 
+      // Sync local build number to Firestore ONLY on emulator/AVD
+      if (Platform.isAndroid) {
+        var deviceInfo = await DeviceInfoPlugin().androidInfo;
+        if (!deviceInfo.isPhysicalDevice) {
+          // 1. Update Global BN instantly (BN106, BN107...)
+          await DatabaseService().updateSystemBuildNumber(buildNumber);
+          
+          // 2. Update Global App Version (e.g. 1.0.0+9)
+          await DatabaseService().updateRequiredVersion(appVersion);
+        }
+      }
+      */
 
       // Fetch Occupied Sub-items for Login Page
       QuerySnapshot subItemsSnap = await FirebaseFirestore.instance.collection('sub_items').get();
@@ -88,8 +106,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         data['id'] = doc.id;
         return data;
       }).where((item) {
-        String tenant = item['TenantName'] ?? '';
-        String status = item['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
+        String status = item['status'] ?? 'Vacant'; // Strict status check
         return status == 'Occupied';
       }).toList();
       DatabaseService.cachedSubItems.sort((a, b) => (a['subItemName'] ?? '').toString().compareTo((b['subItemName'] ?? '').toString()));
@@ -107,15 +124,30 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (!mounted) return;
 
     if (isLoggedIn) {
-      if (role == 'admin') {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
-      } else if (role == 'operator') {
-        String username = prefs.getString('username') ?? "Operator";
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OperatorDashboard(username: username)));
-      } else if (role == 'viewer') {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ViewerDashboard()));
-      } else if (role == 'superadmin') {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard()));
+      if (role == 'admin' || role == 'operator' || role == 'viewer' || role == 'superadmin') {
+        if (role != 'superadmin') {
+          // Verify user exists in Firestore
+          String? username = prefs.getString('username');
+          if (username != null) {
+            var userSnap = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: username).limit(1).get();
+            if (userSnap.docs.isEmpty) {
+              await prefs.clear();
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+              return;
+            }
+          }
+        }
+        
+        if (role == 'admin') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
+        } else if (role == 'operator') {
+          String username = prefs.getString('username') ?? "Operator";
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OperatorDashboard(username: username)));
+        } else if (role == 'viewer') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ViewerDashboard()));
+        } else if (role == 'superadmin') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuperAdminDashboard()));
+        }
       } else {
         String subId = prefs.getString('subItemId') ?? "";
         String catId = prefs.getString('categoryId') ?? "";
@@ -124,6 +156,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
           return;
         }
+        
+        // Verify sub-item exists and is occupied
+        var subSnap = await FirebaseFirestore.instance.collection('sub_items').doc(subId).get();
+        if (!subSnap.exists) {
+          await prefs.clear();
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+          return;
+        }
+        
+        var data = subSnap.data() as Map<String, dynamic>;
+        String status = data['status'] ?? 'Vacant'; // Strict status check
+        if (status == 'Vacant') {
+          await prefs.clear();
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+          return;
+        }
+
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboard(subItemId: subId, categoryId: catId)));
       }
     } else {
@@ -163,25 +212,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               child: Column(
                 children: [
                   Text(
-                    "AKONS SQUARE",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.95),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
+                    "AkonsSquare",
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.95),
                       letterSpacing: 5.0,
                       shadows: [
-                        Shadow(color: const Color(0xFF00FFC2).withOpacity(0.5), blurRadius: 10),
+                        Shadow(color: const Color(0xFF00FFC2).withValues(alpha: 0.5), blurRadius: 10),
                       ],
                     ),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    "SECURE PROPERTY MANAGEMENT",
-                    style: TextStyle(
-                      color: const Color(0xFF00FFC2).withOpacity(0.8),
-                      fontSize: 8,
+                    "Personal.Property.Management",
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: const Color(0xFF00FFC2).withValues(alpha: 0.8),
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2.5,
+                      fontSize: 8,
                     ),
                   ),
                 ],

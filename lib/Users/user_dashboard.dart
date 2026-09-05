@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:akons_square/Common/theme_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/Common/update_guard.dart';
-import 'package:akonssquare/Users/user_report_page.dart';
-import 'package:akonssquare/main.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/update_guard.dart';
+import 'package:akons_square/Common/build_config.dart';
+import 'package:akons_square/Common/ui_helper.dart';
+import 'package:akons_square/Users/user_report_page.dart';
+import 'package:akons_square/main.dart';
+import 'package:akons_square/Common/share_helper.dart';
+import 'package:akons_square/Admin/category_dialogs.dart';
+import 'dart:async';
 
 class UserDashboard extends StatefulWidget {
   final String subItemId;
@@ -22,25 +28,72 @@ class _UserDashboardState extends State<UserDashboard> {
   int _currentIndex = 0;
   String _appName = "";
   String _categoryName = "";
+  String _username = "User";
+  String _tenantName = "";
+  StreamSubscription? _userSessionSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadAppData();
+    _startSessionListener();
+  }
+
+  @override
+  void dispose() {
+    _userSessionSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _startSessionListener() {
+    String subId = widget.subItemId;
+    if (subId.isEmpty) return;
+
+    _userSessionSubscription = FirebaseFirestore.instance
+        .collection('sub_items')
+        .doc(subId)
+        .snapshots()
+        .listen((snapshot) async {
+      if (!snapshot.exists) {
+        _handleLogout();
+        return;
+      }
+      
+      var data = snapshot.data() as Map<String, dynamic>;
+      
+      // Check for Vacant status (Strict)
+      String status = data['status'] ?? 'Vacant';
+      if (status == 'Vacant') {
+        _handleLogout();
+        return;
+      }
+    }, onError: (e) {
+      debugPrint("Listener Error: $e");
+      _handleLogout();
+    });
   }
 
   Future<void> _loadAppData() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     
     String catName = "Unknown";
+    String uName = "User";
+    String tName = "";
     if (widget.categoryId.isNotEmpty) {
       try {
         DocumentSnapshot catDoc = await _dbService.getCategoryById(widget.categoryId);
         if (catDoc.exists) {
           catName = (catDoc.data() as Map?)?['categoryName'] ?? 'Unknown';
         }
+        
+        DocumentSnapshot subDoc = await FirebaseFirestore.instance.collection('sub_items').doc(widget.subItemId).get();
+        if (subDoc.exists) {
+          var data = subDoc.data() as Map?;
+          uName = data?['subItemName'] ?? 'User';
+          tName = data?['TenantName'] ?? '';
+        }
       } catch (e) {
-        debugPrint("Error loading category name: $e");
+        debugPrint("Error loading data: $e");
       }
     }
     
@@ -48,6 +101,8 @@ class _UserDashboardState extends State<UserDashboard> {
       setState(() {
         _appName = packageInfo.appName;
         _categoryName = catName;
+        _username = uName;
+        _tenantName = tName;
       });
     }
   }
@@ -57,26 +112,53 @@ class _UserDashboardState extends State<UserDashboard> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Center(child: Text("Logout Confirmation", style: TextStyle(fontWeight: FontWeight.bold))),
-          content: const Text("Are you sure you want to logout?", textAlign: TextAlign.center),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? ThemeManager.outlineBackground 
+                      : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) 
+                      : null,
+                ),
+                child: Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 40),
+              ),
+              const SizedBox(height: 16),
+              Text("Logout Confirmation", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
-            Row(
-              children: [
-                Expanded(child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
-                  onPressed: () => Navigator.pop(context), child: const Text("Cancel"))),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _handleLogout();
-                    },
-                    child: const Text("Logout"),
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    elevation: 0,
                   ),
+                  onPressed: () => Navigator.pop(context), 
+                  child: const Text("Cancel")
+                ),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error, 
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _handleLogout();
+                  },
+                  child: const Text("Logout"),
                 ),
               ],
             ),
@@ -87,12 +169,18 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Future<void> _handleLogout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? subItemId = prefs.getString('subItemId');
-    if (subItemId != null) {
-      await DatabaseService().updateUserSession('sub_items', subItemId, null);
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? subItemId = prefs.getString('subItemId');
+      if (subItemId != null) {
+        // Try updating session, but don't wait if it fails (e.g. doc deleted)
+        DatabaseService().updateUserSession('sub_items', subItemId, null).catchError((e) => null);
+      }
+      await prefs.clear();
+    } catch (e) {
+      debugPrint("Logout Error: $e");
     }
-    await prefs.clear();
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -101,20 +189,51 @@ class _UserDashboardState extends State<UserDashboard> {
     }
   }
 
+  Widget _buildDetailRow(BuildContext context, String label, String value, {String? subtitle, Color? valueColor, bool isBold = false}) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: subtitle != null ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant)),
+                if (subtitle != null)
+                  Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic)),
+              ],
+            ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+              color: isOutline ? Colors.black : valueColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfoRow(String label, String value, {bool isBold = false, IconData? icon}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 12.0),
+      padding: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
-              if (icon != null) Icon(icon, size: 12, color: Colors.blueGrey.shade300),
+              if (icon != null) Icon(icon, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
               if (icon != null) const SizedBox(width: 6),
-              Text(label, style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+              Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.2)),
             ],
           ),
-          Text(value, style: TextStyle(fontSize: 13, fontWeight: isBold ? FontWeight.bold : FontWeight.w500)),
+          Text(value, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: isBold ? FontWeight.bold : FontWeight.w500, height: 1.2)),
         ],
       ),
     );
@@ -122,366 +241,707 @@ class _UserDashboardState extends State<UserDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> pages = [
-      _buildMainDashboard(),
-      UserReportPage(subItemId: widget.subItemId),
-    ];
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('sub_items').doc(widget.subItemId).snapshots(),
+      builder: (context, snapshot) {
+        // Aggressive Existence Check for Auto-Logout
+        if (snapshot.hasData && (!snapshot.data!.exists || (snapshot.data!.data() as Map?)?['status'] == 'Vacant')) {
+           WidgetsBinding.instance.addPostFrameCallback((_) => _handleLogout());
+           return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
 
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: Text(_appName.isEmpty ? "Loading..." : _appName, style: const TextStyle(fontSize: 16)),
-        centerTitle: true,
-        actions: [
-          InkWell(
-            onTap: _showLogoutConfirmationDialog,
-            child: StreamBuilder<DocumentSnapshot>(
-              stream: _dbService.getAppConfigStream(),
-              builder: (context, snapshot) {
-                return FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (context, pSnap) {
-                    String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
-                    String? remote = snapshot.data?.exists == true ? snapshot.data!['requiredVersion'] : null;
-                    
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+        final List<Widget> pages = [
+          _buildMainDashboard(snapshot.data),
+          UserReportPage(subItemId: widget.subItemId),
+        ];
+
+        return Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            centerTitle: false,
+            title: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 1),
+              child: GestureDetector(
+                onTap: null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _appName.isEmpty ? "Loading..." : _appName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.logout, color: Colors.red, size: 20),
-                        Text(local, style: TextStyle(fontSize: 8, color: Colors.blueGrey.shade600, fontWeight: FontWeight.bold)),
-                        if (remote != null && remote != local)
-                          Text(remote, style: const TextStyle(fontSize: 8, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                        Text(
+                          _currentIndex == 0 ? "Home" : "History",
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary),
+                        ),
+                        Text(
+                          " | ", 
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
+                        ),
+                        Text(
+                          _tenantName.isEmpty ? _username.toUpperCase() : "${_username.toUpperCase()}($_tenantName)",
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.secondary, 
+                          ),
+                        ),
                       ],
-                    );
-                  }
-                );
-              }
+                    ),
+                  ],
+                ),
+              ),
             ),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.share_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                onPressed: () => ShareHelper.shareApp(context),
+                tooltip: "Share App",
+              ),
+              StreamBuilder<DocumentSnapshot>(
+                stream: _dbService.getAppConfigStream(),
+                builder: (context, configSnap) {
+                  return StreamBuilder<DocumentSnapshot>(
+                    stream: _dbService.getDatabaseInfoStream(),
+                    builder: (context, dbInfoSnap) {
+                      String local = appVersion; // Instant update from build_config.dart
+                      final configData = configSnap.data?.data() as Map<String, dynamic>?;
+                      String? remote = configData?['requiredVersion'];
+                      String dbVersion = "...";
+                      if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                        var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                        dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                      }
+                      
+                      bool isOutdated = false;
+                      if (remote != null && remote != local) {
+                        try {
+                          List<String> localParts = local.split('+');
+                          List<String> serverParts = remote.split('+');
+                          int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                          int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                          if (serverMain > localMain) {
+                            isOutdated = true;
+                          } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                            int localBuild = int.tryParse(localParts[1]) ?? 0;
+                            int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                            if (serverBuild > localBuild) isOutdated = true;
+                          }
+                        } catch (e) { isOutdated = remote != local; }
+                      }
+                      
+                      return InkWell(
+                        onTap: () {
+                          if (isOutdated) {
+                            String dUrl = configData?['downloadUrl'] ?? "";
+                            showUpdateLogoutDialog(
+                              context: context, 
+                              remoteVersion: remote ?? "Unknown", 
+                              downloadUrl: dUrl, 
+                              onLogout: _handleLogout
+                            );
+                          } else {
+                            _showLogoutConfirmationDialog();
+                          }
+                        },
+                        child: AppVersionInfo(
+                          version: local,
+                          dbVersion: dbVersion,
+                          latestVersion: remote,
+                          isOutdated: isOutdated,
+                          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary,
+                          secondaryColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary,
+                          showLogoutIcon: true,
+                        ),
+                      );
+                    }
+                  );
+                }
+              ),
+              const SizedBox(width: 16),
+            ],
           ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: UpdateGuard(child: pages[_currentIndex]),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Colors.blue,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: "Dashboard"),
-          BottomNavigationBarItem(icon: Icon(Icons.analytics), label: "History"),
-        ],
-      ),
+          body: UpdateGuard(child: pages[_currentIndex]),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            selectedItemColor: Theme.of(context).colorScheme.primary,
+            unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            onTap: (index) => setState(() => _currentIndex = index),
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: "Home"),
+              BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), activeIcon: Icon(Icons.analytics), label: "History"),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildMainDashboard() {
+  Widget _buildMainDashboard(DocumentSnapshot? snapshot) {
+    if (snapshot == null || !snapshot.exists) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    var subData = snapshot.data() as Map<String, dynamic>?;
+    if (subData == null) return const Center(child: Text("Data not found."));
+
+    String subName = subData['subItemName'] ?? 'Unnamed';
+    String TenantName = subData['TenantName'] ?? '';
+    String nidNumber = subData['nidNumber'] ?? '';
+    String notes = subData['notes'] ?? '';
+    DateTime? createdAt = (subData['createdAt'] as Timestamp?)?.toDate();
+
+    if (widget.categoryId.isEmpty) {
+       return const Center(child: Text("Category info missing. Please contact admin."));
+    }
+
     return StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('sub_items').doc(widget.subItemId).snapshots(),
-        builder: (context, subSnapshot) {
-          if (!subSnapshot.hasData) return const Center(child: CircularProgressIndicator());
+      stream: _dbService.getCategoryStream(widget.categoryId),
+      builder: (context, catSnapshot) {
+        if (!catSnapshot.hasData) return const Center(child: CircularProgressIndicator());
+        
+        var catData = catSnapshot.data!.data() as Map<String, dynamic>?;
+        List assignedServices = catData?['assignedServices'] ?? [];
+
+        var ed = subData['electricityDetails'];
+        double electricityBill = 0;
+        bool isElectricStopped = ed?['isStopped'] == true;
+
+        if (ed != null && !isElectricStopped) {
+          double last = (ed['lastReading'] as num?)?.toDouble() ?? 0;
+          double present = (ed['presentReading'] as num?)?.toDouble() ?? 0;
+          double rate = (ed['pricePerUnit'] as num?)?.toDouble() ?? 0;
+          electricityBill = (present - last) * rate;
+        }
+
+        List excludedServices = subData['excludedServices'] ?? [];
+        List overriddenServices = subData['overriddenServices'] ?? [];
+        List macAddresses = subData['macAddresses'] ?? [];
+        List manualDues = subData['manualDues'] ?? [];
+        
+        List<Map<String, dynamic>> activeServices = [];
+        for (var service in assignedServices) {
+          String originalName = (service is Map) ? (service['name'] ?? '') : service.toString();
+          if (originalName.isEmpty || excludedServices.contains(originalName)) continue;
           
-          var subData = subSnapshot.data!.data() as Map<String, dynamic>?;
-          if (subData == null) return const Center(child: Text("Data not found."));
+          var overrideMatch = overriddenServices.firstWhere(
+            (element) => element is Map && element['originalName'] == originalName,
+            orElse: () => null,
+          );
 
-          String subName = subData['subItemName'] ?? 'Unnamed';
-          String TenantName = subData['TenantName'] ?? '';
-          String nidNumber = subData['nidNumber'] ?? '';
-          String notes = subData['notes'] ?? '';
-          DateTime? createdAt = (subData['createdAt'] as Timestamp?)?.toDate();
+          if (overrideMatch != null) {
+            activeServices.add({
+              'name': overrideMatch['name'] ?? originalName,
+              'amount': overrideMatch['amount'] ?? 0,
+              'deviceQuantity': overrideMatch['deviceQuantity'],
+              'wifiCost': overrideMatch['wifiCost'],
+            });
+          } else {
+            Map<String, dynamic> serviceData = {
+              'name': originalName,
+              'amount': (service is Map) ? (service['amount'] ?? 0) : 0,
+            };
 
-          String durationText = "N/A";
-          if (createdAt != null) {
-            Duration diff = DateTime.now().difference(createdAt);
-            int years = diff.inDays ~/ 365;
-            int months = (diff.inDays % 365) ~/ 30;
-            if (years > 0) {
-              durationText = "$years year${years > 1 ? 's' : ''}${months > 0 ? ' $months month${months > 1 ? 's' : ''}' : ''}";
-            } else {
-              durationText = "$months month${months > 1 ? 's' : ''}";
-              if (months == 0) durationText = "${diff.inDays} days";
+            if (originalName.toLowerCase().contains("wifi")) {
+              serviceData['deviceQuantity'] = 1;
+              serviceData['wifiCost'] = serviceData['amount'];
             }
+
+            activeServices.add(serviceData);
           }
-          
-          if (widget.categoryId.isEmpty) {
-             return const Center(child: Text("Category info missing. Please contact admin."));
-          }
+        }
 
-          return FutureBuilder<DocumentSnapshot>(
-            future: _dbService.getCategoryById(widget.categoryId),
-            builder: (context, catSnapshot) {
-              if (!catSnapshot.hasData) return const Center(child: CircularProgressIndicator());
-              
-              var catData = catSnapshot.data!.data() as Map<String, dynamic>?;
-              List assignedServices = catData?['assignedServices'] ?? [];
+        double servicesSum = activeServices.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
+        double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
 
-              var ed = subData['electricityDetails'];
-              double electricityBill = 0;
-              bool isElectricStopped = ed?['isStopped'] == true;
+        // --- BILLING HISTORY FETCH (CONSOLIDATED) ---
+        List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        DateTime nowTime = DateTime.now();
+        DateTime prevMonth = DateTime(nowTime.year, nowTime.month - 1);
+        String prevMonthYear = "${months[prevMonth.month - 1]}-${prevMonth.year.toString().substring(2)}";
+        String currentMonthYear = "${months[nowTime.month - 1]}-${nowTime.year.toString().substring(2)}";
 
-              if (ed != null && !isElectricStopped) {
-                double last = (ed['lastReading'] as num?)?.toDouble() ?? 0;
-                double present = (ed['presentReading'] as num?)?.toDouble() ?? 0;
-                double rate = (ed['pricePerUnit'] as num?)?.toDouble() ?? 0;
-                electricityBill = (present - last) * rate;
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('billing_history')
+              .where('subItemId', isEqualTo: widget.subItemId)
+              .snapshots(),
+          builder: (context, historySnapshot) {
+            if (!historySnapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+            var historyDocs = historySnapshot.data!.docs;
+            
+            // Helper to parse Month-Year for sorting
+            DateTime parseMY(String my) {
+              List<String> parts = my.split('-');
+              int m = months.indexOf(parts[0]) + 1;
+              int y = 2000 + (int.tryParse(parts[1]) ?? 0);
+              return DateTime(y, m);
+            }
+
+            String lastPaidMonth = "None";
+            if (historyDocs.isNotEmpty) {
+              var sortedPaid = historyDocs
+                  .where((doc) => (doc.data() as Map)['status'] != 'Due')
+                  .map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
+              if (sortedPaid.isNotEmpty) {
+                sortedPaid.sort((a, b) => parseMY(b).compareTo(parseMY(a)));
+                lastPaidMonth = sortedPaid.first;
+              }
+            }
+
+            List<String> paidMonths = historyDocs
+                .where((doc) => (doc.data() as Map)['status'] == 'Paid')
+                .map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
+            
+            List<String> dueMonthsFromHistory = historyDocs
+                .where((doc) => (doc.data() as Map)['status'] == 'Due')
+                .map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
+
+            bool isPrevPaid = paidMonths.contains(prevMonthYear);
+            
+            List<String> pendingMonths = [];
+            // 1. Add all Due months from history
+            pendingMonths.addAll(dueMonthsFromHistory);
+
+            // 2. Add months from createdAt that have NO history record at all (neither Paid nor Due)
+            // Only add months BEFORE the current month (don't auto-add the month we are currently in)
+            if (createdAt != null) {
+              DateTime current = DateTime(createdAt.year, createdAt.month);
+              while (current.isBefore(DateTime(nowTime.year, nowTime.month))) {
+                String mYear = "${months[current.month - 1]}-${current.year.toString().substring(2)}";
+                if (!paidMonths.contains(mYear) && !dueMonthsFromHistory.contains(mYear)) {
+                  pendingMonths.add(mYear);
+                }
+                current = DateTime(current.year, current.month + 1);
+              }
+            }
+            
+            // Sort pending months chronologically
+            pendingMonths.sort((a, b) => parseMY(a).compareTo(parseMY(b)));
+
+            // Total Outstanding: Sum of recorded Due records + Estimated bill for months with NO record
+            double totalOutstanding = 0;
+            
+            // Sum recorded dues
+            for (var doc in historyDocs) {
+              var data = doc.data() as Map;
+              if (data['status'] == 'Due') {
+                totalOutstanding += (data['totalAmount'] as num).toDouble();
+              }
+            }
+
+            // Add estimates for missing months
+            for (var m in pendingMonths) {
+              if (!dueMonthsFromHistory.contains(m)) {
+                // If it's a current/missing month without a record, use estimate
+                // For simplicity, we assume fixed services sum. 
+                // Variable dues (electricity/manual) only apply if m == currentMonthYear
+                bool isCurrent = m == currentMonthYear;
+                totalOutstanding += servicesSum + (isCurrent ? (electricityBill + mDuesSum) : 0);
+              }
+            }
+
+            void showUnpaidDetails(String month) {
+              // 1. Try to find a recorded Due doc
+              var recordedDoc = historyDocs.firstWhere(
+                (doc) => (doc.data() as Map)['monthYear'] == month && (doc.data() as Map)['status'] == 'Due',
+                orElse: () => null as dynamic,
+              );
+
+              if (recordedDoc != null) {
+                UserReportPage.showDetailsDialog(context, recordedDoc.data() as Map<String, dynamic>);
+                return;
               }
 
-              List excludedServices = subData['excludedServices'] ?? [];
-              List overriddenServices = subData['overriddenServices'] ?? [];
+              bool isCurrent = month == currentMonthYear;
               
-              List<Map<String, dynamic>> activeServices = [];
-              for (var service in assignedServices) {
-                String originalName = (service is Map) ? (service['name'] ?? '') : service.toString();
-                if (originalName.isEmpty || excludedServices.contains(originalName)) continue;
-                
-                var overrideMatch = overriddenServices.firstWhere(
-                  (element) => element is Map && element['originalName'] == originalName,
-                  orElse: () => null,
-                );
-
-                if (overrideMatch != null) {
-                  activeServices.add({
-                    'name': overrideMatch['name'] ?? originalName,
-                    'amount': overrideMatch['amount'] ?? 0,
-                    'deviceQuantity': overrideMatch['deviceQuantity'],
-                    'wifiCost': overrideMatch['wifiCost'],
+              // Prepare virtual services list for the dialog
+              List<Map<String, dynamic>> virtualServices = List.from(activeServices);
+              if (isCurrent && manualDues.isNotEmpty) {
+                for (var d in manualDues) {
+                  virtualServices.add({
+                    'name': d['reason'] ?? 'Additional Due',
+                    'amount': d['amount'] ?? 0,
                   });
-                } else {
-                  Map<String, dynamic> serviceData = {
-                    'name': originalName,
-                    'amount': (service is Map) ? (service['amount'] ?? 0) : 0,
-                  };
-
-                  if (originalName.toLowerCase().contains("wifi")) {
-                    serviceData['deviceQuantity'] = 1;
-                    serviceData['wifiCost'] = serviceData['amount'];
-                  }
-
-                  activeServices.add(serviceData);
                 }
               }
 
-              double servicesSum = activeServices.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
-              double totalBill = servicesSum + electricityBill;
+              double monthGrandTotal = servicesSum + (isCurrent ? (electricityBill + mDuesSum) : 0);
 
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Card(
-                      elevation: 3,
-                      color: Colors.blue.shade50,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
-                        child: Column(
+              Map<String, dynamic> virtualData = {
+                'status': 'Due',
+                'monthYear': month,
+                'subItemName': subName,
+                'TenantName': TenantName,
+                'services': virtualServices,
+                'electricityDetails': isCurrent ? ed : null, // Only show readings for current month estimation
+                'electricityBill': isCurrent ? electricityBill : 0,
+                'totalAmount': monthGrandTotal,
+                'createdAt': Timestamp.now(), // Placeholder for "Recorded at"
+                'paymentNotes': 'Estimation based on current settings',
+              };
+
+              UserReportPage.showDetailsDialog(context, virtualData);
+            }
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- MODERN HEADER CARD (Updated Layout) ---
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : null,
+                      gradient: ThemeManager.appThemeNotifier.value == "Outline Theme" ? null : LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+                      boxShadow: ThemeManager.appThemeNotifier.value == "Outline Theme" ? null : [
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Line 1: Category Name
+                        Text(
+                          _categoryName.toUpperCase(),
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 6),
+                        // Line 2: Unit Name (Tenant Name)
+                        Text(
+                          TenantName.isNotEmpty ? "$subName ($TenantName)" : subName,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
+                        ),
+                        // Line 3: NID Number
+                        if (nidNumber.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            "NID: $nidNumber",
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  // --- OUTSTANDING BILL SECTION ---
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+                      boxShadow: ThemeManager.appThemeNotifier.value == "Outline Theme" ? null : [
+                        BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(_categoryName, style: TextStyle(fontSize: 13, color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 6),
-                            Row(
-                              mainAxisAlignment: TenantName.isNotEmpty 
-                                  ? MainAxisAlignment.spaceBetween 
-                                  : MainAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    subName, 
-                                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (TenantName.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Chip(
-                                      label: Text(
-                                        TenantName, 
-                                        style: const TextStyle(fontSize: 11),
-                                        overflow: TextOverflow.ellipsis,
-                                      ), 
-                                      backgroundColor: Colors.white,
-                                      visualDensity: VisualDensity.compact,
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            if (nidNumber.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Text("NID: $nidNumber", style: const TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.bold)),
-                              ),
-                            if (createdAt != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Text("Using for: $durationText", style: const TextStyle(fontSize: 11, color: Colors.blueGrey)),
-                              ),
-                            const Divider(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.receipt_long_outlined, color: Colors.indigo, size: 18),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Total Outstanding: ৳${totalBill.toStringAsFixed(2)}",
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
-                                ),
-                              ],
-                            ),
+                            Icon(pendingMonths.isEmpty ? Icons.check_circle : Icons.pending_actions, color: pendingMonths.isEmpty ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.error, size: 20),
+                            const SizedBox(width: 8),
+                            Text(pendingMonths.isEmpty ? "MONTHLY BILL (PAID)" : "CURRENT OUTSTANDING", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                           ],
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "৳${totalOutstanding.toStringAsFixed(2)}",
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: pendingMonths.isEmpty ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
+                        ),
+                        const SizedBox(height: 4),
+                        Text("Last Paid: $lastPaidMonth", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+                        
+                        if (pendingMonths.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text("Due: ", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                                ...pendingMonths.asMap().entries.map((entry) {
+                                  int idx = entry.key;
+                                  String m = entry.value;
+                                  bool isCurrent = m == currentMonthYear;
+                                  return InkWell(
+                                    onTap: () => showUnpaidDetails(m),
+                                    child: Text(
+                                      "$m${idx == pendingMonths.length - 1 ? '' : ', '}",
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.error,
+                                        decoration: TextDecoration.underline,
+                                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+              // (REMOVED OLD PENDING MONTHS SECTION FROM HERE)
+
+              if (notes.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Text("ADMIN NOTES", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(16),
+                    border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(notes, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null))),
+                    ],
+                  ),
+                ),
+              ],
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Text("BILL BREAKDOWN", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+              ),
+
+              if (ed != null && !isElectricStopped)
+                Card(
+                  elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
+                  ),
+                  child: ExpansionTile(
+                    backgroundColor: ThemeManager.outlineBackground,
+                    collapsedBackgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : null,
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                    visualDensity: VisualDensity.compact,
+                    dense: true,
+                    shape: const Border(),
+                    collapsedShape: const Border(),
+                    iconColor: context.electric,
+                    collapsedIconColor: context.electric,
+                    leading: CircleAvatar(
+                      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : context.electric.withValues(alpha: 0.1),
+                      child: Container(
+                        decoration: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                        child: Icon(Icons.electric_bolt, color: context.electric, size: 20)
                       ),
                     ),
-                    
-                    StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance.collection('billing_history').where('subItemId', isEqualTo: widget.subItemId).snapshots(),
-                      builder: (context, historySnapshot) {
-                        if (!historySnapshot.hasData) return const SizedBox.shrink();
-                        
-                        List<String> paidMonths = historySnapshot.data!.docs.map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
-                        List<String> pendingMonths = [];
-                        
-                        if (createdAt != null) {
-                          DateTime now = DateTime.now();
-                          DateTime current = DateTime(createdAt.year, createdAt.month);
-                          List<String> monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                          
-                          while (current.isBefore(now) || (current.year == now.year && current.month == now.month)) {
-                            String mYear = "${monthNames[current.month - 1]}-${current.year.toString().substring(2)}";
-                            if (!paidMonths.contains(mYear)) {
-                              pendingMonths.add(mYear);
-                            }
-                            current = DateTime(current.year, current.month + 1);
-                          }
-                        }
-                        
-                        if (pendingMonths.isEmpty) return const SizedBox.shrink();
-                        
-                        return Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 6,
-                            runSpacing: 6,
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Electricity Bill", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                        Text("৳${electricityBill.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                      ],
+                    ),
+                    subtitle: Text("Usage: ${((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)} units", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    children: [
+                      const Divider(height: 1),
+                      const SizedBox(height: 8),
+                      _buildInfoRow("Meter Number", ed['subMeterNo'] ?? 'N/A', icon: Icons.numbers),
+                      _buildInfoRow("Last Units", (ed['lastReading'] as num?)?.toDouble().toStringAsFixed(1) ?? '0.0', icon: Icons.history),
+                      _buildInfoRow("Present Units", (ed['presentReading'] as num?)?.toDouble().toStringAsFixed(1) ?? '0.0', icon: Icons.speed),
+                      _buildInfoRow("Used Units", (((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)).toStringAsFixed(1), icon: Icons.bolt, isBold: true),
+                      _buildInfoRow("Price per Unit", "৳${(ed['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.payments_outlined),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
+
+              ...activeServices.map((s) {
+                String name = s['name'] ?? 'Unnamed';
+                bool isWifi = name.toLowerCase().contains("wifi");
+                bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+                return GestureDetector(
+                  onTap: (isWifi && macAddresses.isNotEmpty) ? () => CategoryDialogs.showUserMacDetailsDialog(
+                    context: context, 
+                    subItemName: subName, 
+                    macAddresses: macAddresses, 
+                    wifiService: s
+                  ) : null,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                      boxShadow: isOutline ? [] : [
+                        BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2)),
+                      ],
+                    ),
+                    child: isWifi && macAddresses.isNotEmpty
+                      ? Theme(
+                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                          child: ExpansionTile(
+                            dense: true,
+                            visualDensity: VisualDensity.compact,
+                            tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                            childrenPadding: const EdgeInsets.only(left: 56, bottom: 8),
+                            shape: const Border(),
+                            collapsedShape: const Border(),
+                            iconColor: Theme.of(context).colorScheme.primary,
+                            collapsedIconColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                            title: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 16,
+                                        backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                        child: Container(
+                                          decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                                          child: Icon(Icons.wifi, color: Theme.of(context).colorScheme.primary, size: 16)
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          "$name (৳${s['wifiCost'] ?? 0} / device) (x${s['deviceQuantity'] ?? 1})",
+                                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                              ],
+                            ),
                             children: [
-                              const Text(
-                                "Pending:", 
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.redAccent)
-                              ),
-                              ...pendingMonths.map((m) => Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.redAccent.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.redAccent.shade100),
-                                ),
+                              Align(
+                                alignment: Alignment.centerLeft,
                                 child: Text(
-                                  m, 
-                                  style: const TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)
+                                  "MAC Addresses:\n${macAddresses.asMap().entries.map((e) {
+                                    var val = e.value;
+                                    String sn = (val is Map && val['sn'] != null && val['sn'].toString().isNotEmpty) ? val['sn'].toString() : (e.key + 1).toString();
+                                    String mac = val is Map ? val['mac'] : val.toString();
+                                    return "$sn) $mac";
+                                  }).join('\n')}", 
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary, fontFamily: 'monospace', fontSize: 9)
                                 ),
-                              )),
+                              ),
                             ],
                           ),
-                        );
-                      }
-                    ),
-
-                    if (notes.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      const Text("Notes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 6),
-                      Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        child: ListTile(
+                        )
+                      : ListTile(
                           dense: true,
-                          leading: const Icon(Icons.note_alt_outlined, color: Colors.blueGrey, size: 20),
-                          title: Text(notes, style: const TextStyle(fontSize: 13)),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    const Text("Bill Details", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
-                    if (ed != null && !isElectricStopped)
-                      Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                        child: ExpansionTile(
                           visualDensity: VisualDensity.compact,
-                          leading: const Icon(Icons.electric_bolt, color: Colors.amber, size: 22),
-                          title: const Text("Electricity Bill", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                          subtitle: Text(
-                            "Used: ${((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)} units",
-                            style: const TextStyle(fontSize: 10),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                          title: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: isOutline ? ThemeManager.outlineBackground : (isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary).withValues(alpha: 0.1),
+                                child: Container(
+                                  decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                                  child: Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, color: isWifi ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.tertiary, size: 16)
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  isWifi 
+                                      ? "$name (৳${s['wifiCost'] ?? 0} / device) (x${s['deviceQuantity'] ?? 1})" 
+                                      : name,
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
+                                ),
+                              ),
+                            ],
                           ),
-                          trailing: Text(
-                            "৳${electricityBill.toStringAsFixed(2)}",
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.teal),
-                          ),
-                          children: [
-                            const Divider(height: 1),
-                            const SizedBox(height: 6),
-                            _buildInfoRow("Main Meter No:", ed['mainMeterNo'] ?? 'N/A', icon: Icons.settings_input_component),
-                            _buildInfoRow("Sub-Meter No:", ed['subMeterNo'] ?? 'N/A', icon: Icons.numbers),
-                            _buildInfoRow("Last Readings:", "${(ed['lastReading'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.history),
-                            _buildInfoRow("Present Readings:", "${(ed['presentReading'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.visibility),
-                            _buildInfoRow("Used Units:", (((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)).toStringAsFixed(2), isBold: true, icon: Icons.electric_bolt),
-                            _buildInfoRow("Price per Unit:", "৳${(ed['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.payments_outlined),
-                            const SizedBox(height: 6),
-                          ],
-                        ),
+                        trailing: Text("৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                       ),
-                    ...activeServices.map((s) {
-                      String? wifiSubtitle;
-                      if (s['name'].toString().toLowerCase().contains("wifi") && s['deviceQuantity'] != null) {
-                        wifiSubtitle = "৳${s['wifiCost'] ?? 200} (per Device)";
-                      }
+                  ),
+                );
+              }),
 
-                      return _buildDetailCard(
-                        icon: Icons.check_circle_outline,
-                        color: Colors.teal,
-                        title: s['name'].toString().toLowerCase().contains("wifi") 
-                            ? "${s['name']} (Devices: ${s['deviceQuantity'] ?? 1})" 
-                            : s['name'],
-                        amount: (s['amount'] as num).toDouble(),
-                        subtitle: wifiSubtitle,
-                      );
-                    }),
-                    if (activeServices.isEmpty && (ed == null || isElectricStopped))
-                      const Center(child: Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text("No active charges for this month.", style: TextStyle(fontSize: 13, color: Colors.grey)),
-                      )),
-                  ],
+              if (manualDues.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text("ADJUST DUES/ADVANCES", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                 ),
-              );
-            },
-          );
-        },
-      );
-  }
+                ...manualDues.map((d) {
+                  double amt = (d['amount'] as num).toDouble();
+                  bool isAdv = amt < 0;
+                  bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+                  Color itemColor = isAdv ? Colors.green : Theme.of(context).colorScheme.error;
+                  
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isOutline ? ThemeManager.outlineBackground : itemColor.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: itemColor.withValues(alpha: 0.3), width: 1.5),
+                    ),
+                    child: ListTile(
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                      leading: CircleAvatar(
+                        backgroundColor: itemColor.withValues(alpha: 0.1),
+                        child: Icon(isAdv ? Icons.account_balance_wallet_outlined : Icons.money_off, color: itemColor, size: 20),
+                      ),
+                      title: Text(
+                        "${d['reason']}${isAdv ? ' (Adv)' : ''}",
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null),
+                      ),
+                      subtitle: Text("Added: ${d['date']?.toString().split('T')[0] ?? ''}", style: Theme.of(context).textTheme.bodySmall),
+                      trailing: Text("৳${amt.abs().toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: itemColor)),
+                    ),
+                  );
+                }),
+              ],
 
-  Widget _buildDetailCard({required IconData icon, required Color color, required String title, required double amount, String? subtitle, VoidCallback? onTap}) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: ListTile(
-        onTap: onTap,
-        dense: true,
-        visualDensity: VisualDensity.compact,
-        leading: Icon(icon, color: color, size: 20),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(fontSize: 10)) : null,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("৳${amount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.teal)),
-            if (onTap != null) const Icon(Icons.chevron_right, size: 14, color: Colors.grey),
-          ],
-        ),
-      ),
+              if (activeServices.isEmpty && (ed == null || isElectricStopped) && manualDues.isEmpty)
+                Center(child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Text("No active charges found for this period.", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                )),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

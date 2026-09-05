@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:akonssquare/Admin/admin_home.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/Common/update_guard.dart';
-import 'package:akonssquare/main.dart';
+import 'package:akons_square/Admin/admin_home.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/update_guard.dart';
+import 'package:akons_square/Common/build_config.dart';
+import 'package:akons_square/Common/ui_helper.dart';
+import 'package:akons_square/Common/theme_manager.dart';
+import 'package:akons_square/main.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:akons_square/Common/share_helper.dart';
+import 'dart:async';
 
 class ViewerDashboard extends StatefulWidget {
   const ViewerDashboard({super.key});
@@ -16,27 +21,65 @@ class ViewerDashboard extends StatefulWidget {
 
 class _ViewerDashboardState extends State<ViewerDashboard> {
   String _appName = "";
+  String _username = "Viewer";
+  StreamSubscription? _userSessionSubscription;
 
   @override
   void initState() {
     super.initState();
-    _fetchAppName();
+    _fetchAppData();
+    _startSessionListener();
   }
 
-  Future<void> _fetchAppName() async {
+  @override
+  void dispose() {
+    _userSessionSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _startSessionListener() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userDocId = prefs.getString('userDocId');
+    String? currentSessionId = prefs.getString('sessionId');
+
+    if (userDocId == null || userDocId.isEmpty) return;
+
+    _userSessionSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userDocId)
+        .snapshots()
+        .listen((snapshot) {
+      if (!snapshot.exists) {
+        // User deleted or DB wiped
+        _handleLogout();
+      } else {
+      }
+    }, onError: (e) {
+      _handleLogout();
+    });
+  }
+
+  Future<void> _fetchAppData() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       _appName = packageInfo.appName;
+      _username = prefs.getString('username') ?? "Viewer";
     });
   }
 
   Future<void> _handleLogout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userDocId = prefs.getString('userDocId');
-    if (userDocId != null) {
-      await DatabaseService().updateUserSession('users', userDocId, null);
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userDocId = prefs.getString('userDocId');
+      if (userDocId != null) {
+        DatabaseService().updateUserSession('users', userDocId, null).catchError((e) => null);
+      }
+      await prefs.clear();
+    } catch (e) {
+      debugPrint("Logout Error: $e");
     }
-    await prefs.clear();
+
     if (mounted) {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
     }
@@ -46,68 +89,165 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_appName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const Text("Viewer Mode", style: TextStyle(fontSize: 11, color: Colors.blue)),
-          ],
-        ),
-        actions: [
-          InkWell(
-            onTap: () {
-               showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: const Center(child: Text("Logout", style: TextStyle(fontWeight: FontWeight.bold))),
-                  content: const Text("Are you sure you want to logout from viewer mode?", textAlign: TextAlign.center),
-                  actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  actions: [
-                    Row(
-                      children: [
-                        Expanded(child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
-                          onPressed: () => Navigator.pop(ctx), child: const Text("Cancel"))),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              _handleLogout();
-                            },
-                            child: const Text("Logout"),
-                          ),
-                        ),
-                      ],
+        automaticallyImplyLeading: false,
+        centerTitle: false,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 1),
+          child: GestureDetector(
+            onTap: null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _appName.isEmpty ? "Loading..." : _appName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Home",
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                    ),
+                    Text(
+                      " | ", 
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
+                    ),
+                    Text(
+                      "Viewer",
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary, 
+                      ),
                     ),
                   ],
                 ),
-              );
-            },
-            child: StreamBuilder<DocumentSnapshot>(
-              stream: DatabaseService().getAppConfigStream(),
-              builder: (context, snapshot) {
-                return FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (context, pSnap) {
-                    String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
-                    String? remote = snapshot.data?.exists == true ? snapshot.data!['requiredVersion'] : null;
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () => ShareHelper.shareApp(context),
+            tooltip: "Share App",
+          ),
+          StreamBuilder<DocumentSnapshot>(
+            stream: DatabaseService().getAppConfigStream(),
+            builder: (context, configSnap) {
+              return StreamBuilder<DocumentSnapshot>(
+                stream: DatabaseService().getDatabaseInfoStream(),
+                  builder: (context, dbInfoSnap) {
+                    String local = appVersion; // Instant update from build_config.dart
+                    final configData = configSnap.data?.data() as Map<String, dynamic>?;
+                    String? remote = configData?['requiredVersion'];
+                    String dbVersion = "...";
+                    if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                      var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                    }
                     
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.logout, color: Colors.red, size: 20),
-                        Text(local, style: TextStyle(fontSize: 8, color: Colors.blueGrey.shade600, fontWeight: FontWeight.bold)),
-                        if (remote != null && remote != local)
-                          Text(remote, style: const TextStyle(fontSize: 8, color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                      ],
+                    bool isOutdated = false;
+                    if (remote != null && remote != local) {
+                      try {
+                        List<String> localParts = local.split('+');
+                        List<String> serverParts = remote.split('+');
+                        int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                        int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                        if (serverMain > localMain) {
+                          isOutdated = true;
+                        } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                          int localBuild = int.tryParse(localParts[1]) ?? 0;
+                          int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                          if (serverBuild > localBuild) isOutdated = true;
+                        }
+                      } catch (e) { isOutdated = remote != local; }
+                    }
+                    
+                    return InkWell(
+                      onTap: () {
+                        if (isOutdated) {
+                          String dUrl = configData?['downloadUrl'] ?? "";
+                          showUpdateLogoutDialog(
+                            context: context, 
+                            remoteVersion: remote ?? "Unknown", 
+                            downloadUrl: dUrl, 
+                            onLogout: _handleLogout
+                          );
+                        } else {
+                          // Show old logout dialog
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                              title: Column(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                          ? ThemeManager.outlineBackground 
+                                          : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                                      shape: BoxShape.circle,
+                                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                          ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) 
+                                          : null,
+                                    ),
+                                    child: Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 40),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text("Logout Confirmation", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              content: SizedBox(
+                                width: MediaQuery.of(context).size.width * 0.95,
+                                child: Text("Are you sure you want to logout from viewer mode?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+                              ),
+                              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              actions: [
+                                AppDialogActions(
+                                  actions: [
+                                    AppButton(
+                                      style: ElevatedButton.styleFrom(
+                                        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                                        elevation: 0,
+                                      ),
+                                      onPressed: () => Navigator.pop(ctx), 
+                                      child: const Text("Cancel")
+                                    ),
+                                    AppButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Theme.of(context).colorScheme.error, 
+                                        foregroundColor: Theme.of(context).colorScheme.onPrimary
+                                      ),
+                                      onPressed: () {
+                                        Navigator.pop(ctx);
+                                        _handleLogout();
+                                      },
+                                      child: const Text("Logout"),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      },
+                      child: AppVersionInfo(
+                        version: local,
+                        dbVersion: dbVersion,
+                        latestVersion: remote,
+                        isOutdated: isOutdated,
+                        color: Theme.of(context).colorScheme.primary,
+                        secondaryColor: Theme.of(context).colorScheme.secondary,
+                        showLogoutIcon: true,
+                      ),
                     );
                   }
-                );
-              }
-            ),
+              );
+            }
           ),
           const SizedBox(width: 16),
         ],

@@ -1,10 +1,13 @@
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/main.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/ui_helper.dart';
+import 'package:akons_square/Common/build_config.dart';
+import 'package:akons_square/main.dart';
 
 class UpdateGuard extends StatefulWidget {
   final Widget child;
@@ -67,21 +70,30 @@ class _UpdateGuardState extends State<UpdateGuard> {
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Center(child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.warning_amber_rounded, color: Colors.red), SizedBox(width: 8), Text("Logged Out")])),
-          content: const Text("You have been logged out because someone else logged in using this account on another device.", textAlign: TextAlign.center),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: const Text("You have been logged out because someone else logged in using this account on another device.", textAlign: TextAlign.center),
+          ),
           actions: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
-                    (route) => false,
-                  );
-                },
-                child: const Text("Back to Login"),
-              ),
-            )
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                      (route) => false,
+                    );
+                  },
+                  child: const Text("Back to Login"),
+                ),
+              ],
+            ),
           ],
         ),
       );
@@ -89,9 +101,13 @@ class _UpdateGuardState extends State<UpdateGuard> {
   }
 
   Future<void> _initVersioning() async {
-    // 1. Get local version from pubspec.yaml
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    _localVersion = "${packageInfo.version}+${packageInfo.buildNumber}";
+    // 1. Get local version from PackageInfo (System level check)
+    try {
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      _localVersion = "${packageInfo.version}+${packageInfo.buildNumber}";
+    } catch (e) {
+      _localVersion = appVersion; // Fallback
+    }
 
     // 2. Listen to remote version and popup status from Firestore
     _dbService.getAppConfigStream().listen((snapshot) {
@@ -100,9 +116,6 @@ class _UpdateGuardState extends State<UpdateGuard> {
         _remoteVersion = data['requiredVersion'];
         _isPopupEnabled = data['isPopupEnabled'] ?? true;
         _processVersioning();
-      } else {
-        // If config doc doesn't exist, create it with local version
-        _dbService.updateRequiredVersion(_localVersion!);
       }
     });
   }
@@ -112,15 +125,11 @@ class _UpdateGuardState extends State<UpdateGuard> {
 
     int cmp = _compareVersions(_localVersion!, _remoteVersion!);
 
-    if (cmp > 0) {
-      // Local is higher (developer built a new version) -> Update Firestore
-      _dbService.updateRequiredVersion(_localVersion!);
-      _stopNagging();
-    } else if (cmp < 0 && _isPopupEnabled) {
+    if (cmp < 0 && _isPopupEnabled) {
       // Local is lower AND popup is enabled -> Start nagging
       _startNagging();
     } else {
-      // Version match or popup disabled -> Stop any nagging
+      // Version match or popup disabled or local is higher -> Stop any nagging
       _stopNagging();
     }
   }
@@ -194,34 +203,60 @@ class _UpdateGuardState extends State<UpdateGuard> {
             ],
           ),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "A new version of the app ($_remoteVersion) is available. Your current version is $_localVersion.",
-              style: const TextStyle(fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              "Contact with the authority to get the update.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-          ],
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.95,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "A new version of the app ($_remoteVersion) is available. Your current version is $_localVersion.",
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, side: BorderSide(color: Colors.grey.shade300)),
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _isPopupShowing = false;
-              },
-              child: const Text("OK"),
-            ),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  elevation: 0,
+                ),
+                onPressed: () => Navigator.of(ctx).pop(), 
+                child: const Text("Later")
+              ),
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                ),
+                onPressed: () async {
+                   // Fetch download URL and start progress dialog immediately
+                   DocumentSnapshot snap = await FirebaseFirestore.instance.collection('app_config').doc('settings').get();
+                   if (snap.exists) {
+                     String dUrl = (snap.data() as Map<String, dynamic>)['downloadUrl'] ?? "";
+                     if (dUrl.isNotEmpty) {
+                        Navigator.of(ctx).pop(); // Close the notification popup
+                        if (context.mounted) {
+                          // Show the progress dialog directly
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) => UpdateProgressDialog(url: dUrl),
+                          );
+                        }
+                     } else {
+                        DatabaseService.showToast(context, "Download link not found!");
+                     }
+                   }
+                }, 
+                child: const Text("Update Now")
+              ),
+            ],
           ),
         ],
       ),

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:akonssquare/Admin/category_dialogs.dart';
-import 'package:akonssquare/Common/database_service.dart';
+import 'package:akons_square/Admin/category_dialogs.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/theme_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
+import 'package:akons_square/Common/ui_helper.dart';
+import 'package:akons_square/Users/user_report_page.dart';
 
 class CategoryPage extends StatefulWidget {
   final int initialSubTabIndex;
@@ -18,11 +22,13 @@ class _CategoryPageState extends State<CategoryPage> {
   final DatabaseService _dbService = DatabaseService();
   String? _selectedFilterCategoryId;
   late DateTime _selectedDate;
+  bool _isFabVisible = true;
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now();
+    DateTime now = DateTime.now();
+    _selectedDate = DateTime(now.year, now.month - 1);
   }
 
   String get _selectedMonthStr => DatabaseService.formatMonthYear(_selectedDate);
@@ -38,43 +44,116 @@ class _CategoryPageState extends State<CategoryPage> {
     DatabaseService.vibrate();
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.add, color: Colors.white)), 
-                title: const Text("New Category"), 
-                subtitle: const Text("Create a new group like 'Shop' or 'Room'", maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: () { Navigator.pop(ctx); CategoryDialogs.showCreateCategoryDialog(context); }
-              ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.teal, child: Icon(Icons.build_circle_outlined, color: Colors.white)), 
-                title: const Text("Manage Services"), 
-                subtitle: const Text("Add services like Water, Wifi, or Garbage", maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddServiceDialog(context); }
-              ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.indigo, child: Icon(Icons.add_chart, color: Colors.white)), 
-                title: const Text("Add Main Meter"), 
-                subtitle: const Text("Register a main meter for electricity billing", maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddMainMeterDialog(context); }
-              ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.blueGrey, child: Icon(Icons.cable, color: Colors.white)), 
-                title: const Text("Add Sub Meter"), 
-                subtitle: const Text("Register a sub-meter linked to a main meter", maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddSubMeterDialog(context); }
-              ),
-            ],
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        decoration: BoxDecoration(
+          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
+            _buildActionCard(
+              context, 
+              title: "New Category", 
+              subtitle: "Create a new group like 'Shop' or 'Room'", 
+              icon: Icons.category_outlined, 
+              color: Theme.of(context).colorScheme.primaryContainer,
+              accentColor: Theme.of(context).colorScheme.primary,
+              onTap: () { Navigator.pop(ctx); CategoryDialogs.showCreateCategoryDialog(context); }
+            ),
+            const SizedBox(height: 10),
+            _buildActionCard(
+              context, 
+              title: "Manage Services", 
+              subtitle: "Add global services for categories", 
+              icon: Icons.build_circle_outlined, 
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              accentColor: Theme.of(context).colorScheme.secondary,
+              onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddServiceDialog(context); }
+            ),
+            const SizedBox(height: 10),
+            _buildActionCard(
+              context, 
+              title: "Electricity Meters", 
+              subtitle: "Add Main or Sub-Meters", 
+              icon: Icons.electric_bolt, 
+              color: Theme.of(context).colorScheme.tertiaryContainer,
+              accentColor: context.electric,
+              onTap: () { 
+                Navigator.pop(ctx);
+                _showMeterChoiceMenu(context);
+              }
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionCard(BuildContext context, {required String title, required String subtitle, required IconData icon, required Color color, required Color accentColor, required VoidCallback onTap}) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    return Card(
+      elevation: isOutline ? 0 : 2,
+      margin: EdgeInsets.zero,
+      color: isOutline ? Colors.transparent : color,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), 
+        side: isOutline ? BorderSide(color: accentColor, width: 1.5) : BorderSide.none
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isOutline ? Colors.transparent : accentColor,
+            border: isOutline ? Border.all(color: accentColor, width: 1.5) : null,
           ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: isOutline ? accentColor : Theme.of(context).colorScheme.onPrimary, size: 20),
+        ),
+        title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : accentColor)),
+        subtitle: Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : accentColor.withValues(alpha: 0.7))),
+        trailing: Icon(Icons.arrow_forward_ios, size: 14, color: isOutline ? Colors.black : accentColor),
+      ),
+    );
+  }
+
+  void _showMeterChoiceMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        decoration: BoxDecoration(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
+            _buildActionCard(
+              context, 
+              title: "Add Main Meter", 
+              subtitle: "Register a master electric meter", 
+              icon: Icons.add_chart_outlined, 
+              color: Theme.of(context).colorScheme.primaryContainer,
+              accentColor: Theme.of(context).colorScheme.primary,
+              onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddMainMeterDialog(context); }
+            ),
+            const SizedBox(height: 10),
+            _buildActionCard(
+              context, 
+              title: "Add Sub Meter", 
+              subtitle: "Register a unit-linked meter", 
+              icon: Icons.cable_outlined, 
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              accentColor: Theme.of(context).colorScheme.secondary,
+              onTap: () { Navigator.pop(ctx); CategoryDialogs.showAddSubMeterDialog(context); }
+            ),
+          ],
         ),
       ),
     );
@@ -88,14 +167,16 @@ class _CategoryPageState extends State<CategoryPage> {
       child: Column(
         children: [
           Material(
-            color: Theme.of(context).primaryColor.withOpacity(0.05),
-            child: const TabBar(
-              labelColor: Colors.blue,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.blue,
-              tabs: [
-                Tab(icon: Icon(Icons.door_front_door, size: 20), text: "Occupied"),
-                Tab(icon: Icon(Icons.meeting_room, size: 20), text: "Vacant"),
+            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+            child: TabBar(
+              labelColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary,
+              unselectedLabelColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black.withValues(alpha: 0.6) : Theme.of(context).colorScheme.onSurfaceVariant,
+              indicatorColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Theme.of(context).colorScheme.outlineVariant,
+              tabs: const [
+                Tab(icon: Icon(Icons.door_front_door_outlined, size: 20), text: "Occupied"),
+                Tab(icon: Icon(Icons.meeting_room_outlined, size: 20), text: "Vacant"),
                 Tab(icon: Icon(Icons.electric_bolt, size: 20), text: "Meters"),
               ],
             ),
@@ -103,21 +184,36 @@ class _CategoryPageState extends State<CategoryPage> {
           Expanded(
             child: Stack(
               children: [
-                TabBarView(
-                  children: [
-                    _buildCategoryManagerTab(status: 'Occupied'),
-                    _buildCategoryManagerTab(status: 'Vacant'),
-                    _buildMainMeterTab(),
-                  ],
+                NotificationListener<UserScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification.direction == ScrollDirection.idle) {
+                      if (!_isFabVisible) setState(() => _isFabVisible = true);
+                    } else {
+                      if (_isFabVisible) setState(() => _isFabVisible = false);
+                    }
+                    return true;
+                  },
+                  child: TabBarView(
+                    children: [
+                      _buildCategoryManagerTab(status: 'Occupied'),
+                      _buildCategoryManagerTab(status: 'Vacant'),
+                      _buildMainMeterTab(),
+                    ],
+                  ),
                 ),
                 if (!widget.isOperator)
                   Positioned(
                     right: 16,
                     bottom: 16,
-                    child: FloatingActionButton.extended(
-                      onPressed: () => _showAddActionMenu(context),
-                      icon: const Icon(Icons.add),
-                      label: const Text("Add / Manage"),
+                    child: AnimatedScale(
+                      scale: _isFabVisible ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutBack,
+                      child: FloatingActionButton.extended(
+                        onPressed: () => _showAddActionMenu(context),
+                        icon: const Icon(Icons.add),
+                        label: const Text("Add / Manage"),
+                      ),
                     ),
                   ),
               ],
@@ -135,20 +231,28 @@ class _CategoryPageState extends State<CategoryPage> {
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           child: Row(
             children: [
-              const Icon(Icons.filter_alt, color: Colors.blue, size: 18),
+              Icon(Icons.filter_alt_outlined, color: Theme.of(context).colorScheme.primary, size: 18),
               const SizedBox(width: 4),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: _dbService.getCategoriesStream(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const LinearProgressIndicator();
-                    var categories = snapshot.data!.docs;
+                    var categories = snapshot.data!.docs.toList();
+                    categories.sort((a, b) => ((a.data() as Map)['categoryName'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['categoryName'] ?? '').toString().toLowerCase()));
+                    
                     return DropdownButtonFormField<String?>(
                       value: _selectedFilterCategoryId,
-                      decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8), border: OutlineInputBorder(), labelText: "Category"),
+                      decoration: InputDecoration(
+                        isDense: true, 
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), 
+                        border: InputBorder.none, 
+                        labelText: "Category",
+                        labelStyle: Theme.of(context).textTheme.bodySmall,
+                      ),
                       items: [
-                        const DropdownMenuItem<String?>(value: null, child: Text("All Categories")),
-                        ...categories.map((doc) => DropdownMenuItem<String?>(value: doc.id, child: Text((doc.data() as Map)['categoryName'] ?? ''))),
+                        DropdownMenuItem<String?>(value: null, child: Text("All Categories", style: Theme.of(context).textTheme.bodyMedium)),
+                        ...categories.map((doc) => DropdownMenuItem<String?>(value: doc.id, child: Text((doc.data() as Map)['categoryName'] ?? '', style: Theme.of(context).textTheme.bodyMedium))),
                       ],
                       onChanged: (val) => setState(() => _selectedFilterCategoryId = val),
                     );
@@ -159,11 +263,18 @@ class _CategoryPageState extends State<CategoryPage> {
                 const SizedBox(width: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                    border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Colors.black, width: 1.5) : null,
+                  ),
                   child: Row(
                     children: [
                       IconButton(icon: const Icon(Icons.chevron_left, size: 18), onPressed: () => _moveMonth(-1), constraints: const BoxConstraints(), padding: EdgeInsets.zero),
-                      Text(_selectedMonthStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.indigo)),
+                      Text(
+                        _selectedMonthStr, 
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                      ),
                       IconButton(icon: const Icon(Icons.chevron_right, size: 18), onPressed: () => _moveMonth(1), constraints: const BoxConstraints(), padding: EdgeInsets.zero),
                     ],
                   ),
@@ -184,198 +295,947 @@ class _CategoryPageState extends State<CategoryPage> {
                 categoryDocs = categoryDocs.where((doc) => doc.id == _selectedFilterCategoryId).toList();
               }
 
-              if (categoryDocs.isEmpty) return const Center(child: Text("No categories found."));
+              if (categoryDocs.isEmpty) {
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.category_outlined, size: 64, color: Theme.of(context).colorScheme.outline),
+                        const SizedBox(height: 24),
+                        Text(
+                          "No Categories Added",
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "You haven't created any groups like 'Shop' or 'Flat' yet. Add your first category to start managing units.",
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 32),
+                        AppDialogActions(
+                          actions: [
+                            AppButton.icon(
+                              onPressed: () => CategoryDialogs.showCreateCategoryDialog(context),
+                              icon: const Icon(Icons.add),
+                              child: const Text("Create First Category"),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 48),
+                        Text(
+                          "Tip: Start by creating a category, then add units (shops/rooms) inside it.",
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.primary),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: categoryDocs.length,
-                itemBuilder: (context, i) {
-                  var catDoc = categoryDocs[i];
-                  var catData = catDoc.data() as Map<String, dynamic>;
-                  String catId = catDoc.id;
-                  String catName = catData['categoryName'] ?? 'Unnamed';
-                  List assignedServices = catData['assignedServices'] ?? [];
-
-                  return StreamBuilder<QuerySnapshot>(
-                    stream: _dbService.getSubItemsStream(catId),
-                    builder: (context, subSnapshot) {
-                      if (!subSnapshot.hasData) return const LinearProgressIndicator();
-                      var subDocs = subSnapshot.data!.docs.where((doc) {
-                        var d = doc.data() as Map<String, dynamic>;
-                        String tenant = d['TenantName'] ?? '';
-                        String s = d['status'] ?? (tenant.isNotEmpty && tenant != 'No Name' ? 'Occupied' : 'Vacant');
-                        return s == status;
-                      }).toList();
-
-                      subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
-
-                      final List<Color> cardColors = [
-                        Colors.blue.shade50,
-                        Colors.green.shade50,
-                        Colors.orange.shade50,
-                        Colors.purple.shade50,
-                        Colors.teal.shade50,
-                        Colors.pink.shade50,
-                        Colors.amber.shade50,
-                        Colors.cyan.shade50,
-                      ];
-
-                      double catTotal = 0;
-                      for (var doc in subDocs) {
-                        var d = doc.data() as Map<String, dynamic>;
-                        var ed = d['electricityDetails'];
-                        double eBillVal = 0;
-                        if (ed != null && ed['isStopped'] != true) {
-                          eBillVal = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
-                        }
-                        List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: d['overriddenServices'] ?? []);
-                        catTotal += (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal);
+              return StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('billing_history').where('monthYear', isEqualTo: _selectedMonthStr).snapshots(),
+                builder: (context, billingSnapshot) {
+                  Set<String> paidIds = {};
+                  Map<String, QueryDocumentSnapshot> historyMap = {};
+                  if (billingSnapshot.hasData) {
+                    for (var doc in billingSnapshot.data!.docs) {
+                      var data = doc.data() as Map<String, dynamic>;
+                      String subId = data['subItemId'] ?? '';
+                      if (subId.isNotEmpty) historyMap[subId] = doc;
+                      if (data['status'] != 'Due') {
+                        paidIds.add(subId);
                       }
+                    }
+                  }
 
-                      final List<Color> catCardColors = [
-                        Colors.indigo.shade50,
-                        Colors.teal.shade50,
-                        Colors.deepPurple.shade50,
-                        Colors.blueGrey.shade50,
-                        Colors.brown.shade50,
-                        Colors.cyan.shade50,
-                      ];
-                      final Color catColor = catCardColors[i % catCardColors.length];
-                      final Color accentColor = Colors.primaries[(i * 3) % Colors.primaries.length];
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
+                    itemCount: categoryDocs.length,
+                    itemBuilder: (context, i) {
+                      var catDoc = categoryDocs[i];
+                      var catData = catDoc.data() as Map<String, dynamic>;
+                      String catId = catDoc.id;
+                      String catName = catData['categoryName'] ?? 'Unnamed';
+                      List assignedServices = catData['assignedServices'] ?? [];
+
+                      return StreamBuilder<QuerySnapshot>(
+                        stream: _dbService.getSubItemsStream(catId),
+                        builder: (context, subSnapshot) {
+                          if (!subSnapshot.hasData) return const LinearProgressIndicator();
+                          var subDocs = subSnapshot.data!.docs.where((doc) {
+                            var d = doc.data() as Map<String, dynamic>;
+                            String s = d['status'] ?? 'Vacant'; // Strict status check
+                            return s == status;
+                          }).toList();
+
+                          subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
+
+                          // Hide category if no units are occupied in this tab
+                          if (status == 'Occupied' && subDocs.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+
+                          double catTotal = 0;
+                          for (var doc in subDocs) {
+                            if (paidIds.contains(doc.id)) continue; // Don't count paid units in category total
+
+                            var existingRecord = historyMap[doc.id];
+                            if (existingRecord != null) {
+                               catTotal += ((existingRecord.data() as Map)['totalAmount'] as num).toDouble();
+                               continue;
+                            }
+
+                            var d = doc.data() as Map<String, dynamic>;
+                            var ed = d['electricityDetails'];
+                            double eBillVal = 0;
+                            if (ed != null && ed['isStopped'] != true) {
+                              eBillVal = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
+                            }
+                            List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: d['overriddenServices'] ?? []);
+                            List manualDues = d['manualDues'] ?? [];
+                            double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+                            
+                            catTotal += (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal + mDuesSum);
+                          }
+
+                      bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
+                      
+                      final Color accentColor = ThemeManager.getCardColor(i);
+                      final Color bgColor = ThemeManager.getCardContainerColor(i);
+                      final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
 
                       return Card(
-                        elevation: 3,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        color: catColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accentColor.withOpacity(0.2))),
+                        elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : bgColor,
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16), 
+                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                              ? BorderSide(color: accentColor, width: 1.5) 
+                              : BorderSide.none,
+                        ),
                         child: ExpansionTile(
-                          leading: CircleAvatar(backgroundColor: accentColor, child: const Icon(Icons.category_outlined, color: Colors.white, size: 20)),
-                          title: Text(catName.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 0.5, color: accentColor)),
-                          subtitle: Text("${subDocs.length} units | Total: ৳${catTotal.toStringAsFixed(2)}", style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          backgroundColor: Colors.transparent,
+                          collapsedBackgroundColor: Colors.transparent,
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                          iconColor: accentColor,
+                          collapsedIconColor: accentColor,
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              IconButton(icon: Icon(Icons.settings, color: accentColor, size: 20), onPressed: () => CategoryDialogs.showCategorySettingsDialog(context: context, categoryId: catId, categoryName: catName, dynamicAssignedServices: assignedServices)),
-                              if (!widget.isOperator) 
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.orangeAccent, size: 20), 
-                                  onPressed: () => CategoryDialogs.showConfirmDialog(
-                                    context: context, 
-                                    title: "Remove '$catName'?", 
-                                    content: "Are you sure you want to remove this category?", 
-                                    onConfirm: () async { 
-                                      SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                      await _dbService.removeCategory(catId, prefs.getString('username') ?? "Admin"); 
-                                    },
+                              Row(
+                                children: [
+                                  Icon(Icons.category_outlined, color: accentColor, size: 22),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: onBgColor, width: 1) : null,
+                                    ),
+                                    child: Text(
+                                      catName.toUpperCase(),
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w900, 
+                                        color: onBgColor, 
+                                        letterSpacing: 0.5
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              const Icon(Icons.expand_more),
+                                  const Spacer(),
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
+                                    onPressed: () => CategoryDialogs.showCategorySettingsDialog(
+                                      context: context, 
+                                      categoryId: catId, 
+                                      categoryName: catName, 
+                                      dynamicAssignedServices: assignedServices
+                                    ),
+                                  ),
+                                  if (!widget.isOperator) ...[
+                                    const SizedBox(width: 12),
+                                    IconButton(
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
+                                      onPressed: () => CategoryDialogs.showConfirmDialog(
+                                        context: context, 
+                                        title: "Remove '$catName'?", 
+                                        content: "Are you sure you want to remove this category?", 
+                                        onConfirm: () async { 
+                                          SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                          await _dbService.removeCategory(catId, prefs.getString('username') ?? "Admin"); 
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 30),
+                                    child: Text(
+                                      "${subDocs.length} units | ${assignedServices.length} Services",
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: onBgColor.withValues(alpha: 0.7),
+                                        fontWeight: FontWeight.bold
+                                      ),
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      if (hasElectric) Icon(Icons.electric_bolt, color: context.electric, size: 18),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "৳${catTotal.toStringAsFixed(2)}",
+                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                          fontWeight: FontWeight.w900, 
+                                          color: onBgColor
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                           children: [
                             const Divider(height: 1),
                             ...subDocs.asMap().entries.map((entry) {
-                              int subIdx = entry.key;
                               var subDoc = entry.value;
                               var d = subDoc.data() as Map<String, dynamic>;
                               String subId = subDoc.id;
                               String subName = d['subItemName'] ?? 'Unnamed';
                               String tenant = d['TenantName'] ?? 'No Name';
                               var ed = d['electricityDetails'];
+                              var existingRecord = historyMap[subId];
+                              double servicesTotal = 0;
+                              double eBillAmount = 0;
+                              double mDuesSum = 0;
+                              double total = 0;
+
+                              if (existingRecord != null) {
+                                var hData = existingRecord.data() as Map<String, dynamic>;
+                                total = (hData['totalAmount'] as num).toDouble();
+                                servicesTotal = (hData['houseRentTotal'] as num).toDouble();
+                                eBillAmount = (hData['electricityBill'] as num).toDouble();
+                                mDuesSum = total - (servicesTotal + eBillAmount);
+                              } else {
+                                List overridden = d['overriddenServices'] ?? [];
+                                List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: overridden);
+                                servicesTotal = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
+                                if (ed != null && ed['isStopped'] != true) {
+                                  eBillAmount = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
+                                }
+                                List manualDues = d['manualDues'] ?? [];
+                                mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+                                total = servicesTotal + eBillAmount + mDuesSum;
+                              }
+
+                              // Use nested index for sub-item coloring to make them different from category
+                              int itemIndex = i + entry.key + 1;
+                              final Color itemAccentColor = ThemeManager.getCardColor(itemIndex, isSubCard: true);
+                              final Color itemBgColor = ThemeManager.getCardContainerColor(itemIndex, isSubCard: true);
+                              final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex, isSubCard: true);
+
                               List overridden = d['overriddenServices'] ?? [];
                               List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: overridden);
-                              double eBillAmount = 0;
-                              if (ed != null && ed['isStopped'] != true) eBillAmount = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
-                              double total = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillAmount;
-                              Color itemColor = cardColors[subIdx % cardColors.length];
+                              List manualDues = d['manualDues'] ?? [];
 
                               if (status == 'Vacant') {
                                 return InkWell(
-                                  onLongPress: () => CategoryDialogs.showSubItemStatusDialog(
-                                    context: context, 
-                                    subItemId: subId, 
-                                    subItemName: subName, 
-                                    currentStatus: 'Vacant', 
-                                    currentTenant: tenant, 
-                                    currentNid: d['nidNumber'] ?? ''
-                                  ),
+                                  onLongPress: () {
+                                    HapticFeedback.heavyImpact();
+                                    CategoryDialogs.showSubItemStatusDialog(
+                                      context: context, 
+                                      subItemId: subId, 
+                                      subItemName: subName, 
+                                      currentStatus: 'Vacant', 
+                                      currentTenant: tenant, 
+                                      currentNid: d['nidNumber'] ?? 'No Number',
+                                      electricityDetails: ed
+                                    );
+                                  },
                                   child: Card(
-                                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                    color: itemColor,
-                                    elevation: 2,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.red.shade100, width: 0.8)),
+                                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : itemBgColor,
+                                    elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12), 
+                                      side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                          ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
+                                          : BorderSide.none,
+                                    ),
                                     child: ExpansionTile(
-                                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                                      title: Row(
+                                      backgroundColor: Colors.transparent,
+                                      collapsedBackgroundColor: Colors.transparent,
+                                      shape: const Border(),
+                                      collapsedShape: const Border(),
+                                      tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                      iconColor: itemAccentColor,
+                                      collapsedIconColor: itemAccentColor,
+                                      title: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Icon(Icons.meeting_room_outlined, color: Colors.redAccent, size: 22),
-                                          const SizedBox(width: 10),
-                                          Expanded(child: Text(subName, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.redAccent, fontSize: 18), overflow: TextOverflow.ellipsis)),
-                                          IconButton(
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
-                                            icon: const Icon(Icons.edit, size: 18, color: Colors.blueGrey),
-                                            onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
-                                              context: context, 
-                                              subItemId: subId, 
-                                              currentName: subName, 
-                                              currentTenantName: tenant, 
-                                              currentNidNumber: d['nidNumber'] ?? 'No Number', 
-                                              currentNotes: d['notes'] ?? ''
+                                          Row(
+                                            children: [
+                                              Icon(Icons.meeting_room_outlined, color: itemAccentColor, size: 22),
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
+                                                ),
+                                                child: Text(
+                                                  subName,
+                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.w900, 
+                                                    color: itemAccentColor, 
+                                                  ),
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              const SizedBox(width: 6),
+                                              PopupMenuButton<String>(
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                                icon: Icon(Icons.more_vert, size: 22, color: itemOnBgColor.withValues(alpha: 0.7)),
+                                                onSelected: (val) async {
+                                                  if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate);
+                                                  if (val == 'stop') {
+                                                    bool isStopping = ed?['isStopped'] != true;
+                                                    if (isStopping) {
+                                                      double last = (ed?['lastReading'] ?? 0).toDouble();
+                                                      double pres = (ed?['presentReading'] ?? 0).toDouble();
+                                                      if (pres > last) {
+                                                        CategoryDialogs.showConfirmDialog(
+                                                          context: context,
+                                                          title: "Confirm Stop Sub-Meter Billing",
+                                                          content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
+                                                          onConfirm: () async {
+                                                            await _dbService.updateSubItemElectricity(subId, {
+                                                              ...ed!,
+                                                              'presentReading': last,
+                                                              'isStopped': true,
+                                                              'updatedAt': FieldValue.serverTimestamp(),
+                                                            }, "Admin");
+                                                          },
+                                                        );
+                                                      } else {
+                                                        await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
+                                                      }
+                                                    } else {
+                                                      await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
+                                                    }
+                                                  } else if (val == 'remove_electric') {
+                                                     CategoryDialogs.showConfirmDialog(
+                                                      context: context, 
+                                                      title: "Remove Sub-Meter?",
+                                                      content: "Are you sure you want to remove the electric meter from this unit? All previous billing history will be preserved, and the current meter reading will be carried forward for future use.", 
+                                                      onConfirm: () async { 
+                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                        await _dbService.removeSubItemElectricity(subId, prefs.getString('username') ?? "Admin"); 
+                                                      }
+                                                    );
+                                                  } else if (val == 'services') {
+                                                    CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
+                                                  } else if (val == 'dues') {
+                                                    CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? []);
+                                                  } else if (val == 'remove') {
+                                                     CategoryDialogs.showConfirmDialog(
+                                                      context: context, 
+                                                      title: "Remove '$subName'?", 
+                                                      content: "Are you sure you want to remove this $subName?", 
+                                                      onConfirm: () async { 
+                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                        await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
+                                                      }
+                                                    );
+                                                  }
+                                                },
+                                                itemBuilder: (ctx) => [
+                                                  if (ed != null || !widget.isOperator)
+                                                    PopupMenuItem(
+                                                      value: ed == null ? 'electric' : 'stop', 
+                                                      child: ListTile(
+                                                        leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
+                                                        title: Text(ed == null ? "Add Sub-Meter" : (ed['isStopped'] == true ? "Resume Sub-Meter" : "Stop Sub-Meter")), 
+                                                        dense: true
+                                                      )
+                                                    ),
+                                                  const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
+                                                  if (status == 'Occupied')
+                                                    const PopupMenuItem(value: 'dues', child: ListTile(leading: Icon(Icons.money_off, size: 20, color: Colors.red), title: Text("Adjust Dues/Adv"), dense: true)),
+                                                  if (ed != null && !widget.isOperator)
+                                                    PopupMenuItem(
+                                                      value: 'remove_electric', 
+                                                      child: ListTile(
+                                                        leading: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.error, size: 20),
+                                                        title: Text("Remove Sub-Meter", style: TextStyle(color: Theme.of(context).colorScheme.error)), 
+                                                        dense: true
+                                                      )
+                                                    ),
+                                                  if (!widget.isOperator)
+                                                    PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 30),
+                                                child: Text(
+                                                  'Vacant',
+                                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error),
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                "৳${total.toStringAsFixed(2)}",
+                                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                                  fontWeight: FontWeight.w900, 
+                                                  color: itemOnBgColor, 
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 30, top: 1),
+                                            child: Text(
+                                              "${active.length} Services | Ready for new tenant",
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                color: itemOnBgColor.withValues(alpha: 0.8), 
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
-                                      subtitle: const Row(
-                                        children: [
-                                          SizedBox(width: 32),
-                                          Text("Status: Vacant", style: TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                                        ],
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
+                                              _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
+                                              
+                                            if ((d['notes'] ?? '').toString().isNotEmpty)
+                                              _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
+                                                icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
+                                                onPressed: () => CategoryDialogs.showConfirmDialog(
+                                                  context: context,
+                                                  title: "Remove Note?",
+                                                  content: "Are you sure you want to clear the note for '$subName'?",
+                                                  confirmText: "Clear",
+                                                  onConfirm: () async {
+                                                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                                                    await _dbService.updateSubItemDetails(subId, {'notes': ''}, prefs.getString('username') ?? "Admin");
+                                                  },
+                                                ),
+                                              )),
+                                            
+                                            if (ed != null && ed['isStopped'] != true)
+                                                _buildSectionBox(
+                                                  "Sub-Meter Bills", 
+                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
+                                                  Icons.electric_bolt, 
+                                                  amount: eBillAmount, 
+                                                  color: context.electric,
+                                                  trailing: IconButton(
+                                                    icon: Icon(Icons.edit_note, color: context.electric, size: 22), 
+                                                    onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate)
+                                                  )
+                                                ),
+
+                                              ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
+
+                                              if (manualDues.isNotEmpty) ...[
+                                                const SizedBox(height: 12),
+                                                Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                                                const SizedBox(height: 4),
+                                                ...manualDues.map((m) => Container(
+                                                  margin: const EdgeInsets.only(bottom: 4),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodySmall)),
+                                                      Text("৳${(m['amount'] as num).toDouble().toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                                                    ],
+                                                  ),
+                                                )),
+                                              ],
+                                          ],
+                                        ),
                                       ),
-                                      trailing: PopupMenuButton<String>(
-                                        icon: const Icon(Icons.more_vert, size: 24, color: Colors.blueGrey),
-                                        onSelected: (val) async {
-                                          if (val == 'remove') CategoryDialogs.showConfirmDialog(
-                                            context: context, 
-                                            title: "Remove '$subName'?", 
-                                            content: "Are you sure you want to remove this $subName?", 
-                                            onConfirm: () async { 
-                                              SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                              await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
-                                            }
-                                          );
-                                        },
-                                        itemBuilder: (ctx) => [
-                                          if (!widget.isOperator)
-                                            const PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red, size: 20), title: Text("Remove Unit", style: TextStyle(color: Colors.red)), dense: true)),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                              bool isPaid = paidIds.contains(subId);
+                              
+                              // Always show the current calculated total (Usage-based Elec + Fixed Services + Manual Dues)
+                              double displayTotal = total; 
+
+                              bool isOccupied = status == 'Occupied';
+
+                              return InkWell(
+                                onTap: () {
+                                  Map<String, dynamic> reportData;
+                                  if (existingRecord != null) {
+                                    reportData = existingRecord.data() as Map<String, dynamic>;
+                                  } else {
+                                    reportData = {
+                                      'status': 'Due',
+                                      'monthYear': _selectedMonthStr,
+                                      'subItemName': subName,
+                                      'TenantName': tenant,
+                                      'nidNumber': d['nidNumber'] ?? '',
+                                      'services': active,
+                                      'electricityDetails': ed,
+                                      'electricityBill': eBillAmount,
+                                      'totalAmount': total,
+                                      'houseRentTotal': servicesTotal,
+                                      'createdAt': Timestamp.now(),
+                                      'paymentNotes': 'Current selection report (Estimated)',
+                                    };
+                                  }
+                                  UserReportPage.showDetailsDialog(context, reportData);
+                                },
+                                onLongPress: () {
+                                      HapticFeedback.heavyImpact();
+                                      CategoryDialogs.showSubItemStatusDialog(
+                                        context: context, 
+                                        subItemId: subId, 
+                                        subItemName: subName, 
+                                        currentStatus: 'Occupied', 
+                                        currentTenant: tenant, 
+                                        currentNid: d['nidNumber'] ?? 'No Number',
+                                        electricityDetails: ed
+                                      );
+                                    },
+                                    child: Card(
+                                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      color: isPaid 
+                                          ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiaryContainer) 
+                                          : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : itemBgColor),
+                                      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                                        shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
+                                            : BorderSide.none,
+                                      ),
+                                      child: ExpansionTile(
+                                      backgroundColor: Colors.transparent,
+                                      collapsedBackgroundColor: Colors.transparent,
+                                      shape: const Border(),
+                                      collapsedShape: const Border(),
+                                      tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                      iconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error,
+                                      collapsedIconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error,
+                                      title: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                isOccupied ? (isPaid ? Icons.check_circle : Icons.door_front_door_outlined) : Icons.meeting_room_outlined,
+                                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? (isPaid ? Colors.green : (isOccupied ? Colors.black : Colors.red)) : (isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error),
+                                                size: 22,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                                      ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) 
+                                                      : null,
+                                                ),
+                                                child: Text(
+                                                  subName,
+                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.w900, 
+                                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : (isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error), 
+                                                  ),
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              IconButton(
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                                icon: Icon(Icons.edit_note, size: 22, color: itemOnBgColor.withValues(alpha: 0.7)),
+                                                onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
+                                                  context: context, 
+                                                  subItemId: subId, 
+                                                  currentName: subName, 
+                                                  currentTenantName: tenant, 
+                                                  currentNidNumber: d['nidNumber'] ?? 'No Number', 
+                                                  currentNotes: d['notes'] ?? ''
+                                                ),
+                                              ),
+                                              if ((d['notes'] ?? '').toString().isNotEmpty)
+                                                Container(
+                                                  margin: const EdgeInsets.only(left: 6),
+                                                  padding: const EdgeInsets.all(3),
+                                                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(4)),
+                                                  child: Icon(Icons.notes, color: Theme.of(context).colorScheme.tertiary, size: 16),
+                                                ),
+                                              if (isOccupied)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(left: 6),
+                                                  child: IconButton(
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, size: 24), 
+                                                    onPressed: () => CategoryDialogs.showMarkAsPaidDialog(
+                                                      context: context, 
+                                                      subItemId: subId, 
+                                                      subItemName: subName, 
+                                                      TenantName: tenant, 
+                                                      nidNumber: d['nidNumber'] ?? '', 
+                                                      houseRentTotal: servicesTotal, 
+                                                      electricityBill: eBillAmount, 
+                                                      services: active.cast<Map<String, dynamic>>(), 
+                                                      electricityDetails: ed, 
+                                                      mainCategoryName: catName, 
+                                                      manualDues: d['manualDues'] ?? [],
+                                                      notes: d['notes'] ?? ''
+                                                    )
+                                                  ),
+                                                ),
+                                              const SizedBox(width: 6),
+                                              PopupMenuButton<String>(
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                                icon: Icon(Icons.more_vert, size: 22, color: itemOnBgColor.withValues(alpha: 0.7)),
+                                                onSelected: (val) async {
+                                                  if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate);
+                                                  if (val == 'stop') {
+                                                    bool isStopping = ed?['isStopped'] != true;
+                                                    if (isStopping) {
+                                                      double last = (ed?['lastReading'] ?? 0).toDouble();
+                                                      double pres = (ed?['presentReading'] ?? 0).toDouble();
+                                                      if (pres > last) {
+                                                        CategoryDialogs.showConfirmDialog(
+                                                          context: context,
+                                                          title: "Confirm Stop Sub-Meter Billing",
+                                                          content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
+                                                          onConfirm: () async {
+                                                            await _dbService.updateSubItemElectricity(subId, {
+                                                              ...ed!,
+                                                              'presentReading': last,
+                                                              'isStopped': true,
+                                                              'updatedAt': FieldValue.serverTimestamp(),
+                                                            }, "Admin");
+                                                          },
+                                                        );
+                                                      } else {
+                                                        await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
+                                                      }
+                                                    } else {
+                                                      await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
+                                                    }
+                                                  } else if (val == 'remove_electric') {
+                                                     CategoryDialogs.showConfirmDialog(
+                                                      context: context, 
+                                                      title: "Remove Sub-Meter?", 
+                                                      content: "Are you sure you want to remove the electric meter from this unit? All previous billing history will be preserved, and the current meter reading will be carried forward for future use.", 
+                                                      onConfirm: () async { 
+                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                        await _dbService.removeSubItemElectricity(subId, prefs.getString('username') ?? "Admin"); 
+                                                      }
+                                                    );
+                                                  } else if (val == 'services') {
+                                                     CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
+                                                  } else if (val == 'dues') {
+                                                     CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? []);
+                                                  } else if (val == 'remove') {
+                                                     CategoryDialogs.showConfirmDialog(
+                                                      context: context, 
+                                                      title: "Remove '$subName'?", 
+                                                      content: "Are you sure you want to remove this $subName?", 
+                                                      onConfirm: () async { 
+                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                        await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
+                                                      }
+                                                    );
+                                                  }
+                                                },
+                                                itemBuilder: (ctx) => [
+                                                  if (ed != null || !widget.isOperator)
+                                                    PopupMenuItem(
+                                                      value: ed == null ? 'electric' : 'stop', 
+                                                      child: ListTile(
+                                                        leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
+                                                        title: Text(ed == null ? "Add Sub-Meter" : (ed['isStopped'] == true ? "Resume Sub-Meter" : "Stop Sub-Meter")), 
+                                                        dense: true
+                                                      )
+                                                    ),
+                                                  const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
+                                                  if (status == 'Occupied')
+                                                    const PopupMenuItem(value: 'dues', child: ListTile(leading: Icon(Icons.money_off, size: 20, color: Colors.red), title: Text("Adjust Dues/Adv"), dense: true)),
+                                                  if (ed != null && !widget.isOperator)
+                                                    PopupMenuItem(
+                                                      value: 'remove_electric', 
+                                                      child: ListTile(
+                                                        leading: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.error, size: 20),
+                                                        title: Text("Remove Sub-Meter", style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                                                        dense: true
+                                                      )
+                                                    ),
+                                                  if (!widget.isOperator)
+                                                    PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 30),
+                                                child: Text(
+                                                  isOccupied ? (tenant.isNotEmpty && tenant != 'No Name' ? tenant : 'No Tenant') : 'Vacant',
+                                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                "৳${displayTotal.toStringAsFixed(2)}",
+                                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                                  fontWeight: FontWeight.w900, 
+                                                  color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, 
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 30, top: 1),
+                                            child: Text(
+                                              isOccupied 
+                                                ? (isPaid ? "${active.length} Services | Payment Clear" : "${active.length} Services | Due") 
+                                                : "${active.length} Services | Ready for new tenant",
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
+                                              ),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                       children: [
                                         Padding(
-                                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
-                                                _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Colors.indigo),
-                                                
-                                              if ((d['notes'] ?? '').toString().isNotEmpty)
-                                                _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(icon: const Icon(Icons.remove_circle_outline, color: Colors.orange, size: 20), onPressed: () => _dbService.updateSubItemDetails(subId, {'notes': ''}, "Admin"))),
-                                              
-                                              if (ed != null && ed['isStopped'] != true)
-                                                  _buildSectionBox(
-                                                    "Electric Bills", 
-                                                    "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
-                                                    Icons.flash_on, 
-                                                    amount: eBillAmount, 
-                                                    color: Colors.amber,
-                                                    trailing: IconButton(
-                                                      icon: const Icon(Icons.electric_bolt, color: Colors.orange, size: 22), 
-                                                      onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
-                                                    )
-                                                  ),
+                                                _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
 
-                                                ...active.map((s) => _buildServiceRow(subId, subName, s, overridden)),
+                                              // Dynamic Due Months Row
+                                              StreamBuilder<QuerySnapshot>(
+                                                stream: _dbService.getAllBillingRecordsStream(subId),
+                                                builder: (context, snapshot) {
+                                                  if (!snapshot.hasData) return const SizedBox.shrink();
+                                                  
+                                                  var historyDocs = snapshot.data!.docs;
+                                                  DateTime? unitCreatedAt = (d['createdAt'] as Timestamp?)?.toDate();
+                                                  if (unitCreatedAt == null) return const SizedBox.shrink();
+
+                                                  // Logic to find all pending months (same as UserDashboard)
+                                                  List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                                  DateTime nowTime = DateTime.now();
+                                                  
+                                                  List<String> paidMonths = historyDocs
+                                                      .where((doc) => (doc.data() as Map)['status'] == 'Paid')
+                                                      .map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
+                                                  
+                                                  List<String> dueMonthsFromHistory = historyDocs
+                                                      .where((doc) => (doc.data() as Map)['status'] == 'Due')
+                                                      .map((doc) => (doc.data() as Map)['monthYear'].toString()).toList();
+
+                                                  List<String> pendingMonths = [];
+                                                  pendingMonths.addAll(dueMonthsFromHistory);
+
+                                                  DateTime current = DateTime(unitCreatedAt.year, unitCreatedAt.month);
+                                                  // Only add months BEFORE the current month (stop before the current month we are in)
+                                                  while (current.isBefore(DateTime(nowTime.year, nowTime.month))) {
+                                                    String mYear = "${months[current.month - 1]}-${current.year.toString().substring(2)}";
+                                                    if (!paidMonths.contains(mYear) && !dueMonthsFromHistory.contains(mYear)) {
+                                                      pendingMonths.add(mYear);
+                                                    }
+                                                    current = DateTime(current.year, current.month + 1);
+                                                  }
+
+                                                  if (pendingMonths.isEmpty) return const SizedBox.shrink();
+
+                                                  // Helper to parse Month-Year for sorting
+                                                  DateTime parseMY(String my) {
+                                                    List<String> parts = my.split('-');
+                                                    int m = months.indexOf(parts[0]) + 1;
+                                                    int y = 2000 + (int.tryParse(parts[1]) ?? 0);
+                                                    return DateTime(y, m);
+                                                  }
+                                                  pendingMonths.sort((a, b) => parseMY(a).compareTo(parseMY(b)));
+
+                                                  return _buildSectionBox(
+                                                    "Due Months (Pending)", 
+                                                    "", 
+                                                    Icons.history_toggle_off, 
+                                                    color: Theme.of(context).colorScheme.error,
+                                                    customContent: Padding(
+                                                      padding: const EdgeInsets.only(top: 4),
+                                                      child: Wrap(
+                                                        spacing: 8,
+                                                        runSpacing: 8,
+                                                        children: pendingMonths.map((m) {
+                                                          return InkWell(
+                                                            onTap: () {
+                                                              // Find recorded doc or estimate
+                                                              var recordedDoc = historyDocs.firstWhere(
+                                                                (doc) => (doc.data() as Map)['monthYear'] == m && (doc.data() as Map)['status'] == 'Due',
+                                                                orElse: () => null as dynamic,
+                                                              );
+
+                                                              if (recordedDoc != null) {
+                                                                UserReportPage.showDetailsDialog(context, recordedDoc.data() as Map<String, dynamic>);
+                                                              } else {
+                                                                // Estimate (virtual data)
+                                                                double eVal = 0;
+                                                                if (ed != null && ed['isStopped'] != true) {
+                                                                  eVal = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
+                                                                }
+                                                                List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: d['overriddenServices'] ?? []);
+                                                                double sSum = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
+                                                                List manualDues = d['manualDues'] ?? [];
+                                                                double mSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+                                                                
+                                                                bool isCurrentMonth = m == DatabaseService.getCurrentMonthYear();
+                                                                double monthTotal = sSum + (isCurrentMonth ? (eVal + mSum) : 0);
+
+                                                                Map<String, dynamic> virtualData = {
+                                                                  'status': 'Due',
+                                                                  'monthYear': m,
+                                                                  'subItemName': subName,
+                                                                  'TenantName': tenant,
+                                                                  'services': active,
+                                                                  'electricityDetails': isCurrentMonth ? ed : null,
+                                                                  'electricityBill': isCurrentMonth ? eVal : 0,
+                                                                  'totalAmount': monthTotal,
+                                                                  'createdAt': Timestamp.now(),
+                                                                  'paymentNotes': 'Auto-pending month (Estimated)',
+                                                                };
+                                                                UserReportPage.showDetailsDialog(context, virtualData);
+                                                              }
+                                                            },
+                                                            child: Container(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                              decoration: BoxDecoration(
+                                                                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                                                                borderRadius: BorderRadius.circular(6),
+                                                                border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3)),
+                                                              ),
+                                                              child: Text(
+                                                                m,
+                                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                                  color: Theme.of(context).colorScheme.error,
+                                                                  fontWeight: FontWeight.bold,
+                                                                  decoration: TextDecoration.underline,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          );
+                                                        }).toList(),
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              ),
+
+                                              if ((d['notes'] ?? '').toString().isNotEmpty)
+                                                _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
+                                                  icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
+                                                  onPressed: () => CategoryDialogs.showConfirmDialog(
+                                                    context: context,
+                                                    title: "Remove Note?",
+                                                    content: "Are you sure you want to clear the note for '$subName'?",
+                                                    confirmText: "Clear",
+                                                    onConfirm: () async {
+                                                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                                                      await _dbService.updateSubItemDetails(subId, {'notes': ''}, prefs.getString('username') ?? "Admin");
+                                                    },
+                                                  ),
+                                                )),
+                                              
+                                                  if (ed != null && ed['isStopped'] != true)
+                                                _buildSectionBox(
+                                                  "Sub-Meter Bills", 
+                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
+                                                  Icons.electric_bolt, 
+                                                  amount: eBillAmount, 
+                                                  color: context.electric,
+                                                  trailing: IconButton(
+                                                    icon: Icon(Icons.edit_note, color: context.electric, size: 22), 
+                                                    onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate)
+                                                  )
+                                                ),
+
+                                              ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
+
+                                              if (manualDues.isNotEmpty) ...[
+                                                const SizedBox(height: 12),
+                                                Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                                                const SizedBox(height: 4),
+                                                ...manualDues.map((m) => Container(
+                                                  margin: const EdgeInsets.only(bottom: 4),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodySmall)),
+                                                      Text("৳${(m['amount'] as num).toDouble().toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                                                    ],
+                                                  ),
+                                                )),
+                                              ],
                                             ],
                                           ),
                                         ),
@@ -383,182 +1243,24 @@ class _CategoryPageState extends State<CategoryPage> {
                                     ),
                                   ),
                                 );
-                              }
-
-                              return StreamBuilder<QuerySnapshot>(
-                                stream: FirebaseFirestore.instance.collection('billing_history').where('subItemId', isEqualTo: subId).where('monthYear', isEqualTo: _selectedMonthStr).snapshots(),
-                                builder: (context, paySnap) {
-                                  bool isPaid = paySnap.hasData && paySnap.data!.docs.isNotEmpty;
-                                  double displayTotal = total;
-                                  if (isPaid) {
-                                    displayTotal = (paySnap.data!.docs.first['totalAmount'] as num).toDouble();
-                                  }
-
-                                  return InkWell(
-                                    onLongPress: () => CategoryDialogs.showSubItemStatusDialog(
-                                      context: context, 
-                                      subItemId: subId, 
-                                      subItemName: subName, 
-                                      currentStatus: 'Occupied', 
-                                      currentTenant: tenant, 
-                                      currentNid: d['nidNumber'] ?? ''
-                                    ),
-                                    child: Card(
-                                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                      color: isPaid ? Colors.green.shade50 : itemColor,
-                                      elevation: 2,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        side: BorderSide(color: isPaid ? Colors.green.shade200 : Colors.blue.shade100, width: 0.8)
-                                      ),
-                                      child: ExpansionTile(
-                                        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                                        title: Row(
-                                          children: [
-                                            Icon(isPaid ? Icons.check_circle : Icons.door_front_door_outlined, color: isPaid ? Colors.green : Colors.blue, size: 22),
-                                            const SizedBox(width: 10),
-                                            Expanded(child: Text(subName, style: TextStyle(fontWeight: FontWeight.w900, color: isPaid ? Colors.green.shade700 : Colors.blue, fontSize: 18), overflow: TextOverflow.ellipsis)),
-                                            Text("৳${displayTotal.toStringAsFixed(2)}", style: TextStyle(fontWeight: FontWeight.w900, color: isPaid ? Colors.green.shade700 : Colors.blue, fontSize: 18)),
-                                            const SizedBox(width: 8),
-                                            IconButton(
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(),
-                                              icon: const Icon(Icons.edit, size: 18, color: Colors.blueGrey),
-                                              onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
-                                                context: context, 
-                                                subItemId: subId, 
-                                                currentName: subName, 
-                                                currentTenantName: tenant, 
-                                                currentNidNumber: d['nidNumber'] ?? 'No Number', 
-                                                currentNotes: d['notes'] ?? ''
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        subtitle: Row(
-                                          children: [
-                                            const SizedBox(width: 32),
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                if (tenant != 'No Name' && tenant.isNotEmpty) Text(tenant, style: TextStyle(fontSize: 13, color: isPaid ? Colors.green.shade600 : Colors.blueGrey, fontWeight: FontWeight.bold)),
-                                                Text(isPaid ? "Paid for $_selectedMonthStr" : "${active.length} Active services | Due", style: TextStyle(fontSize: 11, color: isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            if ((d['notes'] ?? '').toString().isNotEmpty) const Icon(Icons.notes, color: Colors.blueGrey, size: 20),
-                                            const SizedBox(width: 8),
-                                            IconButton(
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(),
-                                              icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Colors.blue : Colors.orange, size: 24), 
-                                              onPressed: () => CategoryDialogs.showMarkAsPaidDialog(context: context, subItemId: subId, subItemName: subName, TenantName: tenant, nidNumber: d['nidNumber'] ?? '', houseRentTotal: total - eBillAmount, electricityBill: eBillAmount, services: active.cast<Map<String, dynamic>>(), electricityDetails: ed, mainCategoryName: catName)
-                                            ),
-                                            PopupMenuButton<String>(
-                                              icon: const Icon(Icons.more_vert, size: 24, color: Colors.blueGrey),
-                                              onSelected: (val) async {
-                                                if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator);
-                                                if (val == 'stop') {
-                                                  bool isStopping = ed?['isStopped'] != true;
-                                                  if (isStopping) {
-                                                    double last = (ed?['lastReading'] ?? 0).toDouble();
-                                                    double pres = (ed?['presentReading'] ?? 0).toDouble();
-                                                    if (pres > last) {
-                                                      CategoryDialogs.showConfirmDialog(
-                                                        context: context,
-                                                        title: "Confirm Stop Electric",
-                                                        content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
-                                                        onConfirm: () async {
-                                                          await _dbService.updateSubItemElectricity(subId, {
-                                                            ...ed!,
-                                                            'presentReading': last,
-                                                            'isStopped': true,
-                                                            'updatedAt': FieldValue.serverTimestamp(),
-                                                          }, "Admin");
-                                                        },
-                                                      );
-                                                    } else {
-                                                      await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
-                                                    }
-                                                  } else {
-                                                    await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
-                                                  }
-                                                }
-                                                if (val == 'services') CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
-                                                if (val == 'remove') CategoryDialogs.showConfirmDialog(
-                                                  context: context, 
-                                                  title: "Remove '$subName'?", 
-                                                  content: "Are you sure you want to remove this $subName?", 
-                                                  onConfirm: () async { 
-                                                    SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                                    await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
-                                                  }
-                                                );
-                                              },
-                                              itemBuilder: (ctx) => [
-                                                PopupMenuItem(
-                                                  value: ed == null ? 'electric' : 'stop', 
-                                                  child: ListTile(
-                                                    leading: Icon(Icons.flash_on, color: ed == null ? Colors.grey : Colors.amber, size: 20), 
-                                                    title: Text(ed == null ? "Add Electric" : (ed['isStopped'] == true ? "Resume Electric" : "Stop Electric")), 
-                                                    dense: true
-                                                  )
-                                                ),
-                                                const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest, size: 20), title: Text("Manage Services"), dense: true)),
-                                                const PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red, size: 20), title: Text("Remove Unit", style: TextStyle(color: Colors.red)), dense: true)),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
-                                                  _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Colors.indigo),
-
-                                                if ((d['notes'] ?? '').toString().isNotEmpty)
-                                                  _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(icon: const Icon(Icons.remove_circle_outline, color: Colors.orange, size: 20), onPressed: () => _dbService.updateSubItemDetails(subId, {'notes': ''}, "Admin"))),
-                                                
-                                                    if (ed != null && ed['isStopped'] != true)
-                                                  _buildSectionBox(
-                                                    "Electric Bills", 
-                                                    "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
-                                                    Icons.flash_on, 
-                                                    amount: eBillAmount, 
-                                                    color: Colors.amber,
-                                                    trailing: IconButton(
-                                                      icon: const Icon(Icons.electric_bolt, color: Colors.orange, size: 22), 
-                                                      onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator)
-                                                    )
-                                                  ),
-
-                                                ...active.map((s) => _buildServiceRow(subId, subName, s, overridden)),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                }
-                              );
                             }),
-                            const SizedBox(height: 12),
-                            Center(
-                              child: TextButton.icon(
-                                onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
-                                icon: const Icon(Icons.add_circle_outline, size: 22, color: Colors.indigo),
-                                label: Text("Add New $catName", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.indigo)),
+                            if (status == 'Vacant') ...[
+                              const SizedBox(height: 12),
+                              Center(
+                                child: TextButton.icon(
+                                  onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
+                                  icon: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary),
+                                  label: Text(
+                                    "Add New $catName", 
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
+                              const SizedBox(height: 12),
+                            ],
                           ],
                         ),
                       );
@@ -567,78 +1269,160 @@ class _CategoryPageState extends State<CategoryPage> {
                 },
               );
             },
-          ),
-        ),
-      ],
-    );
-  }
+          );
+        },
+      ),
+    ),
+  ],
+);
+}
 
-  Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color color = Colors.blueGrey, Widget? trailing}) {
+  Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color? color, Widget? trailing, Widget? customContent}) {
+    final effectiveColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.shade100)),
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+      decoration: BoxDecoration(
+        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow, 
+        borderRadius: BorderRadius.circular(12), 
+        border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: color),
+              Icon(icon, size: 16, color: effectiveColor),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-              const Spacer(),
-              if (amount != null) Text("৳${amount.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              if (trailing != null) trailing,
+              Expanded(child: Text(title, style: Theme.of(context).textTheme.titleSmall)),
+              if (amount != null) Text("৳${amount.toStringAsFixed(1)}", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing,
+              ],
             ],
           ),
           const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.only(left: 26),
-            child: Text(content, style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+            child: customContent ?? Text(content, style: Theme.of(context).textTheme.bodySmall),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildServiceRow(String subId, String subName, Map<String, dynamic> s, List overridden) {
+  Widget _buildServiceRow(String subId, String subName, Map<String, dynamic> s, List overridden, List macAddresses) {
     bool isOverridden = s['isOverridden'] == true;
     String name = s['name'];
     bool isWifi = name.toLowerCase().contains("wifi");
     int? devices = isWifi ? (s['deviceQuantity'] as num?)?.toInt() : null;
     double? unitPrice = isWifi ? (s['wifiCost'] as num?)?.toDouble() : null;
+    
+    String displayName = isWifi && devices != null 
+        ? "$name (৳${unitPrice?.toStringAsFixed(0) ?? '0'} / device) (x$devices)" 
+        : name;
+
+    Widget trailing = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text("৳${s['amount'].toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, height: 1.2)),
+        const SizedBox(width: 4),
+        InkWell(
+          onTap: () {
+            if (isWifi) {
+              CategoryDialogs.showWifiServiceEditDialog(
+                context: context, 
+                subItemId: subId, 
+                subItemName: subName, 
+                serviceMap: s, 
+                overriddenServices: overridden,
+                macAddresses: macAddresses
+              );
+            } else {
+              CategoryDialogs.showEditSubItemServiceDialog(context: context, subItemId: subId, subItemName: subName, serviceMap: s, overriddenServices: overridden);
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.edit_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+          ),
+        ),
+      ],
+    );
+
+    if (isWifi && macAddresses.isNotEmpty) {
+      return Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          backgroundColor: Colors.transparent,
+          collapsedBackgroundColor: Colors.transparent,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 8),
+          childrenPadding: const EdgeInsets.only(left: 34, bottom: 8),
+          shape: const Border(),
+          collapsedShape: const Border(),
+          visualDensity: VisualDensity.compact,
+          dense: true,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.wifi, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        displayName, 
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, height: 1.2)
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              trailing,
+            ],
+          ),
+          iconColor: Theme.of(context).colorScheme.primary,
+          collapsedIconColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "MAC Addresses:\n${macAddresses.asMap().entries.map((e) {
+                  var val = e.value;
+                  String sn = (val is Map && val['sn'] != null && val['sn'].toString().isNotEmpty) ? val['sn'].toString() : (e.key + 1).toString();
+                  String mac = val is Map ? val['mac'] : val.toString();
+                  return "$sn) $mac";
+                }).join('\n')}", 
+                style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.primary, fontFamily: 'monospace')
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
       child: Row(
         children: [
-          const SizedBox(width: 4),
+          Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isWifi && devices != null ? "$name (Devices: $devices)" : name, 
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)
+                  displayName, 
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, height: 1.2)
                 ),
-                if (isWifi && unitPrice != null)
-                  Text("(৳${unitPrice.toStringAsFixed(0)} per device)", style: const TextStyle(fontSize: 11, color: Colors.blueGrey)),
-                if (isOverridden && !isWifi) const Text("Customized from 'Original'", style: TextStyle(fontSize: 10, color: Colors.blueAccent, fontStyle: FontStyle.italic)),
+                if (isOverridden && !isWifi) Text("Customized", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.secondary, fontStyle: FontStyle.italic, height: 1.2)),
               ],
             ),
           ),
-          Text("৳${s['amount'].toStringAsFixed(1)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.teal)),
           const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.grey),
-            onPressed: () {
-              if (isWifi) {
-                CategoryDialogs.showWifiServiceEditDialog(context: context, subItemId: subId, subItemName: subName, serviceMap: s, overriddenServices: overridden);
-              } else {
-                CategoryDialogs.showEditSubItemServiceDialog(context: context, subItemId: subId, subItemName: subName, serviceMap: s, overriddenServices: overridden);
-              }
-            },
-          ),
+          trailing,
         ],
       ),
     );
@@ -646,57 +1430,158 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Widget _buildMainMeterTab() {
     return StreamBuilder<QuerySnapshot>(
-      stream: _dbService.getMainMetersStream(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        var meters = snapshot.data!.docs;
-        var resMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Residential').toList();
-        var comMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Commercial').toList();
+      stream: _dbService.getBillingHistoryByMonth(_selectedMonthStr),
+      builder: (context, billingSnapshot) {
+        Map<String, double> paidUnitsMap = {};
+        if (billingSnapshot.hasData) {
+          for (var doc in billingSnapshot.data!.docs) {
+            var data = doc.data() as Map<String, dynamic>;
+            var ed = data['electricityDetails'];
+            if (ed != null) {
+              String? meterNo = ed['mainMeterNo'];
+              if (meterNo != null) {
+                double used = ((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble();
+                if (used > 0) {
+                  paidUnitsMap[meterNo] = (paidUnitsMap[meterNo] ?? 0) + used;
+                }
+              }
+            }
+          }
+        }
 
-        return ListView(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          children: [
-            Card(
-              elevation: 3,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Colors.indigo.shade50,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.indigo.shade200, width: 1)),
-              child: ExpansionTile(
-                leading: const CircleAvatar(backgroundColor: Colors.indigo, child: Icon(Icons.settings_input_component, color: Colors.white, size: 20)),
-                title: const Text("Main Meters List", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.indigo)),
-                subtitle: Text("${meters.length} total meters found", style: const TextStyle(fontSize: 12)),
-                children: [
-                  _buildMeterExpandableSection("Residential Meter", resMeters, Icons.home_outlined, Colors.green),
-                  const SizedBox(height: 8),
-                  _buildMeterExpandableSection("Commercial Meter", comMeters, Icons.business_outlined, Colors.orange),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            ),
-            _buildSubMeterExpandableSection(),
-          ],
+        return StreamBuilder<QuerySnapshot>(
+          stream: _dbService.getMainMetersStream(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+            var meters = snapshot.data!.docs.toList();
+            meters.sort((a, b) => ((a.data() as Map)['meterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['meterNo'] ?? '').toString().toLowerCase()));
+            
+            var resMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Residential').toList();
+            var comMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Commercial').toList();
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 80),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_month, color: Theme.of(context).colorScheme.primary, size: 18),
+                      const SizedBox(width: 8),
+                      Text("Stats for:", style: Theme.of(context).textTheme.labelSmall),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Theme.of(context).colorScheme.surface,
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(icon: const Icon(Icons.chevron_left, size: 18), onPressed: () => _moveMonth(-1), constraints: const BoxConstraints(), padding: EdgeInsets.zero),
+                            Text(
+                              _selectedMonthStr, 
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                            ),
+                            IconButton(icon: const Icon(Icons.chevron_right, size: 18), onPressed: () => _moveMonth(1), constraints: const BoxConstraints(), padding: EdgeInsets.zero),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Card(
+                  elevation: isOutline ? 0 : 2,
+                  color: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardContainerColor(10),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16), 
+                    side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
+                  ),
+                  child: ExpansionTile(
+                    backgroundColor: Colors.transparent,
+                    collapsedBackgroundColor: Colors.transparent,
+                    leading: CircleAvatar(
+                      backgroundColor: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardColor(10), 
+                      child: Container(
+                        decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                        child: Icon(Icons.settings_input_component, color: isOutline ? Theme.of(context).colorScheme.primary : Colors.white, size: 20)
+                      )
+                    ),
+                    title: Text(
+                      "Main Meters List", 
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(10))
+                    ),
+                    subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(10).withValues(alpha: 0.7))),
+                    children: [
+                      _buildMeterExpandableSection(
+                        "Residential Meter", 
+                        resMeters, 
+                        Icons.home_outlined, 
+                        Theme.of(context).colorScheme.primary,
+                        paidUnitsMap,
+                        colorIndex: 11,
+                      ),
+                      _buildMeterExpandableSection(
+                        "Commercial Meter", 
+                        comMeters, 
+                        Icons.business_outlined, 
+                        Theme.of(context).colorScheme.secondary,
+                        paidUnitsMap,
+                        colorIndex: 12,
+                      ),
+                    ],
+                  ),
+                ),
+                _buildSubMeterExpandableSection(),
+              ],
+            );
+          },
         );
-      },
+      }
     );
   }
 
-  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, MaterialColor color) {
+  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color, Map<String, double> paidUnitsMap, {int colorIndex = 0}) {
     bool isOp = widget.isOperator;
-    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
+    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
+    final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    final Color effectiveBgColor = isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardContainerColor(colorIndex, isSubCard: true);
+    final Color effectiveAccentColor = isOutline ? Theme.of(context).colorScheme.primary : ThemeManager.getCardColor(colorIndex, isSubCard: true);
+    final Color onBgColor = isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(colorIndex, isSubCard: true);
 
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      color: color.shade50,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: color.shade200, width: 1)),
+      elevation: isOutline ? 0 : 1,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      color: effectiveBgColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), 
+        side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
+      ),
       child: ExpansionTile(
-        leading: CircleAvatar(backgroundColor: color, child: Icon(icon, color: Colors.white, size: 20)),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: color.shade800)),
-        subtitle: Text("${meters.length} meters found", style: const TextStyle(fontSize: 12)),
+        backgroundColor: Colors.transparent,
+        collapsedBackgroundColor: Colors.transparent,
+        leading: CircleAvatar(
+          backgroundColor: isOutline ? ThemeManager.outlineBackground : effectiveAccentColor, 
+          child: Container(
+            decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+            child: Icon(icon, color: Colors.white, size: 20)
+          )
+        ),
+        title: Text(
+          title, 
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: isOutline ? Colors.black : onBgColor)
+        ),
+        subtitle: Text("${meters.length} meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : onBgColor.withValues(alpha: 0.7))),
         children: [
           if (meters.isEmpty) 
-            const Padding(padding: EdgeInsets.all(16), child: Text("No meters registered"))
+            Padding(
+              padding: const EdgeInsets.all(16), 
+              child: Text("No meters registered", style: Theme.of(context).textTheme.bodySmall)
+            )
           else 
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -705,27 +1590,21 @@ class _CategoryPageState extends State<CategoryPage> {
                 child: Table(
                   defaultColumnWidth: const IntrinsicColumnWidth(),
                   defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  border: const TableBorder(
+                    verticalInside: BorderSide.none,
+                  ),
                   children: [
                     TableRow(
-                      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+                      decoration: BoxDecoration(
+                        color: isOutline ? ThemeManager.outlineBackground : effectiveAccentColor,
+                        border: isOutline ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
+                      ),
                       children: [
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("#", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last\nReadings", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Present\nReadings", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last Govt.\nBill Readings", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("New Govt.\nBill Readings", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt. Bill\nAmounts", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt. Bill\nUnits", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last Month\nUnit Rate", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("This Month\nUnit Rate", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Govt.\nDue/Adv Units", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Main Meter\nUsed Units", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Total Sub-Meter\nUnits", textAlign: TextAlign.center, style: textStyle))),
-                        Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Balance Units\n(Main-Sub)", textAlign: TextAlign.center, style: textStyle))),
-                        if (!isOp)
-                          Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Action", textAlign: TextAlign.center, style: textStyle))),
-                      ],
+                        "#", "Meter Number", "Last Updated", "Last Readings", "Present Readings", "Govt. Last\n Bill Readings", "Govt. New\nBill Readings", "Govt. Bill\nAmounts", "Govt. Bill\nUnits", "Last Month\nUnit Rate", "This Month\nUnit Rate", "Govt.\nDue/Adv Units", "Main Meter\nUsed Units", "Sub-Meter\nUsed Units", "Balance", "Action"
+                      ].map((h) => Padding(
+                        padding: const EdgeInsets.all(12), 
+                        child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: isOutline ? Colors.black : null)))
+                      )).toList().sublist(0, isOp ? 15 : 16),
                     ),
                     ...meters.asMap().entries.map((entry) {
                       int idx = entry.key;
@@ -740,59 +1619,69 @@ class _CategoryPageState extends State<CategoryPage> {
                       double govtAmt = (data['govtBillAmount'] ?? 0).toDouble();
                       double govtUnit = newGovt - lastGovt;
                       double lastRate = (data['lastMonthUnitRate'] ?? 0).toDouble();
-                      double thisRate = (data['unitRate'] ?? 0).toDouble();
-                      double govtDueAdv = newGovt - pres;
-                      double totalSubPaid = (data['totalSubPaidUnits'] ?? 0).toDouble();
+                      
+                      // Live calculation for consistency
+                      double thisRate = govtUnit > 0 ? (govtAmt / govtUnit) : (data['unitRate'] ?? 0).toDouble();
+                      double govtDueAdv = pres - newGovt;
+                      
+                      String advDueSuffix = "";
+                      if (govtDueAdv < 0) advDueSuffix = "(A)";
+                      else if (govtDueAdv > 0) advDueSuffix = "(D)";
+                      bool isAdvDueRed = govtDueAdv != 0;
+                      double totalSubPaid = paidUnitsMap[meterNo] ?? 0;
                       double balance = mainUsed - totalSubPaid;
-                      final rowColor = idx % 2 == 0 ? Colors.white.withOpacity(0.4) : Colors.transparent;
 
                       Widget wrapCell(Widget child) {
                         return InkWell(
                           onTap: () => CategoryDialogs.showUpdateMainMeterDialog(context: context, data: data, docId: mDoc.id),
-                          child: Padding(padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12), child: Center(child: child)),
+                          child: Padding(padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), child: Center(child: child)),
                         );
                       }
 
                       return TableRow(
-                        decoration: BoxDecoration(color: rowColor),
+                        decoration: BoxDecoration(color: isOutline ? ThemeManager.outlineBackground : (idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent)),
                         children: [
-                          wrapCell(Text("${idx + 1}", textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(meterNo, textAlign: TextAlign.center, style: textStyle?.copyWith(color: Colors.blue))),
-                          wrapCell(Text(last.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(pres.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(lastGovt.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(newGovt.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(govtAmt.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(govtUnit.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(lastRate.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(thisRate.toStringAsFixed(1), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(govtDueAdv.toStringAsFixed(0), textAlign: TextAlign.center, style: (dataStyle ?? const TextStyle()).copyWith(color: govtDueAdv.abs() > 5 ? Colors.orange : null, fontWeight: govtDueAdv.abs() > 5 ? FontWeight.bold : null))),
-                          wrapCell(Text(mainUsed.toStringAsFixed(0), textAlign: TextAlign.center, style: textStyle)),
-                          wrapCell(Text(totalSubPaid.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle)),
-                          wrapCell(Text(balance.toStringAsFixed(0), textAlign: TextAlign.center, style: (textStyle ?? const TextStyle()).copyWith(color: balance > 0 ? Colors.red : Colors.green))),
+                          wrapCell(Text("${idx + 1}", style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(meterNo, style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary))),
+                          wrapCell(Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(DatabaseService.formatFullDateTime(data['updatedAt'] as Timestamp?), style: dataStyle?.copyWith(fontSize: 10, color: isOutline ? Colors.black : null)),
+                              Text(DatabaseService.formatDuration(data['updatedAt'] as Timestamp?), style: dataStyle?.copyWith(fontSize: 9, color: isOutline ? Colors.black54 : Theme.of(context).colorScheme.outline, fontStyle: FontStyle.italic)),
+                            ],
+                          )),
+                          wrapCell(Text(last.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(pres.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(lastGovt.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(newGovt.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(govtAmt.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(govtUnit.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(lastRate.toStringAsFixed(1), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(thisRate.toStringAsFixed(1), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text("${govtDueAdv.toStringAsFixed(0)}$advDueSuffix", style: dataStyle?.copyWith(color: isAdvDueRed ? Theme.of(context).colorScheme.error : (isOutline ? Colors.black : null), fontWeight: isAdvDueRed ? FontWeight.bold : null))),
+                          wrapCell(Text(mainUsed.toStringAsFixed(0), style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(totalSubPaid.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(balance.toStringAsFixed(0), style: dataStyle?.copyWith(color: balance > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold))),
                           if (!isOp)
                             Padding(
                               padding: const EdgeInsets.all(4),
-                              child: Center(
-                                child: IconButton(
-                                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                                  onPressed: () => CategoryDialogs.showConfirmDialog(
-                                    context: context, 
-                                    title: "Remove Meter?", 
-                                    content: "Are you sure you want to remove meter '$meterNo'?", 
-                                    onConfirm: () async {
-                                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                                      await _dbService.removeMainMeter(mDoc.id, prefs.getString('username') ?? "Admin");
-                                    }
-                                  ),
-                                  constraints: const BoxConstraints(),
-                                  padding: EdgeInsets.zero,
+                              child: IconButton(
+                                icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.error),
+                                onPressed: () => CategoryDialogs.showDeleteMeterDialog(
+                                  context: context, 
+                                  type: "MainMeter",
+                                  meterNo: meterNo,
+                                  onConfirm: () async {
+                                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                                    await _dbService.removeMainMeter(mDoc.id, prefs.getString('username') ?? "Admin");
+                                  }
                                 ),
                               ),
                             ),
-                        ],
+                        ].sublist(0, isOp ? 15 : 16),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
@@ -804,27 +1693,46 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Widget _buildSubMeterExpandableSection() {
     bool isOp = widget.isOperator;
-    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
+    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
 
     return StreamBuilder<QuerySnapshot>(
       stream: _dbService.getSubMetersStream(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const LinearProgressIndicator();
-        var subMeters = snapshot.data!.docs;
+        final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+        var subMeters = snapshot.data!.docs.toList();
+        subMeters.sort((a, b) => ((a.data() as Map)['subMeterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['subMeterNo'] ?? '').toString().toLowerCase()));
 
         return Card(
-          elevation: 3,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: Colors.teal.shade50,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.teal.shade200, width: 1)),
+          elevation: isOutline ? 0 : 2,
+          color: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardContainerColor(13),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16), 
+            side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
+          ),
           child: ExpansionTile(
-            leading: const CircleAvatar(backgroundColor: Colors.teal, child: Icon(Icons.cable, color: Colors.white, size: 20)),
-            title: const Text("Sub-Meters List", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.teal)),
-            subtitle: Text("${subMeters.length} sub-meters registered", style: const TextStyle(fontSize: 12)),
+            backgroundColor: Colors.transparent,
+            collapsedBackgroundColor: Colors.transparent,
+            leading: CircleAvatar(
+              backgroundColor: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardColor(13), 
+              child: Container(
+                decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1)) : null,
+                child: Icon(Icons.cable, color: isOutline ? Theme.of(context).colorScheme.primary : Colors.white, size: 20)
+              )
+            ),
+            title: Text(
+              "Sub-Meters List", 
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(13))
+            ),
+            subtitle: Text("${subMeters.length} sub-meters registered", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(13).withValues(alpha: 0.7))),
             children: [
               if (subMeters.isEmpty) 
-                const Padding(padding: EdgeInsets.all(16), child: Text("No sub-meters found."))
+                Padding(
+                  padding: const EdgeInsets.all(16), 
+                  child: Text("No sub-meters found.", style: Theme.of(context).textTheme.bodySmall)
+                )
               else
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -833,19 +1741,21 @@ class _CategoryPageState extends State<CategoryPage> {
                     child: Table(
                       defaultColumnWidth: const IntrinsicColumnWidth(),
                       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                      border: const TableBorder(
+                        verticalInside: BorderSide.none,
+                      ),
                       children: [
                         TableRow(
-                          decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5))),
+                          decoration: BoxDecoration(
+                            color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.secondary,
+                            border: isOutline ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
+                          ),
                           children: [
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("#", textAlign: TextAlign.center, style: textStyle))),
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Sub-Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Main-Meter\nNumber", textAlign: TextAlign.center, style: textStyle))),
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Last\nReadings", textAlign: TextAlign.center, style: textStyle))),
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Present\nReadings", textAlign: TextAlign.center, style: textStyle))),
-                            Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Used\nUnits", textAlign: TextAlign.center, style: textStyle))),
-                            if (!isOp)
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("Action", textAlign: TextAlign.center, style: textStyle))),
-                          ],
+                            "#", "Sub-Meter", "Last Updated", "Main-Meter", "Last", "Present", "Used", "Action"
+                          ].map((h) => Padding(
+                            padding: const EdgeInsets.all(12), 
+                            child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: isOutline ? Colors.black : null)))
+                          )).toList().sublist(0, isOp ? 7 : 8),
                         ),
                         ...subMeters.asMap().entries.map((entry) {
                           int idx = entry.key;
@@ -853,40 +1763,43 @@ class _CategoryPageState extends State<CategoryPage> {
                           var sData = sDoc.data() as Map<String, dynamic>;
                           double last = (sData['lastReading'] ?? 0).toDouble();
                           double pres = (sData['presentReading'] ?? last).toDouble();
-                          final rowColor = idx % 2 == 0 ? Colors.white.withOpacity(0.4) : Colors.transparent;
 
                           return TableRow(
-                            decoration: BoxDecoration(color: rowColor),
+                            decoration: BoxDecoration(color: isOutline ? ThemeManager.outlineBackground : (idx % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent)),
                             children: [
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${idx + 1}", textAlign: TextAlign.center, style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['subMeterNo'] ?? '', textAlign: TextAlign.center, style: textStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['mainMeterNo'] ?? '', textAlign: TextAlign.center, style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(last.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(pres.toStringAsFixed(0), textAlign: TextAlign.center, style: dataStyle))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text((pres - last).toStringAsFixed(0), textAlign: TextAlign.center, style: (textStyle ?? const TextStyle()).copyWith(color: Colors.blue)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text("${idx + 1}", style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['subMeterNo'] ?? '', style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(DatabaseService.formatFullDateTime(sData['updatedAt'] as Timestamp?), style: dataStyle?.copyWith(fontSize: 10, color: isOutline ? Colors.black : null)),
+                                  Text(DatabaseService.formatDuration(sData['updatedAt'] as Timestamp?), style: dataStyle?.copyWith(fontSize: 9, color: isOutline ? Colors.black54 : Theme.of(context).colorScheme.outline, fontStyle: FontStyle.italic)),
+                                ],
+                              ))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['mainMeterNo'] ?? '', style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(last.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(pres.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text((pres - last).toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)))),
                               if (!isOp)
                                 Padding(
                                   padding: const EdgeInsets.all(4),
-                                  child: Center(
-                                    child: IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                                      onPressed: () => CategoryDialogs.showConfirmDialog(
-                                        context: context, 
-                                        title: "Remove Sub-Meter?", 
-                                        content: "Are you sure you want to remove '${sData['subMeterNo']}'?", 
-                                        onConfirm: () async {
-                                          SharedPreferences prefs = await SharedPreferences.getInstance();
-                                          await _dbService.removeSubMeter(sDoc.id, prefs.getString('username') ?? "Admin");
-                                        }
-                                      ),
-                                      constraints: const BoxConstraints(),
-                                      padding: EdgeInsets.zero,
+                                  child: IconButton(
+                                    icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20),
+                                    onPressed: () => CategoryDialogs.showDeleteMeterDialog(
+                                      context: context, 
+                                      type: "SubMeter",
+                                      meterNo: sData['subMeterNo'] ?? 'N/A',
+                                      onConfirm: () async {
+                                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                                        await _dbService.removeSubMeter(sDoc.id, prefs.getString('username') ?? "Admin");
+                                      }
                                     ),
                                   ),
                                 ),
-                            ],
+                            ].sublist(0, isOp ? 7 : 8),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),
@@ -901,8 +1814,8 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget _buildMeterStat(String label, double val, {bool isBold = false}) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.blueGrey)),
-        Text(val.toStringAsFixed(1), style: TextStyle(fontSize: 15, fontWeight: isBold ? FontWeight.w900 : FontWeight.bold)),
+        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        Text(val.toStringAsFixed(1), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: isBold ? FontWeight.w900 : FontWeight.bold)),
       ],
     );
   }

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:akons_square/Common/theme_manager.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/ui_helper.dart';
 
 class UserReportPage extends StatelessWidget {
   final String subItemId;
@@ -21,124 +24,193 @@ class UserReportPage extends StatelessWidget {
     return parts.isEmpty ? "Joined today" : parts.join(", ");
   }
 
-  String _formatDateTime(Timestamp? timestamp) {
-    if (timestamp == null) return "N/A";
-    DateTime dt = timestamp.toDate();
-    return "${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
-  }
-
-  void _showDetailsDialog(BuildContext context, Map<String, dynamic> data) {
+  static void showDetailsDialog(BuildContext context, Map<String, dynamic> data) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     List services = data['services'] ?? [];
     Map<String, dynamic>? ed = data['electricityDetails'];
-    double houseRentTotal = (data['houseRentTotal'] as num?)?.toDouble() ?? 0;
+    double totalAmount = (data['totalAmount'] as num?)?.toDouble() ?? 0;
+    double electricityBill = (data['electricityBill'] as num?)?.toDouble() ?? 0;
+    
+    double rentAmount = 0;
+    List<Map<String, dynamic>> otherServices = [];
+    for (var s in services) {
+      if (s['name'].toString().toLowerCase().contains('rent')) {
+        rentAmount += (s['amount'] as num?)?.toDouble() ?? 0;
+      } else {
+        otherServices.add(Map<String, dynamic>.from(s));
+      }
+    }
+    double rentAndServicesSubtotal = rentAmount + otherServices.fold(0.0, (sum, s) => sum + (s['amount'] as num).toDouble());
+
+    String status = data['status'] ?? 'Paid';
+    bool isDue = status == 'Due';
+
+    String paidTime = "N/A";
+    if (data['paidAt'] != null) {
+      paidTime = DatabaseService.formatFullDateTime(data['paidAt'] as Timestamp);
+    } else if (isDue && data['createdAt'] != null) {
+      paidTime = "(Due Since: ${DatabaseService.formatFullDateTime(data['createdAt'] as Timestamp)})";
+    }
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Center(child: Text("Details for ${data['monthYear']}", textAlign: TextAlign.center)),
+        backgroundColor: isOutline ? ThemeManager.outlineBackground : null,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : BorderSide.none,
+        ),
+        title: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                    ? ThemeManager.outlineBackground 
+                    : (isDue ? Colors.red.withValues(alpha: 0.1) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
+                shape: BoxShape.circle,
+                border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                    ? Border.all(color: isDue ? Colors.red : Theme.of(context).colorScheme.primary, width: 1.5) 
+                    : null,
+              ),
+              child: Icon(isDue ? Icons.request_quote_outlined : Icons.calendar_month_outlined, color: isDue ? Colors.red : Theme.of(context).colorScheme.primary, size: 40),
+            ),
+            const SizedBox(height: 16),
+            Text(isDue ? "Due: ${data['monthYear'] ?? ''}" : "Payment: ${data['monthYear'] ?? ''}", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : (isDue ? Colors.red : null))),
+            const SizedBox(height: 4),
+            Text("${data['subItemName'] ?? 'Unit'} (${data['TenantName'] ?? 'No Name'})", style: Theme.of(context).textTheme.titleSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary)),
+          ],
+        ),
         content: SizedBox(
-          width: double.maxFinite,
+          width: MediaQuery.of(context).size.width * 0.85,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (data['TenantName'] != null && data['TenantName'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: Text("Tenant: ${data['TenantName']}", style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.blueAccent, fontSize: 16)),
-                  ),
-                if (data['nidNumber'] != null && data['nidNumber'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text("NID: ${data['nidNumber']}", style: const TextStyle(fontSize: 16, color: Colors.blueAccent)),
-                  ),
-                if (data['paymentNotes'] != null && data['paymentNotes'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text("Note: ${data['paymentNotes']}", style: const TextStyle(fontSize: 16, color: Colors.blueGrey, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
-                  ),
-                const Padding(
-                  padding: EdgeInsets.only(top: 8, bottom: 4),
-                  child: Text("Rent & Services", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                ...services.map((s) {
-                  String name = s['name'] ?? 'Service';
-                  String? subtitle;
-                  
-                  if (name.toLowerCase().contains("wifi")) {
-                    int qty = s['deviceQuantity'] ?? 1;
-                    num total = s['amount'] ?? 0;
-                    // Dynamically calculate cost if missing, otherwise use stored cost
-                    num costPerDevice = s['wifiCost'] ?? (qty > 0 ? (total / qty) : total);
-                    
-                    name = "$name (Devices: $qty)";
-                    subtitle = "৳${costPerDevice.toStringAsFixed(2)} (per Device)";
-                  }
+                _buildDetailRow(context, isDue ? "Status:" : "Payment Time:", isDue ? "PENDING (DUE)" : paidTime, isBold: true, valueColor: isDue ? Colors.red : null),
+                if (isDue) _buildDetailRow(context, "Recorded at:", DatabaseService.formatFullDateTime(data['createdAt'] as Timestamp?), valueColor: Colors.red),
 
-                  return _buildDetailRow(
-                    name,
-                    "৳${s['amount']}",
-                    subtitle: subtitle,
-                  );
+
+                
+                Row(
+                  children: [
+                    Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Text("Rent & Services", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildDetailRow(context, "House Rent", "৳${rentAmount.toStringAsFixed(2)}"),
+                ...otherServices.map((s) {
+                  String name = s['name'] ?? 'Service';
+                  return _buildDetailRow(context, name, "৳${(s['amount'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'}");
                 }),
                 const Divider(),
                 _buildDetailRow(
+                  context,
                   "Subtotal (Rent & Services)",
-                  "৳$houseRentTotal",
+                  "৳${rentAndServicesSubtotal.toStringAsFixed(2)}",
+                  isBold: true,
                 ),
-                const Divider(),
-                if (ed != null) ...[
-                  const Padding(
-                    padding: EdgeInsets.only(left: 16, top: 8, bottom: 4),
-                    child: Text("Electricity Details", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  _buildDetailRow("Meter No:", ed['mainSubMeterNo'] ?? 'N/A'),
-                  _buildDetailRow("Reading:", "${ed['lastReading']} -> ${ed['presentReading']}"),
-                  _buildDetailRow("Units Used:", "${(ed['presentReading'] ?? 0) - (ed['lastReading'] ?? 0)}"),
-                  _buildDetailRow("Price/Unit:", "৳${ed['pricePerUnit']}"),
-                  const Divider(),
-                  _buildDetailRow(
-                    "Electricity Total",
-                    "৳${data['electricityBill']}",
-                    valueColor: Colors.teal,
-                    isBold: true,
+
+                if (ed != null || electricityBill > 0) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isOutline ? Theme.of(context).colorScheme.primary : context.electric.withValues(alpha: 0.1)),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.electric_bolt, color: context.electric, size: 20),
+                            const SizedBox(width: 8),
+                            Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : context.electric)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (ed != null) ...[
+                          _buildDetailRow(context, "Meter No:", ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'),
+                          _buildDetailRow(context, "Last Units:", "${ed['lastReading'] ?? 0}"),
+                          _buildDetailRow(context, "Present Units:", "${ed['presentReading'] ?? 0}"),
+                          _buildDetailRow(context, "Used Units:", "${(ed['presentReading'] ?? 0) - (ed['lastReading'] ?? 0)}", isBold: true),
+                          _buildDetailRow(context, "Price per Unit:", "৳${ed['pricePerUnit'] ?? 0}"),
+                        ] else ...[
+                           const Center(child: Text("(Detailed readings not available)", style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic))),
+                        ],
+                        const Divider(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("Electric Bill", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null)),
+                            Text("৳${electricityBill.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: context.electric)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-                const SizedBox(height: 12),
+                const SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.indigo.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.indigo.shade200),
+                    color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Grand Total", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                      Text("৳${data['totalAmount']}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                      Expanded(
+                        child: Text(
+                          "Grand Total", 
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: isOutline ? Colors.black : Colors.white, 
+                            fontWeight: FontWeight.bold
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text("৳${totalAmount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.w900)),
                     ],
                   ),
                 ),
+                if ((data['paymentNotes'] ?? '').toString().isNotEmpty && !(isDue == false && data['paymentNotes'] == "Marked as Due"))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Text("Note: ${data['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: isOutline ? Colors.black : null)),
+                  ),
               ],
             ),
           ),
         ),
         actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, side: BorderSide(color: Colors.grey.shade300)),
-              onPressed: () => Navigator.pop(ctx), child: const Text("OK")),
+          AppDialogActions(
+            actions: [
+              AppButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.error,
+                  foregroundColor: isOutline ? Colors.black : Colors.white,
+                  side: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                ),
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text("Close")
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {String? subtitle, Color? valueColor, bool isBold = false}) {
+  static Widget _buildDetailRow(BuildContext context, String label, String value, {String? subtitle, Color? valueColor, bool isBold = false}) {
+
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: Row(
@@ -150,18 +222,17 @@ class UserReportPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant)),
                 if (subtitle != null)
-                  Text(subtitle, style: const TextStyle(fontSize: 10, color: Colors.blue, fontStyle: FontStyle.italic)),
+                  Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic)),
               ],
             ),
           ),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 12,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-              color: valueColor,
+              color: isOutline ? Colors.black : valueColor,
             ),
           ),
         ],
@@ -171,152 +242,253 @@ class UserReportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('sub_items').doc(subItemId).snapshots(),
-      builder: (context, subSnapshot) {
-        if (!subSnapshot.hasData) return const Center(child: CircularProgressIndicator());
-        var subData = subSnapshot.data!.data() as Map<String, dynamic>?;
-        if (subData == null) return const Center(child: Text("Data not found"));
+        stream: FirebaseFirestore.instance.collection('sub_items').doc(subItemId).snapshots(),
+        builder: (context, subSnapshot) {
+          if (!subSnapshot.hasData) return const Center(child: CircularProgressIndicator());
+          var subData = subSnapshot.data!.data() as Map<String, dynamic>?;
+          if (subData == null) return const Center(child: Text("Data not found"));
 
-        DateTime? createdAt = (subData['createdAt'] as Timestamp?)?.toDate();
-        String subName = subData['subItemName'] ?? 'Unnamed';
+          DateTime? createdAt = (subData['createdAt'] as Timestamp?)?.toDate();
+          String subName = subData['subItemName'] ?? 'Unnamed';
+          String currentTenant = subData['TenantName'] ?? '';
 
-        return Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              color: Colors.blue.shade50,
-              child: Column(
-                children: [
-                  Text(
-                    subName,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue),
+          return Column(
+            children: [
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: isOutline ? ThemeManager.outlineBackground : null,
+                  gradient: isOutline ? null : LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(height: 4),
-                  const Text("Subscription Info", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.blueGrey)),
-                  const SizedBox(height: 8),
-                  Text("Using Since: ${createdAt != null ? "${createdAt.day.toString().padLeft(2, '0')}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.year}" : 'N/A'}", style: const TextStyle(fontSize: 12)),
-                  Text("Duration: ${_formatDuration(createdAt)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                ],
+                  borderRadius: BorderRadius.circular(24),
+                  border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+                  boxShadow: isOutline ? null : [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      currentTenant.isNotEmpty ? "$subName ($currentTenant)" : subName,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text("PAYMENT HISTORY", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        _buildHeaderSummary(context, "Joined", createdAt != null ? "${createdAt.day}-${createdAt.month}-${createdAt.year}" : 'N/A'),
+                        Container(width: 1, height: 30, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)),
+                        _buildHeaderSummary(context, "Total Duration", _formatDuration(createdAt)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('billing_history')
-                    .where('subItemId', isEqualTo: subItemId)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-                  if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}"));
-                  
-                  var docs = snapshot.data!.docs;
-                  
-                  // Sort in memory to avoid needing a composite index in Firestore
-                  docs.sort((a, b) {
-                    Timestamp t1 = (a.data() as Map)['createdAt'] ?? Timestamp.now();
-                    Timestamp t2 = (b.data() as Map)['createdAt'] ?? Timestamp.now();
-                    return t2.compareTo(t1); // Descending
-                  });
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('billing_history')
+                      .where('subItemId', isEqualTo: subItemId)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                    
+                    var docs = snapshot.data!.docs;
+                    docs.sort((a, b) {
+                      Timestamp t1 = (a.data() as Map)['createdAt'] ?? Timestamp.now();
+                      Timestamp t2 = (b.data() as Map)['createdAt'] ?? Timestamp.now();
+                      return t2.compareTo(t1); 
+                    });
 
-                  // Limit to last 2 records
-                  var displayDocs = docs.take(2).toList();
+                    if (docs.isEmpty) {
+                      return Center(child: Text("No record of paid rent found.", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic)));
+                    }
 
-                  if (displayDocs.isEmpty) {
-                    return const Center(child: Text("No record of paid rent found.", style: TextStyle(color: Colors.grey)));
-                  }
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: docs.length,
+                      itemBuilder: (context, index) {
+                        final data = docs[index].data() as Map<String, dynamic>;
+                        String status = data['status'] ?? 'Paid';
+                        bool isDue = status == 'Due';
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: displayDocs.length,
-                    itemBuilder: (context, index) {
-                      var data = displayDocs[index].data() as Map<String, dynamic>;
-                      return Card(
-                        elevation: 3,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () => _showDetailsDialog(context, data),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 12,
-                                      backgroundColor: Colors.blueGrey.shade100,
-                                      child: Text("${index + 1}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        // Extract Rent, Electricity and calculate Utility
+                        List services = data['services'] ?? [];
+                        double totalAmount = (data['totalAmount'] as num?)?.toDouble() ?? 0;
+                        double electricityBill = (data['electricityBill'] as num?)?.toDouble() ?? 0;
+                        
+                        double rentAmount = 0;
+                        for (var s in services) {
+                          if (s['name'].toString().toLowerCase().contains('rent')) {
+                            rentAmount += (s['amount'] as num?)?.toDouble() ?? 0;
+                          }
+                        }
+                        
+                        double utilityAmount = totalAmount - rentAmount - electricityBill;
+                        if (utilityAmount < 0) utilityAmount = 0;
+
+                        String paidTimeLabel = isDue ? "Recorded on: " : "Paid on: ";
+                        String paidTime = "N/A";
+                        if (isDue) {
+                           paidTime = data['createdAt'] != null ? DatabaseService.formatFullDateTime(data['createdAt'] as Timestamp) : "N/A";
+                        } else if (data['paidAt'] != null) {
+                          paidTime = DatabaseService.formatFullDateTime(data['paidAt'] as Timestamp);
+                        }
+
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardContainerColor(index + 2, alpha: 0.5, isSubCard: true),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: isOutline ? null : [
+                              BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
+                            ],
+                            border: Border.all(color: isOutline ? (isDue ? Colors.red : Theme.of(context).colorScheme.primary) : (isDue ? Colors.red.withValues(alpha: 0.5) : ThemeManager.getCardColor(index + 2, isSubCard: true).withValues(alpha: 0.1)), width: (isDue || isOutline) ? 1.5 : 1),
+
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => UserReportPage.showDetailsDialog(context, data),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: isOutline ? ThemeManager.outlineBackground : ThemeManager.getCardColor(index + 2, isSubCard: true).withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: isOutline ? Border.all(color: isDue ? Colors.red : Theme.of(context).colorScheme.primary, width: 1) : null,
+                                        ),
+                                        child: Icon(isDue ? Icons.request_quote_outlined : Icons.calendar_month_outlined, color: isOutline ? (isDue ? Colors.red : Theme.of(context).colorScheme.primary) : ThemeManager.getCardColor(index + 2, isSubCard: true), size: 18),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "${data['monthYear'] ?? 'N/A'} - ${data['TenantName'] ?? 'No Name'}",
+                                              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: isOutline ? Colors.black : (isDue ? Colors.red : null)),
+                                            ),
+                                            Text("$paidTimeLabel$paidTime", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 9, color: isOutline ? Colors.black : null)),
+                                          ],
+                                        ),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: isOutline ? ThemeManager.outlineBackground : (isDue ? Colors.red.withValues(alpha: 0.1) : Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1)),
+                                              borderRadius: BorderRadius.circular(30),
+                                              border: isOutline ? Border.all(color: isDue ? Colors.red : Colors.green, width: 1.5) : null,
+                                            ),
+                                            child: Text(status.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? (isDue ? Colors.red : Colors.green) : (isDue ? Colors.red : Theme.of(context).colorScheme.tertiary), fontWeight: FontWeight.w900)),
+                                          ),
+                                          if ((data['paymentNotes'] ?? '').toString().isNotEmpty && !(isDue == false && data['paymentNotes'] == "Marked as Due"))
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 2),
+                                              child: Text(
+                                                data['paymentNotes'],
+                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontStyle: FontStyle.italic, color: isOutline ? (isDue ? Colors.red : Colors.black) : Theme.of(context).colorScheme.onSurfaceVariant),
+                                                textAlign: TextAlign.right,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
                                     ),
-                                    Text(data['monthYear'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green.shade100,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        "PAID (${_formatDateTime(data['paidAt'] as Timestamp?)})", 
-                                        style: const TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (data['TenantName'] != null && data['TenantName'].toString().isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        "Tenant: ${data['TenantName']} ${data['nidNumber'] != null ? '(NID: ${data['nidNumber']})' : ''}",
-                                        style: const TextStyle(fontSize: 11, color: Colors.blueGrey, fontStyle: FontStyle.italic),
-                                      ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                      children: [
+                                        _buildCompactSummary(context, "Rent", "৳${rentAmount.toStringAsFixed(0)}", isOutline ? Colors.black : Theme.of(context).colorScheme.onSurface),
+                                        Container(width: 1, height: 16, color: Theme.of(context).colorScheme.outlineVariant),
+                                        InkWell(
+                                          onTap: () {
+                                            DatabaseService.vibrate();
+                                            UserReportPage.showDetailsDialog(context, data);
+                                          },
+                                          child: _buildCompactSummary(context, "Elec", "৳${electricityBill.toStringAsFixed(0)}", isOutline ? Colors.black : context.electric),
+                                        ),
+                                        Container(width: 1, height: 16, color: Theme.of(context).colorScheme.outlineVariant),
+                                        _buildCompactSummary(context, "Util", "৳${utilityAmount.toStringAsFixed(0)}", isOutline ? Colors.black : Theme.of(context).colorScheme.secondary),
+                                        Container(width: 1, height: 16, color: Theme.of(context).colorScheme.outlineVariant),
+                                        _buildCompactSummary(context, "Total", "৳${totalAmount.toStringAsFixed(0)}", isOutline ? Colors.black : ThemeManager.getCardColor(index + 2, isSubCard: true), isBold: true),
+                                      ],
                                     ),
                                   ),
-                                const Divider(height: 24),
-                                Row(
-                                  children: [
-                                    _buildSummaryItem("Rent/Services", "৳${data['houseRentTotal']}", Colors.blueGrey),
-                                    _buildSummaryItem("Electricity", "৳${data['electricityBill']}", Colors.teal),
-                                    _buildSummaryItem("Total Paid", "৳${data['totalAmount']}", Colors.indigo, isBold: true),
-                                  ],
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  );
-                },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        );
-      },
-    );
+            ],
+          );
+        },
+      );
   }
 
-  Widget _buildSummaryItem(String label, String value, Color color, {bool isBold = false}) {
+  Widget _buildHeaderSummary(BuildContext context, String label, String value) {
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
     return Expanded(
       child: Column(
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7), fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-              color: color,
-            ),
-          ),
+          Text(value, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w900)),
         ],
       ),
+    );
+  }
+
+  Widget _buildCompactSummary(BuildContext context, String label, String value, Color color, {bool isBold = false}) {
+    return Column(
+      children: [
+        Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w500, fontSize: 9)),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontWeight: isBold ? FontWeight.w900 : FontWeight.bold,
+            color: color,
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 }

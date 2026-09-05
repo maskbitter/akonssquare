@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:akonssquare/Admin/category_page.dart';
-import 'package:akonssquare/Admin/admin_home.dart';
-import 'package:akonssquare/Common/database_service.dart';
-import 'package:akonssquare/Common/update_guard.dart';
-import 'package:akonssquare/main.dart';
+import 'package:akons_square/Admin/category_page.dart';
+import 'package:akons_square/Admin/admin_home.dart';
+import 'package:akons_square/Admin/settings_page.dart';
+import 'package:akons_square/Common/database_service.dart';
+import 'package:akons_square/Common/update_guard.dart';
+import 'package:akons_square/Common/build_config.dart';
+import 'package:akons_square/Common/ui_helper.dart';
+import 'package:akons_square/Common/theme_manager.dart';
+import 'package:akons_square/main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-
-import 'package:akonssquare/main.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:akons_square/Common/share_helper.dart';
 import 'dart:async';
 
 class OperatorDashboard extends StatefulWidget {
@@ -23,6 +25,7 @@ class OperatorDashboard extends StatefulWidget {
 class _OperatorDashboardState extends State<OperatorDashboard> {
   int _currentIndex = 0;
   int _categoryInitialSubTab = 0;
+  String _appName = "";
   StreamSubscription? _userSessionSubscription;
   StreamSubscription? _dbVersionSubscription;
   final PageController _pageController = PageController();
@@ -31,8 +34,18 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
   @override
   void initState() {
     super.initState();
+    _loadAppName();
     _startSessionListener();
     _startDBVersionListener();
+  }
+
+  Future<void> _loadAppName() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _appName = packageInfo.appName;
+      });
+    }
   }
 
   @override
@@ -47,7 +60,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
       if (snap.exists) {
         double currentVer = snap['dbVersion']?.toDouble() ?? 1.0;
         if (_lastDBVersion != null && currentVer != _lastDBVersion) {
-          DatabaseService.showToast(context, "System Data Updated (V$currentVer)", backgroundColor: Colors.teal);
+          DatabaseService.showToast(context, "System Data Updated (V$currentVer)");
           setState(() {}); 
         }
         _lastDBVersion = currentVer;
@@ -58,6 +71,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
   void _startSessionListener() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? currentPassword = prefs.getString('savedPassword');
+    String? currentSessionId = prefs.getString('sessionId');
 
     // Listen to the specific user document
     _userSessionSubscription = FirebaseFirestore.instance
@@ -67,13 +81,16 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
         .snapshots()
         .listen((snapshot) {
       if (snapshot.docs.isEmpty) {
+        // User deleted or DB wiped
         _handleLogout();
       } else {
-        var userData = snapshot.docs.first.data();
+        var userData = snapshot.docs.first.data() as Map<String, dynamic>;
         if (userData['password'] != currentPassword) {
           _handleLogout();
         }
       }
+    }, onError: (e) {
+      _handleLogout();
     });
   }
 
@@ -82,26 +99,53 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Center(child: Text("Logout Confirmation", style: TextStyle(fontWeight: FontWeight.bold))),
-          content: const Text("Are you sure you want to logout?", textAlign: TextAlign.center),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? ThemeManager.outlineBackground 
+                      : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                      ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) 
+                      : null,
+                ),
+                child: Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 40),
+              ),
+              const SizedBox(height: 16),
+              Text("Logout Confirmation", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.95,
+            child: Text("Are you sure you want to logout?", textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
-            Row(
-              children: [
-                Expanded(child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
-                  onPressed: () => Navigator.pop(context), child: const Text("Cancel"))),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _handleLogout();
-                    },
-                    child: const Text("Logout"),
+            AppDialogActions(
+              actions: [
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    elevation: 0,
                   ),
+                  onPressed: () => Navigator.pop(context), 
+                  child: const Text("Cancel")
+                ),
+                AppButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error, 
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _handleLogout();
+                  },
+                  child: const Text("Logout"),
                 ),
               ],
             ),
@@ -112,12 +156,17 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
   }
 
   Future<void> _handleLogout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userDocId = prefs.getString('userDocId');
-    if (userDocId != null) {
-      await DatabaseService().updateUserSession('users', userDocId, null);
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userDocId = prefs.getString('userDocId');
+      if (userDocId != null) {
+        DatabaseService().updateUserSession('users', userDocId, null).catchError((e) => null);
+      }
+      await prefs.clear();
+    } catch (e) {
+      debugPrint("Logout Error: $e");
     }
-    await prefs.clear();
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -128,105 +177,166 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> titles = ["Home", "Manage"];
+    final List<String> titles = ["Home", "Manage", "Settings"];
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 70,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "Operator Panel",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            Row(
+        automaticallyImplyLeading: false,
+        centerTitle: false,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 1),
+          child: GestureDetector(
+            onTap: null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  titles[_currentIndex],
-                  style: const TextStyle(fontSize: 11, color: Colors.teal),
+                  _appName.isEmpty ? "Loading..." : _appName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const Text(" | ", style: TextStyle(fontSize: 11, color: Colors.grey)),
-                Text(
-                  widget.username.toUpperCase(),
-                  style: TextStyle(fontSize: 11, color: Colors.teal.shade700, fontWeight: FontWeight.bold),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      titles[_currentIndex],
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                    ),
+                    Text(
+                      " | ", 
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
+                    ),
+                    Text(
+                      "Operator",
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary, 
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
-        actions: [
-          InkWell(
-            onTap: _showLogoutConfirmationDialog,
-            child: StreamBuilder<DocumentSnapshot>(
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              onPressed: () => ShareHelper.shareApp(context),
+              tooltip: "Share App",
+            ),
+            StreamBuilder<DocumentSnapshot>(
               stream: DatabaseService().getAppConfigStream(),
-              builder: (context, snapshot) {
-                return FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (context, pSnap) {
-                    String local = pSnap.hasData ? "${pSnap.data!.version}+${pSnap.data!.buildNumber}" : "...";
-                    String? remote = snapshot.data?.exists == true ? snapshot.data!['requiredVersion'] : null;
+              builder: (context, configSnap) {
+                return StreamBuilder<DocumentSnapshot>(
+                  stream: DatabaseService().getDatabaseInfoStream(),
+                  builder: (context, dbInfoSnap) {
+                    String local = appVersion; // Instant update from build_config.dart
+                    final configData = configSnap.data?.data() as Map<String, dynamic>?;
+                    String? remote = configData?['requiredVersion'];
+                    String dbVersion = "...";
+                    if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                      var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                    }
                     
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.logout, color: Colors.red, size: 20),
-                        Text(local, style: TextStyle(fontSize: 8, color: Colors.blueGrey.shade600, fontWeight: FontWeight.bold)),
-                        if (remote != null && remote != local)
-                          Text(remote, style: const TextStyle(fontSize: 8, color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                      ],
+                    bool isOutdated = false;
+                    if (remote != null && remote != local) {
+                      try {
+                        List<String> localParts = local.split('+');
+                        List<String> serverParts = remote.split('+');
+                        int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                        int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                        if (serverMain > localMain) {
+                          isOutdated = true;
+                        } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                          int localBuild = int.tryParse(localParts[1]) ?? 0;
+                          int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                          if (serverBuild > localBuild) isOutdated = true;
+                        }
+                      } catch (e) { isOutdated = remote != local; }
+                    }
+                    
+                    return InkWell(
+                      onTap: () {
+                        if (isOutdated) {
+                          String dUrl = configData?['downloadUrl'] ?? "";
+                          showUpdateLogoutDialog(
+                            context: context, 
+                            remoteVersion: remote ?? "Unknown", 
+                            downloadUrl: dUrl, 
+                            onLogout: _handleLogout
+                          );
+                        } else {
+                          _showLogoutConfirmationDialog();
+                        }
+                      },
+                      child: AppVersionInfo(
+                        version: local,
+                        dbVersion: dbVersion,
+                        latestVersion: remote,
+                        isOutdated: isOutdated,
+                        color: Theme.of(context).colorScheme.primary,
+                        secondaryColor: Theme.of(context).colorScheme.secondary,
+                        showLogoutIcon: true,
+                      ),
                     );
                   }
                 );
               }
             ),
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: UpdateGuard(
-        child: PageView(
-          controller: _pageController,
-          onPageChanged: (index) => setState(() => _currentIndex = index),
-          children: [
-            // 1. Home Tab (Same as Admin Home)
-            AdminHome(
-              onCategoryTap: (index) {
-                _pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
-                setState(() {
-                  _categoryInitialSubTab = index; // index 0 for Occupied, 1 for Vacant
-                });
-              },
-              onElectricityTap: () {
-                _pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
-                setState(() {
-                  _categoryInitialSubTab = 2; // Main Meters
-                });
-              },
-            ),
-            // 2. Manage Tab (Same as Category Manager, with restrictions)
-            CategoryPage(
-              key: ValueKey(_categoryInitialSubTab),
-              initialSubTabIndex: _categoryInitialSubTab,
-              isOperator: true,
-            ),
+            const SizedBox(width: 16),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Colors.teal,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          _pageController.animateToPage(index, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.manage_accounts), label: "Manage"),
-        ],
-      ),
-    );
+        body: UpdateGuard(
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) => setState(() => _currentIndex = index),
+            children: [
+              // 1. Home Tab (Same as Admin Home)
+              AdminHome(
+                onCategoryTap: (index) {
+                  _pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                  setState(() {
+                    _categoryInitialSubTab = index; // index 0 for Occupied, 1 for Vacant
+                  });
+                },
+                onElectricityTap: () {
+                  _pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                  setState(() {
+                    _categoryInitialSubTab = 2; // Main Meters
+                  });
+                },
+              ),
+              // 2. Manage Tab (Same as Category Manager, with restrictions)
+              CategoryPage(
+                key: ValueKey(_categoryInitialSubTab),
+                initialSubTabIndex: _categoryInitialSubTab,
+                isOperator: true,
+              ),
+              const SettingsPage(showOnlyTheme: true),
+            ],
+          ),
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          type: BottomNavigationBarType.fixed,
+          onTap: (index) {
+            if (index == 1) {
+              setState(() {
+                _categoryInitialSubTab = 0; // Default to Occupied
+              });
+            }
+            _pageController.animateToPage(index, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+          },
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: "Home"),
+            BottomNavigationBarItem(icon: Icon(Icons.manage_accounts_outlined), activeIcon: Icon(Icons.manage_accounts), label: "Manage"),
+            BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: "Settings"),
+          ],
+        ),
+      );
   }
 }
