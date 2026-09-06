@@ -22,6 +22,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:akons_square/Common/data_repository.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 bool isUserLoggedIn = false; // গ্লোবাল ফ্ল্যাগ
@@ -31,6 +32,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Initialize Data Repository for Local-First caching
+  DataRepository().init();
+
   await ThemeManager.init();
   runApp(const MyApp());
 }

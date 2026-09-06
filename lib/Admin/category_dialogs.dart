@@ -640,23 +640,29 @@ class CategoryDialogs {
                         String? profileUrl = currentProfileUrl;
                         String? nidUrl = currentNidUrl;
 
+                        // 1. Upload Images First
                         if (newProfileImage != null) {
                           profileUrl = await StorageService().uploadTenantImage(
                             imageFile: newProfileImage!, 
                             unitName: currentName, 
                             subItemId: subItemId, 
-                            imageType: 'profile'
+                            imageType: 'profile',
+                            tenantName: tenantController.text.trim(),
                           );
+                          if (profileUrl == null) throw Exception("Profile image upload returned null");
                         }
                         if (newNidImage != null) {
                           nidUrl = await StorageService().uploadTenantImage(
                             imageFile: newNidImage!, 
                             unitName: currentName, 
                             subItemId: subItemId, 
-                            imageType: 'nid'
+                            imageType: 'nid',
+                            tenantName: tenantController.text.trim(),
                           );
+                          if (nidUrl == null) throw Exception("NID image upload returned null");
                         }
 
+                        // 2. Update Firestore only if uploads succeeded
                         SharedPreferences prefs = await SharedPreferences.getInstance();
                         String actor = prefs.getString('username') ?? "Admin";
                         await _dbService.updateSubItemDetails(subItemId, {
@@ -667,13 +673,20 @@ class CategoryDialogs {
                           'profilePictureUrl': profileUrl,
                           'nidPictureUrl': nidUrl,
                         }, actor);
+                        
                         if (context.mounted) {
                           Navigator.pop(ctx);
                           DatabaseService.showToast(context, "Details Updated!");
                         }
                       } catch (e) {
                          setDialogState(() => isLoading = false);
-                         if (context.mounted) DatabaseService.showToast(context, "Update failed: $e", backgroundColor: Colors.red);
+                         String errorMsg = e.toString();
+                         if (errorMsg.contains("permission-denied")) {
+                           errorMsg = "Firebase Storage permission denied. Please check your security rules.";
+                         } else if (errorMsg.contains("network-request-failed")) {
+                           errorMsg = "Network error. Please check your internet connection.";
+                         }
+                         if (context.mounted) DatabaseService.showToast(context, "Upload failed: $errorMsg", backgroundColor: Colors.red);
                       }
                     }, 
                     child: isLoading 
@@ -820,23 +833,29 @@ class CategoryDialogs {
                       String? nidUrl;
                       
                       try {
+                        // 1. Upload Images First
                         if (profileImage != null) {
                           profileUrl = await StorageService().uploadTenantImage(
                             imageFile: profileImage!, 
                             unitName: subItemName, 
                             subItemId: subItemId, 
-                            imageType: 'profile'
+                            imageType: 'profile',
+                            tenantName: tenantController.text.trim(),
                           );
+                          if (profileUrl == null) throw Exception("Profile image upload returned null");
                         }
                         if (nidImage != null) {
                           nidUrl = await StorageService().uploadTenantImage(
                             imageFile: nidImage!, 
                             unitName: subItemName, 
                             subItemId: subItemId, 
-                            imageType: 'nid'
+                            imageType: 'nid',
+                            tenantName: tenantController.text.trim(),
                           );
+                          if (nidUrl == null) throw Exception("NID image upload returned null");
                         }
 
+                        // 2. Update Firestore only if uploads succeeded
                         SharedPreferences prefs = await SharedPreferences.getInstance();
                         await _dbService.updateSubItemStatus(
                           subItemId, 
@@ -850,7 +869,13 @@ class CategoryDialogs {
                         if (context.mounted) Navigator.pop(ctx);
                       } catch (e) {
                          setDialogState(() => isLoading = false);
-                         if (context.mounted) DatabaseService.showToast(context, "Upload failed: $e", backgroundColor: Colors.red);
+                         String errorMsg = e.toString();
+                         if (errorMsg.contains("permission-denied")) {
+                           errorMsg = "Firebase Storage permission denied. Please check your security rules.";
+                         } else if (errorMsg.contains("network-request-failed")) {
+                           errorMsg = "Network error. Please check your internet connection.";
+                         }
+                         if (context.mounted) DatabaseService.showToast(context, "Upload failed: $errorMsg", backgroundColor: Colors.red);
                       }
                     },
                     child: isLoading 

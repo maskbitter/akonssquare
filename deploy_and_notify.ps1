@@ -126,28 +126,43 @@ if ($stagedFiles.Count -gt 0) {
     Write-Host ">>> No source changes to sync." -ForegroundColor Yellow
 }
 
-# 6. Firebase Deployment (Hosting + Storage for APK)
-Write-Host "`n>>> Step 3: Firebase Deployment & Storage Upload..." -ForegroundColor Yellow
-try {
-    # Firebase Hosting
-    Write-Host ">>> Deploying to Firebase Hosting..." -ForegroundColor Cyan
-    firebase.cmd deploy --only hosting --project "akons-square"
+# 6. Version Change Check
+$lastReleaseVersion = if (Test-Path $lastReleaseFile) { (Get-Content $lastReleaseFile).Trim() } else { "0.0.0" }
 
-    # Firebase Storage (The actual update distribution)
-    Write-Host ">>> Uploading APK to Firebase Storage (Latest Release)..." -ForegroundColor Cyan
-    node scripts/upload_to_firebase_storage.js $targetApkPath $currentVersion
+# Now comparing the FULL version string (e.g., 1.0.1+25) instead of just the base version
+$shouldReleaseToFirebase = $currentVersion -ne $lastReleaseVersion
 
-    # Update local last release record
-    Set-Content $lastReleaseFile $currentVersion
+if (-not $shouldReleaseToFirebase) {
+    Write-Host "`n>>> [SKIP] Version ($currentVersion) hasn't changed since last release." -ForegroundColor Yellow
+    Write-Host ">>> Skipping Firebase upload and user notification." -ForegroundColor Yellow
+}
 
-    Write-Host "`n>>> [SUCCESS] Version $currentVersion (BN$newBN) is now LIVE!" -ForegroundColor Green
-    Write-Host ">>> Users will receive the update notification via Firebase metadata." -ForegroundColor Green
+# 7. Firebase Deployment (Hosting + Storage for APK)
+if ($shouldReleaseToFirebase) {
+    Write-Host "`n>>> Step 3: Firebase Deployment & Storage Upload..." -ForegroundColor Yellow
+    try {
+        # Firebase Hosting
+        Write-Host ">>> Deploying to Firebase Hosting..." -ForegroundColor Cyan
+        firebase.cmd deploy --only hosting --project "akons-square"
 
-    # Open release folder
-    explorer.exe (Get-Item $releaseDir).FullName
-} catch {
-    Write-Host "!!! Firebase Deployment Task failed." -ForegroundColor Red
-    Write-Host $_.Exception.Message -ForegroundColor Red
+        # Firebase Storage (The actual update distribution)
+        Write-Host ">>> Uploading APK to Firebase Storage (Latest Release)..." -ForegroundColor Cyan
+        node scripts/upload_to_firebase_storage.js $targetApkPath $currentVersion
+
+        # Update local last release record
+        Set-Content $lastReleaseFile $currentVersion
+
+        Write-Host "`n>>> [SUCCESS] Version $currentVersion (BN$newBN) is now LIVE!" -ForegroundColor Green
+        Write-Host ">>> Users will receive the update notification via Firebase metadata." -ForegroundColor Green
+
+        # Open release folder
+        explorer.exe (Get-Item $releaseDir).FullName
+    } catch {
+        Write-Host "!!! Firebase Deployment Task failed." -ForegroundColor Red
+        Write-Host $_.Exception.Message -ForegroundColor Red
+    }
+} else {
+    Write-Host "`n>>> [PROCESS FINISHED] GitHub sync complete. No Firebase update needed." -ForegroundColor Green
 }
 
 Write-Host "`n>>> [COMPLETED] ALL PROCESSES FINISHED! <<<`n" -ForegroundColor Green

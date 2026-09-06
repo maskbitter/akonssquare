@@ -9,6 +9,8 @@ import 'package:flutter/rendering.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Users/user_report_page.dart';
 
+import 'package:akons_square/Common/data_repository.dart';
+
 class CategoryPage extends StatefulWidget {
   final int initialSubTabIndex;
   final bool isOperator;
@@ -18,11 +20,15 @@ class CategoryPage extends StatefulWidget {
   State<CategoryPage> createState() => _CategoryPageState();
 }
 
-class _CategoryPageState extends State<CategoryPage> {
+class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClientMixin {
   final DatabaseService _dbService = DatabaseService();
+  final DataRepository _repository = DataRepository();
   String? _selectedFilterCategoryId;
   late DateTime _selectedDate;
   bool _isFabVisible = true;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -160,6 +166,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return DefaultTabController(
       length: 3,
       initialIndex: widget.initialSubTabIndex,
@@ -233,11 +240,10 @@ class _CategoryPageState extends State<CategoryPage> {
               Icon(Icons.filter_alt_outlined, color: Theme.of(context).colorScheme.primary, size: 18),
               const SizedBox(width: 4),
               Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: _dbService.getCategoriesStream(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const LinearProgressIndicator();
-                    var categories = snapshot.data!.docs.toList();
+                child: ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+                  valueListenable: _repository.categories,
+                  builder: (context, categoriesList, child) {
+                    var categories = categoriesList.toList();
                     categories.sort((a, b) => ((a.data() as Map)['categoryName'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['categoryName'] ?? '').toString().toLowerCase()));
                     
                     return DropdownButtonFormField<String?>(
@@ -284,11 +290,10 @@ class _CategoryPageState extends State<CategoryPage> {
         ),
         const Divider(height: 1),
         Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: _dbService.getCategoriesStream(),
-            builder: (context, categorySnapshot) {
-              if (!categorySnapshot.hasData) return const Center(child: CircularProgressIndicator());
-              var categoryDocs = categorySnapshot.data!.docs.toList();
+          child: ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+            valueListenable: _repository.categories,
+            builder: (context, allCategories, child) {
+              var categoryDocs = allCategories.toList();
               categoryDocs.sort((a, b) => ((a.data() as Map)['categoryName'] ?? '').compareTo((b.data() as Map)['categoryName'] ?? ''));
               if (_selectedFilterCategoryId != null) {
                 categoryDocs = categoryDocs.where((doc) => doc.id == _selectedFilterCategoryId).toList();
@@ -339,14 +344,14 @@ class _CategoryPageState extends State<CategoryPage> {
                 );
               }
 
-              return StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('billing_history').where('monthYear', isEqualTo: _selectedMonthStr).snapshots(),
-                builder: (context, billingSnapshot) {
+              return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+                valueListenable: _repository.billingHistory,
+                builder: (context, billingHistory, child) {
                   Set<String> paidIds = {};
                   Map<String, QueryDocumentSnapshot> historyMap = {};
-                  if (billingSnapshot.hasData) {
-                    for (var doc in billingSnapshot.data!.docs) {
-                      var data = doc.data() as Map<String, dynamic>;
+                  for (var doc in billingHistory) {
+                    var data = doc.data() as Map<String, dynamic>;
+                    if (data['monthYear'] == _selectedMonthStr) {
                       String subId = data['subItemId'] ?? '';
                       if (subId.isNotEmpty) historyMap[subId] = doc;
                       if (data['status'] != 'Due') {
@@ -366,14 +371,12 @@ class _CategoryPageState extends State<CategoryPage> {
                       String catName = catData['categoryName'] ?? 'Unnamed';
                       List assignedServices = catData['assignedServices'] ?? [];
 
-                      return StreamBuilder<QuerySnapshot>(
-                        stream: _dbService.getSubItemsStream(catId),
-                        builder: (context, subSnapshot) {
-                          if (!subSnapshot.hasData) return const LinearProgressIndicator();
-                          var subDocs = subSnapshot.data!.docs.where((doc) {
+                      return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+                        valueListenable: _repository.subItems,
+                        builder: (context, allSubItems, child) {
+                          var subDocs = allSubItems.where((doc) {
                             var d = doc.data() as Map<String, dynamic>;
-                            String s = d['status'] ?? 'Vacant'; // Strict status check
-                            return s == status;
+                            return d['categoryId'] == catId && (d['status'] ?? 'Vacant') == status;
                           }).toList();
 
                           subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
@@ -400,13 +403,13 @@ class _CategoryPageState extends State<CategoryPage> {
                             return (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal);
                           }
 
-                          return FutureBuilder<double>(
-                            future: Future.wait(subDocs.map((doc) {
-                              double monthAmt = _calculateUnitMonthTotal(doc);
-                              return _dbService.calculateTotalOutstanding(doc.id, paidIds.contains(doc.id) ? 0 : monthAmt, _selectedMonthStr);
-                            })).then((vals) => vals.fold<double>(0.0, (a, b) => a + b)),
-                            builder: (context, catTotalSnap) {
-                              double catOutstanding = catTotalSnap.data ?? 0;
+                          return ValueListenableBuilder<Map<String, double>>(
+                            valueListenable: _repository.subItemPayableCache,
+                            builder: (context, payableCache, child) {
+                              double catTotalPayable = 0;
+                              for (var doc in subDocs) {
+                                catTotalPayable += payableCache[doc.id] ?? 0;
+                              }
                               bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
                               
                               final Color accentColor = ThemeManager.getCardColor(i);
@@ -506,7 +509,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                           if (hasElectric) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                                           const SizedBox(width: 4),
                                           Text(
-                                            "Total: ৳${catOutstanding.toStringAsFixed(0)}",
+                                            "Total: ৳${catTotalPayable.toStringAsFixed(0)}",
                                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                               fontWeight: FontWeight.w900, 
                                               color: onBgColor
@@ -557,14 +560,15 @@ class _CategoryPageState extends State<CategoryPage> {
                               bool isPaid = paidIds.contains(subId);
                               bool isOccupied = status == 'Occupied';
 
-                              return FutureBuilder<Map<String, dynamic>>(
-                                future: _dbService.calculateFinancialSummary(subId, monthTotal, _selectedMonthStr, subItemData: d),
-                                builder: (context, summarySnap) {
-                                  var summary = summarySnap.data;
-                                  double totalOutstanding = (summary?['total'] ?? monthTotal).toDouble();
-                                  List pendingMonths = summary?['pendingMonths'] ?? [];
-                                  List summaryManualDues = summary?['manualDues'] ?? [];
-                                  int arrearsCount = summary?['arrearsCount'] ?? 0;
+                              return ValueListenableBuilder<Map<String, double>>(
+                                valueListenable: _repository.subItemPayableCache,
+                                builder: (context, payableCache, child) {
+                                  double totalPayable = payableCache[subId] ?? monthTotal;
+                                  
+                                  var summary = _repository.calculateFinancialSummaryLocal(subId, monthTotal, _selectedMonthStr);
+                                  List pendingMonths = summary['pendingMonths'] ?? [];
+                                  List summaryManualDues = d['manualDues'] ?? [];
+                                  int arrearsCount = summary['arrearsCount'] ?? 0;
                                   bool hasAdvance = summaryManualDues.any((m) => (m['amount'] as num).toDouble() < -0.1);
 
                                   int itemIndex = i + entry.key + 1;
@@ -1086,7 +1090,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                               if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                                               const SizedBox(width: 4),
                                               Text(
-                                                "৳${totalOutstanding.toStringAsFixed(0)}",
+                                                "৳${totalPayable.toStringAsFixed(0)}",
                                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                                   fontWeight: FontWeight.w900, 
                                                   color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, 
@@ -1452,13 +1456,13 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget _buildMainMeterTab() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _dbService.getBillingHistoryByMonth(_selectedMonthStr),
-      builder: (context, billingSnapshot) {
+    return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+      valueListenable: _repository.billingHistory,
+      builder: (context, billingHistory, child) {
         Map<String, double> paidUnitsMap = {};
-        if (billingSnapshot.hasData) {
-          for (var doc in billingSnapshot.data!.docs) {
-            var data = doc.data() as Map<String, dynamic>;
+        for (var doc in billingHistory) {
+          var data = doc.data() as Map<String, dynamic>;
+          if (data['monthYear'] == _selectedMonthStr) {
             var ed = data['electricityDetails'];
             if (ed != null) {
               String? meterNo = ed['mainMeterNo'];
@@ -1472,12 +1476,11 @@ class _CategoryPageState extends State<CategoryPage> {
           }
         }
 
-        return StreamBuilder<QuerySnapshot>(
-          stream: _dbService.getMainMetersStream(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+          valueListenable: _repository.mainMeters,
+          builder: (context, metersList, child) {
             final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
-            var meters = snapshot.data!.docs.toList();
+            var meters = metersList.toList();
             meters.sort((a, b) => ((a.data() as Map)['meterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['meterNo'] ?? '').toString().toLowerCase()));
             
             var resMeters = meters.where((d) => (d.data() as Map)['meterType'] == 'Residential').toList();
@@ -1561,7 +1564,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 _buildSubMeterExpandableSection(),
               ],
             );
-          },
+          }
         );
       }
     );
@@ -1719,12 +1722,11 @@ class _CategoryPageState extends State<CategoryPage> {
     final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: _dbService.getSubMetersStream(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const LinearProgressIndicator();
+    return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+      valueListenable: _repository.subMeters,
+      builder: (context, subMetersList, child) {
         final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
-        var subMeters = snapshot.data!.docs.toList();
+        var subMeters = subMetersList.toList();
         subMeters.sort((a, b) => ((a.data() as Map)['subMeterNo'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['subMeterNo'] ?? '').toString().toLowerCase()));
 
         return Card(

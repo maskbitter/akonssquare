@@ -67,7 +67,6 @@ flutter {
     source = "../.."
 }
 
-/*
 tasks.register("incrementBuildNumber") {
     doFirst {
         val taskNames = project.gradle.startParameter.taskNames
@@ -115,4 +114,4 @@ tasks.register("incrementBuildNumber") {
 tasks.named("preBuild") {
     dependsOn("incrementBuildNumber")
 }
-*/
+

@@ -10,18 +10,24 @@ class StorageService {
     required String unitName,
     required String subItemId,
     required String imageType, // 'profile' or 'nid'
+    required String tenantName,
   }) async {
     try {
-      String fileName = "${imageType}_picture.jpg";
+      String cleanName = tenantName.trim().isEmpty ? "Unnamed_Tenant" : tenantName.trim();
+      String fileName = imageType == 'profile' ? "${cleanName}_profile.jpg" : "${cleanName}_NID.jpg";
       String path = "current tenants nid/profile/$unitName/$subItemId/$fileName";
       
       Reference ref = _storage.ref().child(path);
-      UploadTask uploadTask = ref.putFile(imageFile);
+      // Adding metadata helps Firebase identify the file type correctly
+      UploadTask uploadTask = ref.putFile(
+        imageFile,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
       TaskSnapshot snapshot = await uploadTask;
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
       print("Error uploading image: $e");
-      return null;
+      rethrow; // Rethrow to let the UI handle the error
     }
   }
 

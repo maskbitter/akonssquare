@@ -8,6 +8,14 @@ import 'package:akons_square/Common/storage_service.dart';
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  DatabaseService() {
+    // Enable offline persistence with a large enough cache
+    _db.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+  }
+
   static const double defaultDbVersion = 0.0;
 
   // --- Normalization Helper ---
@@ -895,6 +903,7 @@ class DatabaseService {
     QuerySnapshot historySnap = await _db.collection('billing_history').where('subItemId', isEqualTo: subId).get();
     
     double totalOutstanding = 0;
+    double totalPayable = 0;
     List<Map<String, dynamic>> pendingMonths = [];
     Set<String> processedMonths = {};
     List manualDues = [];
@@ -915,22 +924,32 @@ class DatabaseService {
       }
     }
 
-    // 1. Sum recorded dues from history
+    // 1. Process history records
     for (var doc in historySnap.docs) {
       var data = doc.data() as Map<String, dynamic>;
-      String my = data['monthYear'].toString().trim().toLowerCase();
+      String my = data['monthYear'].toString().trim();
+      
+      // Filter out records from future months relative to currentMonthYear
+      if (compareMonthYear(my, currentMonthYear) > 0) continue;
+
+      double amt = (data['totalAmount'] as num).toDouble();
+      
       if (data['status'] == 'Due') {
-        totalOutstanding += (data['totalAmount'] as num).toDouble();
+        totalOutstanding += amt;
         pendingMonths.add({
           'monthYear': data['monthYear'],
           'data': {...data, 'docId': doc.id},
           'isHistory': true,
         });
+      } else if (data['status'] == 'Paid' && my.toLowerCase() == currentMonthYear.trim().toLowerCase()) {
+        // Track how much was already paid for the SELECTED month
+        totalPayable += amt;
       }
-      processedMonths.add(my);
+      
+      processedMonths.add(my.toLowerCase());
     }
 
-    // 2. Add current month (Fixed costs only) if it's not already recorded
+    // 2. Add current month estimation if not already recorded
     if (!processedMonths.contains(currentMonthYear.trim().toLowerCase())) {
       totalOutstanding += currentMonthAmount;
       pendingMonths.add({
@@ -942,27 +961,18 @@ class DatabaseService {
     // 3. Add all unrecorded manual dues/advances
     totalOutstanding += manualDuesTotal;
 
-    int arrearsCount = pendingMonths.where((m) => m['isHistory'] == true).length;
+    // Grand total payable = Everything currently outstanding (Arrears + Current Due) 
+    // + what has already been paid for the current month.
+    totalPayable += totalOutstanding;
 
+    int arrearsCount = pendingMonths.where((m) => m['isHistory'] == true).length;
+    
     // Sort pending months chronologically
-    pendingMonths.sort((a, b) {
-      try {
-        List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        var aParts = a['monthYear'].split('-');
-        var bParts = b['monthYear'].split('-');
-        int aMonth = months.indexOf(aParts[0]);
-        int bMonth = months.indexOf(bParts[0]);
-        int aYear = int.parse(aParts[1]);
-        int bYear = int.parse(bParts[1]);
-        if (aYear != bYear) return aYear.compareTo(bYear);
-        return aMonth.compareTo(bMonth);
-      } catch (e) {
-        return 0;
-      }
-    });
+    pendingMonths.sort((a, b) => compareMonthYear(a['monthYear'], b['monthYear']));
     
     return {
       'total': totalOutstanding,
+      'totalPayable': totalPayable,
       'pendingMonths': pendingMonths,
       'manualDues': manualDues,
       'arrearsCount': arrearsCount,
@@ -1387,6 +1397,22 @@ class DatabaseService {
       }
     }
     return effectiveList;
+  }
+
+  static int compareMonthYear(String myA, String myB) {
+    try {
+      final List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      var aParts = myA.split('-');
+      var bParts = myB.split('-');
+      int aMonth = months.indexOf(aParts[0]);
+      int bMonth = months.indexOf(bParts[0]);
+      int aYear = int.parse(aParts[1]);
+      int bYear = int.parse(bParts[1]);
+      if (aYear != bYear) return aYear.compareTo(bYear);
+      return aMonth.compareTo(bMonth);
+    } catch (e) {
+      return 0;
+    }
   }
 
   static String formatFullDateTime(dynamic timestamp) {

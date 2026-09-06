@@ -9,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Users/user_report_page.dart';
 
+import 'package:akons_square/Common/data_repository.dart';
+
 class AdminHome extends StatefulWidget {
   final Function(int)? onCategoryTap;
   final VoidCallback? onElectricityTap;
@@ -19,8 +21,9 @@ class AdminHome extends StatefulWidget {
   State<AdminHome> createState() => _AdminHomeState();
 }
 
-class _AdminHomeState extends State<AdminHome> {
+class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixin {
   final DatabaseService _dbService = DatabaseService();
+  final DataRepository _repository = DataRepository();
   late DateTime _selectedDate;
   String _userRole = 'operator';
   
@@ -28,10 +31,12 @@ class _AdminHomeState extends State<AdminHome> {
   bool _showBarChart = false;
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
-    DateTime now = DateTime.now();
-    _selectedDate = DateTime(now.year, now.month - 1);
+    _selectedDate = DateTime.now();
     _loadRole();
   }
 
@@ -57,21 +62,20 @@ class _AdminHomeState extends State<AdminHome> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _dbService.getCategoriesStream(),
-        builder: (context, catSnap) {
-          return StreamBuilder<QuerySnapshot>(
-            stream: _dbService.getServicesStream(),
-            builder: (context, serviceSnap) {
-              return StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('sub_items').snapshots(),
-                builder: (context, subSnap) {
-                  if (!catSnap.hasData || !serviceSnap.hasData || !subSnap.hasData) return _buildShimmerHeader();
-                  
-                  bool hasCategories = catSnap.data!.docs.isNotEmpty;
-                  bool hasServices = serviceSnap.data!.docs.isNotEmpty;
-                  bool hasSubItems = subSnap.data!.docs.isNotEmpty;
+      body: ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+        valueListenable: _repository.categories,
+        builder: (context, categories, child) {
+          return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+            valueListenable: _repository.services,
+            builder: (context, services, child) {
+              return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+                valueListenable: _repository.subItems,
+                builder: (context, subItems, child) {
+                  bool hasCategories = categories.isNotEmpty;
+                  bool hasServices = services.isNotEmpty;
+                  bool hasSubItems = subItems.isNotEmpty;
 
                   if (!hasCategories || !hasServices || !hasSubItems) {
                     return _buildEmptyStateHome(
@@ -150,7 +154,7 @@ class _AdminHomeState extends State<AdminHome> {
                                   ],
                                 ),
                               ),
-                              _buildFinancialHeader(catSnap.data!.docs, serviceSnap.data!.docs),
+                              _buildFinancialHeader(categories, services),
                             ],
 
                             if (settings['showElectricity']!)
@@ -260,46 +264,61 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildFinancialHeader(List<QueryDocumentSnapshot> categories, List<QueryDocumentSnapshot> services) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('billing_history')
-          .where('monthYear', isEqualTo: _selectedMonthStr)
-          .snapshots(),
-      builder: (context, receivedSnapshot) {
+    return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+      valueListenable: _repository.billingHistory,
+      builder: (context, allRecords, child) {
+        var receivedSnapshot = allRecords.where((d) => (d.data() as Map)['monthYear'] == _selectedMonthStr).toList();
+        
         double receivedTotal = 0;
         double rentTotal = 0;
-        if (receivedSnapshot.hasData) {
-          for (var doc in receivedSnapshot.data!.docs) {
-            var data = doc.data() as Map<String, dynamic>;
-            if (data['status'] == 'Due') continue; // Don't count recorded dues as received revenue
+        
+        for (var doc in receivedSnapshot) {
+          var data = doc.data() as Map<String, dynamic>;
+          if (data['status'] == 'Due') continue;
 
-            receivedTotal += (doc['totalAmount'] as num).toDouble();
-            List services = data.containsKey('services') ? data['services'] : [];
-            for (var s in services) {
-              if (s['name'].toString().toLowerCase().contains('rent')) {
-                rentTotal += (s['amount'] as num).toDouble();
-              }
+          receivedTotal += (doc['totalAmount'] as num).toDouble();
+          List services = data.containsKey('services') ? data['services'] : [];
+          for (var s in services) {
+            if (s['name'].toString().toLowerCase().contains('rent')) {
+              rentTotal += (s['amount'] as num).toDouble();
             }
           }
         }
 
         double utilityTotal = receivedTotal - rentTotal;
 
-        return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('sub_items')
-              .where('status', isEqualTo: 'Occupied')
-              .snapshots(),
-          builder: (context, occupiedSnapshot) {
-            if (!receivedSnapshot.hasData || !occupiedSnapshot.hasData) {
-              return _buildShimmerHeader();
-            }
+        return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+          valueListenable: _repository.subItems,
+          builder: (context, allSubItems, child) {
+            var occupiedSnapshot = allSubItems.where((d) => (d.data() as Map)['status'] == 'Occupied').toList();
 
             return FutureBuilder<double>(
-              future: _calculateDueTotal(occupiedSnapshot.data?.docs ?? [], receivedSnapshot.data!.docs, categories),
-              builder: (context, dueSnapshot) {
-                double dueTotal = dueSnapshot.data ?? 0;
-                double grandTotal = receivedTotal + dueTotal;
+              future: _calculateGrandTotal(occupiedSnapshot, receivedSnapshot, categories),
+              builder: (context, grandTotalSnapshot) {
+                double grandTotal = grandTotalSnapshot.data ?? 0;
+                
+                // Calculate receivedTotal, rentTotal, utilityTotal strictly from currently occupied units
+                double receivedTotal = 0;
+                double rentTotal = 0;
+                
+                Set<String> occupiedIds = occupiedSnapshot.map((d) => d.id).toSet();
+                for (var doc in receivedSnapshot) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  // Only count if unit is currently occupied
+                  if (!occupiedIds.contains(data['subItemId'])) continue;
+                  if (data['status'] == 'Due') continue;
+
+                  receivedTotal += (doc['totalAmount'] as num).toDouble();
+                  List services = data.containsKey('services') ? data['services'] : [];
+                  for (var s in services) {
+                    if (s['name'].toString().toLowerCase().contains('rent')) {
+                      rentTotal += (s['amount'] as num).toDouble();
+                    }
+                  }
+                }
+
+                double utilityTotal = receivedTotal - rentTotal;
+                double dueTotal = grandTotal - receivedTotal;
 
                 return Column(
                   children: [
@@ -373,7 +392,7 @@ class _AdminHomeState extends State<AdminHome> {
                                     Theme.of(context).colorScheme.primary, 
                                     Theme.of(context).colorScheme.tertiaryContainer,
                                     Icons.check_circle_outline,
-                                    () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 0)
+                                    () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 0)
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -384,7 +403,7 @@ class _AdminHomeState extends State<AdminHome> {
                                     Theme.of(context).colorScheme.primary, 
                                     Theme.of(context).colorScheme.errorContainer,
                                     Icons.pending_actions,
-                                    () => _showBillingDetailsPopup(context, receivedSnapshot.data!.docs, occupiedSnapshot.data!.docs, initialTab: 1)
+                                    () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 1)
                                   ),
                                 ),
                               ],
@@ -399,7 +418,7 @@ class _AdminHomeState extends State<AdminHome> {
                                     Theme.of(context).colorScheme.primary, 
                                     Theme.of(context).colorScheme.primaryContainer,
                                     Icons.home_work_outlined,
-                                    () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: true)
+                                    () => _showRentUtilityPopup(context, receivedSnapshot, isRent: true)
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -410,7 +429,7 @@ class _AdminHomeState extends State<AdminHome> {
                                     Theme.of(context).colorScheme.primary, 
                                     Theme.of(context).colorScheme.secondaryContainer,
                                     Icons.settings_suggest_outlined,
-                                    () => _showRentUtilityPopup(context, receivedSnapshot.data!.docs, isRent: false)
+                                    () => _showRentUtilityPopup(context, receivedSnapshot, isRent: false)
                                   ),
                                 ),
                               ],
@@ -707,18 +726,16 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildCategoryOverviewCard(Map<String, bool> settings) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('sub_items').snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return _buildShimmerHeader();
-
-        int totalDocs = snapshot.data!.docs.length;
+    return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+      valueListenable: _repository.subItems,
+      builder: (context, subItems, child) {
+        int totalDocs = subItems.length;
         int occupiedCount = 0;
         int vacantCount = 0;
 
-        for (var doc in snapshot.data!.docs) {
+        for (var doc in subItems) {
           var d = doc.data() as Map<String, dynamic>;
-          String status = d['status'] ?? 'Vacant'; // Strict status check
+          String status = d['status'] ?? 'Vacant';
           if (status == 'Occupied') {
             occupiedCount++;
           } else {
@@ -778,11 +795,10 @@ class _AdminHomeState extends State<AdminHome> {
             ),
             // Static Category List
             if (settings['showCategory']!)
-              StreamBuilder<QuerySnapshot>(
-                stream: _dbService.getCategoriesStream(),
-                builder: (context, catSnap) {
-                  if (!catSnap.hasData) return const SizedBox.shrink();
-                  var allCategories = catSnap.data!.docs.toList();
+              ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+                valueListenable: _repository.categories,
+                builder: (context, categories, child) {
+                  var allCategories = categories.toList();
                   allCategories.sort((a, b) => ((a.data() as Map)['categoryName'] ?? '').toString().toLowerCase().compareTo(((b.data() as Map)['categoryName'] ?? '').toString().toLowerCase()));
                   
                   // Filter based on individual category visibility settings
@@ -1653,39 +1669,26 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Future<double> _calculateDueTotal(List<QueryDocumentSnapshot> occupied, List<QueryDocumentSnapshot> records, List<QueryDocumentSnapshot> categories) async {
-    double totalDue = 0;
+  Future<double> _calculateGrandTotal(List<QueryDocumentSnapshot> occupied, List<QueryDocumentSnapshot> records, List<QueryDocumentSnapshot> categories) async {
+    double grandTotal = 0;
     
-    // Map to quickly find existing records for the selected month
-    Map<String, QueryDocumentSnapshot> recordMap = {
-      for (var doc in records) (doc.data() as Map)['subItemId']: doc
-    };
-
     for (var subDoc in occupied) {
       String subId = subDoc.id;
       
       // Calculate month estimate (Fixed costs)
-      double estimatedMonthAmount = await _calculateSingleDue(subDoc, categories: categories, isCurrentMonth: true);
+      double estimatedMonthAmount = await _calculateSingleMonthEstimate(subDoc, categories: categories);
       
-      // calculateFinancialSummary handles arrears and current records internally.
-      // If a record exists for the selected month, it's used. Otherwise, estimatedMonthAmount is used.
       var summary = await _dbService.calculateFinancialSummary(subId, estimatedMonthAmount, _selectedMonthStr);
-      totalDue += summary['total'] as double;
+      grandTotal += (summary['totalPayable'] as num).toDouble();
     }
-    return totalDue;
+    return grandTotal;
   }
 
-  Future<double> _calculateSingleDue(QueryDocumentSnapshot subDoc, {List<QueryDocumentSnapshot>? categories, QueryDocumentSnapshot? existingRecord, bool isCurrentMonth = false}) async {
-    // Priority: If a record (Due/Paid) already exists for this month, use its stored total.
-    if (existingRecord != null) {
-      return ((existingRecord.data() as Map)['totalAmount'] as num).toDouble();
-    }
-
+  Future<double> _calculateSingleMonthEstimate(QueryDocumentSnapshot subDoc, {List<QueryDocumentSnapshot>? categories}) async {
     var subData = subDoc.data() as Map<String, dynamic>;
     String catId = subData['categoryId'] ?? '';
     if (catId.isEmpty) return 0;
 
-    // Use pre-fetched categories list if available to avoid Firestore calls
     Map<String, dynamic>? catData;
     if (categories != null) {
       try {
@@ -1713,11 +1716,6 @@ class _AdminHomeState extends State<AdminHome> {
 
     double servicesSum = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
     
-    // Manual Dues
-    List manualDues = subData['manualDues'] ?? [];
-    List filteredManualDues = manualDues.where((m) => (m is Map && m['monthYear'] == _selectedMonthStr)).toList();
-    double mDuesSum = filteredManualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
-
     var ed = subData['electricityDetails'];
     double eBill = 0;
     if (ed != null && ed['isStopped'] != true) {
@@ -1727,10 +1725,8 @@ class _AdminHomeState extends State<AdminHome> {
       eBill = (present - last) * rate;
     }
 
-    // Only count eBill and manualDues if we are estimating the selected month's due
-    // calculateTotalOutstanding handles arrears separately.
-    double estimatedMonthAmount = servicesSum + eBill + mDuesSum;
-    
-    return await _dbService.calculateTotalOutstanding(subDoc.id, estimatedMonthAmount, _selectedMonthStr);
+    // Return fixed costs only (services + electricity). 
+    // Manual dues are handled by calculateFinancialSummary internally.
+    return servicesSum + eBill;
   }
 }
