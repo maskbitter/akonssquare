@@ -602,9 +602,9 @@ extension BillingServiceDialogs on CategoryDialogs {
     DateTime selectedDate = DateTime(now.year, now.month - 1);
     final List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     bool isLoading = false;
-    bool clearManualDues = true; // Default to clear manual dues on payment
 
     Set<String> selectedMonthIds = {};
+    Set<int> selectedManualDueIndices = {};
     bool isCurrentSelected = true;
 
     showDialog(
@@ -620,26 +620,24 @@ extension BillingServiceDialogs on CategoryDialogs {
             List<QueryDocumentSnapshot> allRecords = snapshot.data?.docs ?? [];
             List<QueryDocumentSnapshot> otherDues = allRecords.where((d) {
               var data = d.data() as Map;
-              return data['status'] == 'Due' && data['monthYear'] != monthYear;
+              String status = data['status']?.toString() ?? 'Paid';
+              String my = data['monthYear']?.toString().trim() ?? "";
+              return status == 'Due' && my != monthYear.trim();
             }).toList();
 
-            QueryDocumentSnapshot? currentRecord = allRecords.where((d) => (d.data() as Map)['monthYear'] == monthYear).firstOrNull;
-            String? currentStatus = currentRecord != null ? (currentRecord.data() as Map)['status'] : null;
+            QueryDocumentSnapshot? currentRecord = allRecords.where((d) => 
+                (d.data() as Map)['monthYear']?.toString().trim() == monthYear.trim()).firstOrNull;
+            String currentStatus = currentRecord != null 
+                ? ((currentRecord.data() as Map)['status']?.toString() ?? 'Paid') 
+                : 'None';
             bool isPaid = currentStatus == 'Paid';
             bool hasDue = currentStatus == 'Due';
-            String? dueDocId = hasDue ? currentRecord!.id : null;
             
             // Auto-deselect current month if already paid
             if (isPaid && isCurrentSelected) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 setDialogState(() => isCurrentSelected = false);
               });
-            }
-            double otherDuesSelectedSum = 0;
-            for (var d in otherDues) {
-              if (selectedMonthIds.contains(d.id)) {
-                otherDuesSelectedSum += ((d.data() as Map)['totalAmount'] as num).toDouble();
-              }
             }
 
             double lastRead = (electricityDetails?['lastReading'] ?? 0).toDouble();
@@ -648,373 +646,430 @@ extension BillingServiceDialogs on CategoryDialogs {
             double dynamicElecBill = (currentRead - lastRead) * unitRate;
             if (dynamicElecBill < 0) dynamicElecBill = 0;
 
+            // Calculations for Payable
+            double currentMonthTotal = houseRentTotal + dynamicElecBill;
+            
+            double selectedArrearsSum = 0;
+            for (var d in otherDues) {
+              if (selectedMonthIds.contains(d.id)) {
+                selectedArrearsSum += ((d.data() as Map)['totalAmount'] as num).toDouble();
+              }
+            }
 
+            double selectedManualAdjustmentsSum = 0;
+            for (int i = 0; i < manualDues.length; i++) {
+              if (selectedManualDueIndices.contains(i)) {
+                selectedManualAdjustmentsSum += (manualDues[i]['amount'] as num).toDouble();
+              }
+            }
 
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                      ? ThemeManager.outlineBackground 
-                      : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                      ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) 
-                      : null,
-                ),
-                child: Icon(Icons.payments_outlined, color: Theme.of(context).colorScheme.primary, size: 40),
-              ),
-              const SizedBox(height: 16),
-              Text("Payment: $subItemName", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.8,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min, 
+            double grandTotal = (isCurrentSelected && !isPaid ? currentMonthTotal : 0) + selectedArrearsSum + selectedManualAdjustmentsSum;
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Column(
                 children: [
-                Text("Select month for this payment", style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center, 
-                  children: [
-                    DropdownButton<int>(
-                      value: selectedDate.month, 
-                      items: List.generate(12, (i) => DropdownMenuItem(value: i + 1, child: Text(months[i]))), 
-                      onChanged: (v) { if (v != null) { setDialogState(() => selectedDate = DateTime(selectedDate.year, v)); } }
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                          ? ThemeManager.outlineBackground 
+                          : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                          ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) 
+                          : null,
                     ),
-                    const SizedBox(width: 20),
-                    DropdownButton<int>(
-                      value: selectedDate.year, 
-                      items: List.generate(5, (i) => DropdownMenuItem(value: now.year - 2 + i, child: Text("${now.year - 2 + i}"))), 
-                      onChanged: (v) { if (v != null) { setDialogState(() => selectedDate = DateTime(v, selectedDate.month)); } }
-                    ),
-                  ],
-                ),
-
-                const Divider(height: 24),
-
-                // Breakdown Section
-                Column(
-                  children: [
+                    child: Icon(Icons.payments_outlined, color: Theme.of(context).colorScheme.primary, size: 40),
+                  ),
+                  const SizedBox(height: 16),
+                  Text("Payment: $subItemName", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.8,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, 
+                    children: [
+                    Text("Select month for this payment", style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 8),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.center, 
                       children: [
-                        InkWell(
-                          onTap: isPaid ? null : () => setDialogState(() => isCurrentSelected = !isCurrentSelected),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        DropdownButton<int>(
+                          value: selectedDate.month, 
+                          items: List.generate(12, (i) => DropdownMenuItem(value: i + 1, child: Text(months[i]))), 
+                          onChanged: (v) { 
+                            if (v != null) { 
+                              setDialogState(() {
+                                selectedDate = DateTime(selectedDate.year, v); 
+                                isCurrentSelected = true; // Reset to checked by default when month changes
+                              }); 
+                            } 
+                          }
+                        ),
+                        const SizedBox(width: 20),
+                        DropdownButton<int>(
+                          value: selectedDate.year, 
+                          items: List.generate(5, (i) => DropdownMenuItem(value: now.year - 2 + i, child: Text("${now.year - 2 + i}"))), 
+                          onChanged: (v) { 
+                            if (v != null) { 
+                              setDialogState(() {
+                                selectedDate = DateTime(v, selectedDate.month); 
+                                isCurrentSelected = true; // Reset to checked by default when year changes
+                              }); 
+                            } 
+                          }
+                        ),
+                      ],
+                    ),
+
+                    const Divider(height: 24),
+
+                    // Current Month Breakdown
+                    InkWell(
+                      onTap: isPaid ? null : () => setDialogState(() => isCurrentSelected = !isCurrentSelected),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
                               Checkbox(
                                 value: isCurrentSelected, 
-                                onChanged: isPaid ? null : (v) => setDialogState(() => isCurrentSelected = v ?? true)
+                                activeColor: Theme.of(context).colorScheme.primary,
+                                onChanged: isPaid ? null : (v) => setDialogState(() => isCurrentSelected = v ?? false)
                               ),
-                              Text("Current Month", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
-                              if (isPaid) ...[
-                                const SizedBox(width: 4),
-                                const Icon(Icons.check_circle, color: Colors.green, size: 14),
-                                const Text(" Paid", style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
-                              ] else if (hasDue) ...[
-                                const SizedBox(width: 4),
-                                const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 14),
-                                const Text(" Due", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
-                              ],
+                              Expanded(
+                                child: Text(
+                                  "Current Month: $monthYear ${isPaid ? '(Paid)' : ''}", 
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: isPaid ? Colors.grey : null
+                                  )
+                                )
+                              ),
                             ],
                           ),
-                        ),
-                        if (otherDues.isNotEmpty)
-                          TextButton(
-                            onPressed: () {
-                              setDialogState(() {
-                                if (selectedMonthIds.length == otherDues.length) {
-                                  selectedMonthIds.clear();
-                                } else {
-                                  selectedMonthIds.addAll(otherDues.map((d) => d.id));
-                                }
-                              });
-                            }, 
-                            child: Text(selectedMonthIds.length == otherDues.length ? "Deselect All" : "Select All Dues", style: const TextStyle(fontSize: 10))
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-
-                    // House Rent (if available)
-
-                    ...services.where((s) => s['name'].toString().toLowerCase().contains('rent')).map((s) => 
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: CategoryDialogs._buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(1)}", isBold: true),
-                      )
-                    ),
-
-                    // Other Services
-                    ...services.where((s) => !s['name'].toString().toLowerCase().contains('rent')).map((s) => 
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: CategoryDialogs._buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(1)}"),
-                      )
-                    ),
-
-                    if (electricityDetails != null && electricityDetails['isStopped'] != true) ...[
-                      const SizedBox(height: 6),
-                      CategoryDialogs._buildRow(context, "Sub-Meter Bill:", "৳${dynamicElecBill.toStringAsFixed(1)}", isBold: true),
-                    ],
-
-                    const Divider(height: 16),
-                    CategoryDialogs._buildRow(context, "Total:", "৳${(houseRentTotal + dynamicElecBill).toStringAsFixed(1)}", isBold: true),
-                    const Divider(height: 16),
-
-                    // Manual Dues/Advances Breakdown
-                    Builder(builder: (context) {
-                      var filtered = manualDues.where((d) => (d is Map && d['monthYear']?.toString().trim() == monthYear.trim())).toList();
-                      if (filtered.isEmpty) return const SizedBox.shrink();
-                      return Column(
-                        children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text("Adjust Dues/Adv ($monthYear):", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
-                          ),
-                          ...filtered.map((d) {
-                            double amt = (d['amount'] as num).toDouble();
-                            bool isAdv = amt < 0;
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: CategoryDialogs._buildRow(
-                                context, 
-                                "${d['reason']}${isAdv ? ' (Adv)' : ''}:", 
-                                "৳${amt.abs().toStringAsFixed(1)}", 
-                                color: isAdv ? Colors.green : Colors.red
-                              ),
-                            );
-                          }),
-                          const Divider(height: 16),
-                        ],
-                      );
-                    }),
-
-                    // Previous Dues from Billing History
-                    if (otherDues.isNotEmpty) ...[
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text("Previous Dues (Pending):", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.red)),
-                      ),
-                      ...otherDues.map((d) {
-                        var dData = d.data() as Map<String, dynamic>;
-                        bool isSelected = selectedMonthIds.contains(d.id);
-                        return InkWell(
-                          onTap: () => setDialogState(() {
-                            if (isSelected) selectedMonthIds.remove(d.id);
-                            else selectedMonthIds.add(d.id);
-                          }),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
+                          if (isCurrentSelected) Padding(
+                            padding: const EdgeInsets.only(left: 48, right: 8),
+                            child: Column(
                               children: [
-                                SizedBox(
-                                  width: 24, height: 24,
-                                  child: Checkbox(
-                                    value: isSelected, 
-                                    activeColor: Colors.red,
-                                    onChanged: (v) => setDialogState(() {
-                                      if (v == true) selectedMonthIds.add(d.id);
-                                      else selectedMonthIds.remove(d.id);
-                                    })
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(child: CategoryDialogs._buildRow(
-                                  context, 
-                                  "${dData['monthYear']}:", 
-                                  "৳${(dData['totalAmount'] as num).toDouble().toStringAsFixed(1)}", 
-                                  color: Colors.red
+                                ...services.map((s) => Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2),
+                                  child: CategoryDialogs._buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(1)}"),
                                 )),
+                                if (electricityDetails != null && electricityDetails['isStopped'] != true)
+                                  CategoryDialogs._buildRow(context, "Sub-Meter Bill:", "৳${dynamicElecBill.toStringAsFixed(1)}"),
+                                const Divider(),
+                                CategoryDialogs._buildRow(context, "Sub-Total:", "৳${currentMonthTotal.toStringAsFixed(1)}", isBold: true),
                               ],
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+
+                    // Pending Arrears (Previous months with 'Due' status)
+                    if (otherDues.isNotEmpty) ...[
+                      const Divider(height: 24),
+                      Text("Pending Arrears:", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.red)),
+                      const SizedBox(height: 8),
+                      ...otherDues.map((d) {
+                        var data = d.data() as Map;
+                        double amt = (data['totalAmount'] as num).toDouble();
+                        String my = data['monthYear']?.toString() ?? "Unknown";
+                        bool isChecked = selectedMonthIds.contains(d.id);
+                        return InkWell(
+                          onTap: () => setDialogState(() {
+                            if (isChecked) selectedMonthIds.remove(d.id); else selectedMonthIds.add(d.id);
+                          }),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: isChecked, 
+                                activeColor: Colors.red,
+                                onChanged: (v) => setDialogState(() {
+                                  if (v == true) selectedMonthIds.add(d.id); else selectedMonthIds.remove(d.id);
+                                })
+                              ),
+                              Expanded(child: CategoryDialogs._buildRow(context, "$my Due:", "৳${amt.toStringAsFixed(1)}", color: Colors.red)),
+                            ],
+                          ),
                         );
                       }),
-                      const Divider(height: 16),
                     ],
+
+                    // Manual Dues/Advances
+                    if (manualDues.isNotEmpty) ...[
+                      const Divider(height: 24),
+                      Text("Manual Dues / Advances:", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      ...manualDues.asMap().entries.map((entry) {
+                        int idx = entry.key;
+                        var d = entry.value as Map;
+                        double amt = (d['amount'] as num).toDouble();
+                        bool isAdv = amt < 0;
+                        bool isChecked = selectedManualDueIndices.contains(idx);
+                        return InkWell(
+                          onTap: () => setDialogState(() {
+                            if (isChecked) selectedManualDueIndices.remove(idx); else selectedManualDueIndices.add(idx);
+                          }),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: isChecked, 
+                                activeColor: isAdv ? Colors.green : Colors.red,
+                                onChanged: (v) => setDialogState(() {
+                                  if (v == true) selectedManualDueIndices.add(idx); else selectedManualDueIndices.remove(idx);
+                                })
+                              ),
+                              Expanded(
+                                child: CategoryDialogs._buildRow(
+                                  context, 
+                                  "${d['reason']} (${d['monthYear']}):", 
+                                  "৳${amt.abs().toStringAsFixed(1)}", 
+                                  color: isAdv ? Colors.green : Colors.red
+                                )
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                    
+                    const Divider(height: 32),
+                    CategoryDialogs._buildRow(
+                      context, 
+                      "Total Payable:", 
+                      "৳${grandTotal.toStringAsFixed(1)}", 
+                      isBold: true, 
+                      fontSize: 22,
+                      color: Theme.of(context).colorScheme.primary
+                    ),
+
+                    if (notes != null && notes!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.note_alt_outlined, size: 20, color: Theme.of(context).colorScheme.error),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                "Unit Notes: $notes", 
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onErrorContainer,
+                                  fontWeight: FontWeight.bold
+                                )
+                              )
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 12),
+                    if (!isFuture) ...[
+                       TextField(
+                        controller: noteController, 
+                        onChanged: (val) => setDialogState(() => letterCount = CategoryDialogs._getLetterCount(val)),
+                        style: Theme.of(context).textTheme.bodyLarge,
+                        maxLength: 100,
+                        decoration: InputDecoration(
+                          labelText: "Notes", 
+                          hintText: "Add payment notes",
+                          prefixIcon: const Icon(Icons.note_alt_outlined),
+                          isDense: true,
+                          counterText: "$letterCount / 100",
+                          counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: letterCount > 100 ? Theme.of(context).colorScheme.error : null),
+                        ),
+                      ),
+                    ] else
+                       Text("Future payments cannot be recorded.", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+
+                    // --- HISTORY SECTION ---
+                    FutureBuilder<QuerySnapshot>(
+                      future: CategoryDialogs._dbService.getPaymentRecords(subItemId, monthYear),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                          return Column(
+                            children: [
+                              const SizedBox(height: 16),
+                              const Divider(),
+                              Text("Payment History", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                              const SizedBox(height: 8),
+                              ...snapshot.data!.docs.asMap().entries.map((entry) {
+                                var hData = entry.value.data() as Map<String, dynamic>;
+                                int idx = entry.key + 1;
+                                String status = hData['status'] ?? 'Paid';
+                                bool isDue = status == 'Due';
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Text("$idx. ${isDue ? 'Due for' : 'Paid by'}: ${hData['TenantName'] ?? TenantName}", 
+                                        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: isDue ? Colors.red : null)),
+                                      Text("${isDue ? 'Recorded at' : 'Paid at'}: ${CategoryDialogs._formatTimestamp((hData['paidAt'] ?? hData['createdAt']) as Timestamp?)}", 
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isDue ? Colors.red.withOpacity(0.8) : null)),
+                                      if ((hData['paymentNotes'] ?? '').toString().isNotEmpty)
+                                        Text("Note: ${hData['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: isDue ? Colors.red.withValues(alpha: 0.7) : null)),
+                                      const SizedBox(height: 4),
+                                    ],
+                                  ),
+                                );
+
+                              }),
+                            ],
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+
                   ],
                 ),
-                
-                // Calculate Total Payable including manual dues AND selected previous dues
-                Builder(builder: (context) {
-                  var filtered = manualDues.where((d) => (d is Map && d['monthYear']?.toString().trim() == monthYear.trim())).toList();
-                  double mDuesSum = filtered.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
-                  double currentTotal = houseRentTotal + dynamicElecBill + mDuesSum;
-                  double grandTotal = (isCurrentSelected ? currentTotal : 0) + otherDuesSelectedSum;
-                  return CategoryDialogs._buildRow(context, "Total Payable:", "৳${grandTotal.toStringAsFixed(1)}", isBold: true, fontSize: 18);
-                }),
-
-
-
-                if (manualDues.isNotEmpty)
-                  CheckboxListTile(
-                    title: const Text("Clear all pending dues with this payment?", style: TextStyle(fontSize: 12)),
-                    value: clearManualDues,
-                    onChanged: (val) => setDialogState(() => clearManualDues = val ?? true),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                
-                if (notes != null && notes!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.note_alt_outlined, size: 20, color: Theme.of(context).colorScheme.error),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "Unit Notes: $notes", 
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onErrorContainer,
-                              fontWeight: FontWeight.bold
-                            )
-                          )
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 12),
-                if (!isFuture) ...[
-                   TextField(
-                    controller: noteController, 
-                    onChanged: (val) => setDialogState(() => letterCount = CategoryDialogs._getLetterCount(val)),
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    maxLength: 100,
-                    decoration: InputDecoration(
-                      labelText: "Notes", 
-                      hintText: "Add payment notes",
-                      prefixIcon: const Icon(Icons.note_alt_outlined),
-                      isDense: true,
-                      counterText: "$letterCount / 100",
-                      counterStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: letterCount > 100 ? Theme.of(context).colorScheme.error : null),
-                    ),
-                  ),
-                ] else
-                   Text("Future payments cannot be recorded.", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
-
-                // --- HISTORY SECTION ---
-                FutureBuilder<QuerySnapshot>(
-                  future: CategoryDialogs._dbService.getPaymentRecords(subItemId, monthYear),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                      return Column(
-                        children: [
-                          const SizedBox(height: 16),
-                          const Divider(),
-                          Text("Payment History", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                          const SizedBox(height: 8),
-                          ...snapshot.data!.docs.asMap().entries.map((entry) {
-                            var hData = entry.value.data() as Map<String, dynamic>;
-                            int idx = entry.key + 1;
-                            String status = hData['status'] ?? 'Paid';
-                            bool isDue = status == 'Due';
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text("$idx. ${isDue ? 'Due for' : 'Paid by'}: ${hData['TenantName'] ?? TenantName}", 
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(color: isDue ? Colors.red : null)),
-                                  Text("${isDue ? 'Recorded at' : 'Paid at'}: ${CategoryDialogs._formatTimestamp((hData['paidAt'] ?? hData['createdAt']) as Timestamp?)}", 
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isDue ? Colors.red.withOpacity(0.8) : null)),
-                                  if ((hData['paymentNotes'] ?? '').toString().isNotEmpty)
-                                    Text("Note: ${hData['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: isDue ? Colors.red.withValues(alpha: 0.7) : null)),
-                                  const SizedBox(height: 4),
-                                ],
-                              ),
-                            );
-
-                          }),
-                        ],
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-
-              ],
+              ),
             ),
-          ),
-        ),
-        actions: [
-                AppDialogActions(
-                  actions: [
-                    if (isFuture) 
-                      AppButton(
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Theme.of(context).colorScheme.onError, 
-                            backgroundColor: Theme.of(context).colorScheme.error,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                          onPressed: () => Navigator.pop(ctx), 
-                          child: const Text("Cancel")
-                      )
-                    else ...[
+            actions: [
+              AppDialogActions(
+                actions: [
+                  if (isFuture)
+                    AppButton(
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.onError,
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text("Cancel"),
+                    )
+                  else ...[
+                    AppButton(
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.onError,
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text("Cancel"),
+                    ),
+                    if (currentRecord == null || hasDue)
                       AppButton(
                         style: ElevatedButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.onError,
-                          backgroundColor: Theme.of(context).colorScheme.error,
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
                         ),
-                        onPressed: () => Navigator.pop(ctx), 
-                        child: const Text("Cancel")
+                        onPressed: (isLoading || letterCount > 100 || !isCurrentSelected || hasDue) ? null : () {
+                          if (electricityDetails != null && currentRead < lastRead) {
+                            CategoryDialogs._showValidationWarning(context, "Reading cannot be lower than previous.");
+                            return;
+                          }
+                          showConfirmDialog(
+                            context: context,
+                            title: "Mark as Due?",
+                            content: "Are you sure you want to mark $monthYear as Due?",
+                            icon: Icons.warning_amber_rounded,
+                            confirmText: "Mark Due",
+                            confirmColor: Colors.orange,
+                            onConfirm: () async {
+                              setDialogState(() => isLoading = true);
+                              SharedPreferences prefs = await SharedPreferences.getInstance();
+                              String actor = prefs.getString('username') ?? "Unknown";
+                              String note = noteController.text.trim().isEmpty ? "Marked as Due" : noteController.text.trim();
+                              
+                              Map<String, dynamic>? finalElecDetails;
+                              if (electricityDetails != null) {
+                                finalElecDetails = Map<String, dynamic>.from(electricityDetails);
+                                finalElecDetails['presentReading'] = currentRead;
+                              }
+
+                              await CategoryDialogs._dbService.addBillingRecord({
+                                'subItemId': subItemId, 
+                                'subItemName': subItemName, 
+                                'TenantName': TenantName, 
+                                'nidNumber': nidNumber,
+                                'profilePictureUrl': profilePictureUrl,
+                                'monthYear': monthYear, 
+                                'houseRentTotal': houseRentTotal,
+                                'electricityBill': dynamicElecBill,
+                                'electricityDetails': finalElecDetails,
+                                'manualDues': [], // Manual dues are handled separately in granular mode
+                                'totalAmount': currentMonthTotal, 
+                                'services': services, 
+                                'paymentNotes': note,
+                                'status': 'Due',
+                                'paidAt': null
+                              }, actor);
+
+                              if (finalElecDetails != null) {
+                                double used = currentRead - lastRead;
+                                String? meterNo = finalElecDetails['mainMeterNo'];
+                                String? subMeterNo = finalElecDetails['subMeterNo'];
+                                await CategoryDialogs._dbService.updateSubItemElectricity(subItemId, {
+                                  ...finalElecDetails, 
+                                  'lastReading': currentRead, 
+                                  'updatedAt': FieldValue.serverTimestamp()
+                                }, actor);
+                                if (subMeterNo != null) await CategoryDialogs._dbService.syncSubMeterReading(subMeterNo, currentRead, actor);
+                                if (meterNo != null && used > 0) await CategoryDialogs._dbService.incrementMainMeterPaidUnits(meterNo, used);
+                              }
+                              if (context.mounted) {
+                                Navigator.pop(ctx);
+                                DatabaseService.showToast(context, "Marked as Due Successfully!");
+                              }
+                            },
+                          );
+                        },
+                        child: isLoading 
+                          ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : Text(hasDue ? "Marked due" : "Due"),
                       ),
-                      if (currentRecord == null) // Show "Due" button only if no record exists for this month
-                        AppButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          onPressed: (isLoading || letterCount > 100) ? null : () {
-                            if (electricityDetails != null && currentRead < lastRead) {
-                              CategoryDialogs._showValidationWarning(context, "Reading cannot be lower than previous.");
-                              return;
-                            }
-                            
-                            showConfirmDialog(
-                              context: context,
-                              title: "Mark as Due?",
-                              content: "Are you sure you want to mark this payment as Due for $subItemName ($monthYear)?",
-                              icon: Icons.warning_amber_rounded,
-                              confirmText: "Mark Due",
-                              confirmColor: Colors.orange,
-                              onConfirm: () async {
-                                setDialogState(() => isLoading = true);
-                                SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                String actor = prefs.getString('username') ?? "Unknown";
-                                String note = noteController.text.trim().isEmpty ? "Marked as Due" : noteController.text.trim();
-                                
+                    if (currentRecord == null || selectedMonthIds.isNotEmpty || selectedManualDueIndices.isNotEmpty)
+                      AppButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6D4C41),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        ),
+                        onPressed: (isLoading || letterCount > 100 || (isCurrentSelected && isFuture) || grandTotal == 0) ? null : () {
+                          if (isCurrentSelected && electricityDetails != null && currentRead < lastRead) {
+                            CategoryDialogs._showValidationWarning(context, "Reading cannot be lower than previous.");
+                            return;
+                          }
+                          
+                          showConfirmDialog(
+                            context: context,
+                            title: "Confirm Payment?",
+                            content: "Process selected payments for a total of ৳${grandTotal.toStringAsFixed(1)}?",
+                            icon: Icons.check_circle_outline,
+                            confirmText: "Confirm",
+                            confirmColor: Theme.of(context).colorScheme.tertiary,
+                            onConfirm: () async {
+                              setDialogState(() => isLoading = true);
+                              SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                              String actor = prefs.getString('username') ?? "Unknown";
+                              String note = noteController.text.trim().isEmpty ? "In cash" : noteController.text.trim();
+
+                              // 1. Process Current Month if selected
+                              if (isCurrentSelected && !isPaid) {
                                 Map<String, dynamic>? finalElecDetails;
                                 if (electricityDetails != null) {
                                   finalElecDetails = Map<String, dynamic>.from(electricityDetails);
                                   finalElecDetails['presentReading'] = currentRead;
                                 }
-
-                                var relevantDues = manualDues.where((d) => (d is Map && d['monthYear']?.toString().trim() == monthYear.trim())).toList();
-                                double mDuesSum = relevantDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
-
                                 await CategoryDialogs._dbService.addBillingRecord({
                                   'subItemId': subItemId, 
                                   'subItemName': subItemName, 
@@ -1025,160 +1080,64 @@ extension BillingServiceDialogs on CategoryDialogs {
                                   'houseRentTotal': houseRentTotal,
                                   'electricityBill': dynamicElecBill,
                                   'electricityDetails': finalElecDetails,
-                                  'manualDues': relevantDues,
-                                  'totalAmount': houseRentTotal + dynamicElecBill + mDuesSum, 
+                                  'manualDues': [], 
+                                  'totalAmount': currentMonthTotal, 
                                   'services': services, 
                                   'paymentNotes': note,
-                                  'status': 'Due',
-                                  'paidAt': null
+                                  'status': 'Paid',
+                                  'paidAt': FieldValue.serverTimestamp()
                                 }, actor);
-
-                                if (clearManualDues && relevantDues.isNotEmpty) {
-                                  List remaining = manualDues.where((d) => !relevantDues.contains(d)).toList();
-                                  await CategoryDialogs._dbService.updateSubItemManualDues(subItemId, remaining, actor);
-                                }
 
                                 if (finalElecDetails != null) {
                                   double used = currentRead - lastRead;
                                   String? meterNo = finalElecDetails['mainMeterNo'];
                                   String? subMeterNo = finalElecDetails['subMeterNo'];
-
                                   await CategoryDialogs._dbService.updateSubItemElectricity(subItemId, {
                                     ...finalElecDetails, 
                                     'lastReading': currentRead, 
                                     'updatedAt': FieldValue.serverTimestamp()
                                   }, actor);
-
-                                  if (subMeterNo != null) {
-                                    await CategoryDialogs._dbService.syncSubMeterReading(subMeterNo, currentRead, actor);
-                                  }
-
-                                  if (meterNo != null && used > 0) {
-                                    await CategoryDialogs._dbService.incrementMainMeterPaidUnits(meterNo, used);
-                                  }
-                                }
-
-                                if (context.mounted) {
-                                  Navigator.pop(ctx);
-                                  DatabaseService.showToast(context, "Marked as Due!");
-                                }
-                              }
-                            );
-                          },
-                          child: isLoading 
-                            ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Text("Due")
-                        ),
-                      AppButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.tertiary,
-                          foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: (isLoading || letterCount > 100 || (isPaid && selectedMonthIds.isEmpty && !hasDue) || (!isPaid && !isCurrentSelected && selectedMonthIds.isEmpty)) ? null : () {
-                          if (isCurrentSelected && electricityDetails != null && currentRead < lastRead) {
-                            CategoryDialogs._showValidationWarning(context, "Reading cannot be lower than previous for final payment.");
-                            return;
-                          }
-                          
-                          showConfirmDialog(
-                            context: context,
-                            title: hasDue ? "Confirm Pay Due?" : "Confirm Payment?",
-                            content: hasDue 
-                              ? "Are you sure you want to pay the due for $subItemName ($monthYear)?" 
-                              : "Are you sure you want to record payment for $subItemName ($monthYear)?",
-                            icon: Icons.check_circle_outline,
-                            confirmText: hasDue ? "Pay Due" : "Confirm",
-                            confirmColor: Theme.of(context).colorScheme.tertiary,
-                            onConfirm: () async {
-                              setDialogState(() => isLoading = true);
-                              SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                              String actor = prefs.getString('username') ?? "Unknown";
-                              
-                              if (isCurrentSelected) {
-                                if (hasDue && dueDocId != null) {
-                                  String note = noteController.text.trim();
-                                  // If note is empty, we pass empty string to clear "Marked as Due"
-                                  await CategoryDialogs._dbService.updateBillingRecordStatus(dueDocId, 'Paid', actor, newNote: note.isEmpty ? "" : note);
-                                } else if (!isPaid) {
-                                  String note = noteController.text.trim().isEmpty ? "In cash" : noteController.text.trim();
-                                  Map<String, dynamic>? finalElecDetails;
-                                  if (electricityDetails != null) {
-                                    finalElecDetails = Map<String, dynamic>.from(electricityDetails);
-                                    finalElecDetails['presentReading'] = currentRead;
-                                  }
-                                  
-                                  var relevantDues = manualDues.where((d) => d['monthYear'] == monthYear).toList();
-                                  double mDuesSum = relevantDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
-
-                                  await CategoryDialogs._dbService.addBillingRecord({
-                                    'subItemId': subItemId, 
-                                    'subItemName': subItemName, 
-                                    'TenantName': TenantName, 
-                                    'nidNumber': nidNumber,
-                                    'profilePictureUrl': profilePictureUrl,
-                                    'monthYear': monthYear, 
-                                    'houseRentTotal': houseRentTotal,
-                                    'electricityBill': dynamicElecBill,
-                                    'electricityDetails': finalElecDetails,
-                                    'manualDues': relevantDues,
-                                    'totalAmount': houseRentTotal + dynamicElecBill + mDuesSum, 
-                                    'services': services, 
-                                    'paymentNotes': note,
-                                    'status': 'Paid',
-                                    'paidAt': FieldValue.serverTimestamp()
-                                  }, actor);
-
-                                  if (clearManualDues && relevantDues.isNotEmpty) {
-                                    List remaining = manualDues.where((d) => !relevantDues.contains(d)).toList();
-                                    await CategoryDialogs._dbService.updateSubItemManualDues(subItemId, remaining, actor);
-                                  }
-                                  
-                                  if (finalElecDetails != null) {
-                                    double used = currentRead - lastRead;
-                                    String? meterNo = finalElecDetails['mainMeterNo'];
-                                    String? subMeterNo = finalElecDetails['subMeterNo'];
-                                    await CategoryDialogs._dbService.updateSubItemElectricity(subItemId, {
-                                      ...finalElecDetails, 
-                                      'lastReading': currentRead, 
-                                      'updatedAt': FieldValue.serverTimestamp()
-                                    }, actor);
-                                    if (subMeterNo != null) {
-                                      await CategoryDialogs._dbService.syncSubMeterReading(subMeterNo, currentRead, actor);
-                                    }
-                                    if (meterNo != null && used > 0) {
-                                      await CategoryDialogs._dbService.incrementMainMeterPaidUnits(meterNo, used);
-                                    }
-                                  }
+                                  if (subMeterNo != null) await CategoryDialogs._dbService.syncSubMeterReading(subMeterNo, currentRead, actor);
+                                  if (meterNo != null && used > 0) await CategoryDialogs._dbService.incrementMainMeterPaidUnits(meterNo, used);
                                 }
                               }
 
-                              // Clear ONLY selected previous dues
+                              // 2. Process Arrears
                               if (selectedMonthIds.isNotEmpty) {
                                 await CategoryDialogs._dbService.markMultipleRecordsAsPaid(selectedMonthIds.toList(), actor);
+                              }
+
+                              // 3. Process Manual Dues/Advances
+                              if (selectedManualDueIndices.isNotEmpty) {
+                                List remainingManualDues = [];
+                                for (int i = 0; i < manualDues.length; i++) {
+                                  if (!selectedManualDueIndices.contains(i)) {
+                                    remainingManualDues.add(manualDues[i]);
+                                  }
+                                }
+                                await CategoryDialogs._dbService.updateSubItemManualDues(subItemId, remainingManualDues, actor);
                               }
                               
                               if (context.mounted) {
                                 Navigator.pop(ctx);
-                                DatabaseService.showToast(context, hasDue ? "Due Paid!" : "Payment Recorded!");
+                                DatabaseService.showToast(context, "Payment Successful!");
                               }
                             }
                           );
-                        }, 
+                        },
                         child: isLoading 
-                          ? SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onTertiary))
-                          : Text(hasDue ? "Pay Due" : "Confirm")
+                          ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text("Confirm"),
                       ),
-                    ],
                   ],
-                ),
-        ],
-        );
-      }
+                ],
+              ),
+            ],
+          );
+        },
+      );
+    }),
     );
-  }),
-);
-
   }
 
   void showManualDueDialog({required BuildContext context, required String subItemId, required String subItemName, required List manualDues, required String monthYear}) {

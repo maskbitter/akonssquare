@@ -374,20 +374,29 @@ class _UpdateProgressDialogState extends State<UpdateProgressDialog> {
 
   void _startDownload() {
     try {
-      final String filename = "update_${DateTime.now().millisecondsSinceEpoch}.apk";
+      // Using a stable filename for better FileProvider mapping reliability
+      const String filename = "akons_square_update.apk";
       print("OTA: Starting download from ${widget.url} to $filename");
+      
       _subscription = OtaUpdate().execute(
         widget.url, 
         destinationFilename: filename,
-        usePackageInstaller: true, // Required for Android 14+
+        // MUST match the authority in AndroidManifest.xml
+        androidProviderAuthority: "com.example.akonssquare.ota_update_provider",
+        usePackageInstaller: true, 
       ).listen(
         (OtaEvent event) {
-          print("OTA Status: ${event.status}, Value: ${event.value}");
+          print("OTA Progress: Status=${event.status}, Value=${event.value}");
           
           if (event.status == OtaStatus.INSTALLING && !_isDismissed) {
+            print("OTA: Installation started, dismissing progress dialog.");
             _isDismissed = true;
             Navigator.pop(context);
             return;
+          }
+
+          if (event.status == OtaStatus.ALREADY_RUNNING_ERROR) {
+            print("OTA: Update already in progress.");
           }
 
           if (!mounted) return;
@@ -395,14 +404,16 @@ class _UpdateProgressDialogState extends State<UpdateProgressDialog> {
           setState(() {
             currentEvent = event;
             if (event.status == OtaStatus.DOWNLOAD_ERROR || 
-                       event.status == OtaStatus.INTERNAL_ERROR ||
-                       event.status == OtaStatus.PERMISSION_NOT_GRANTED_ERROR) {
-              error = "Update failed: ${event.status}. Please check internet or permissions.";
+                event.status == OtaStatus.INTERNAL_ERROR ||
+                event.status == OtaStatus.PERMISSION_NOT_GRANTED_ERROR ||
+                event.status == OtaStatus.CHECKSUM_ERROR) {
+              print("OTA Terminal Error: ${event.status}");
+              error = "Update failed: ${event.status}. Please check connection or permissions.";
             }
           });
         },
         onError: (e) {
-          print("OTA Error: $e");
+          print("OTA Stream Error: $e");
           if (mounted) {
             setState(() {
               error = "Download error: $e";

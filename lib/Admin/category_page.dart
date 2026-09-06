@@ -383,7 +383,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             return const SizedBox.shrink();
                           }
 
-                          double _calculateUnitMonthTotal(QueryDocumentSnapshot doc) {
+                            double _calculateUnitMonthTotal(QueryDocumentSnapshot doc) {
                             var existingRecord = historyMap[doc.id];
                             if (existingRecord != null) {
                                return ((existingRecord.data() as Map)['totalAmount'] as num).toDouble();
@@ -396,12 +396,8 @@ class _CategoryPageState extends State<CategoryPage> {
                             }
                             List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: d['overriddenServices'] ?? []);
                             
-                            // Filter manual dues strictly by selected month
-                            List allManualDues = d['manualDues'] ?? [];
-                            List filteredManualDues = allManualDues.where((m) => (m is Map && m['monthYear']?.toString().trim() == _selectedMonthStr.trim())).toList();
-                            double mDuesSum = filteredManualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
-                            
-                            return (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal + mDuesSum);
+                            // Manual dues are now handled by calculateFinancialSummary to ensure all pending ones are counted
+                            return (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal);
                           }
 
                           return FutureBuilder<double>(
@@ -554,19 +550,22 @@ class _CategoryPageState extends State<CategoryPage> {
                                 if (ed != null && ed['isStopped'] != true) {
                                   eBillAmount = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
                                 }
-                                List manualDues = d['manualDues'] ?? [];
-                                List filteredManualDues = manualDues.where((m) => (m is Map && m['monthYear']?.toString().trim() == _selectedMonthStr.trim())).toList();
-                                mDuesSum = filteredManualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
-                                monthTotal = servicesTotal + eBillAmount + mDuesSum;
+                                // Manual dues are now accounted for by calculateFinancialSummary
+                                monthTotal = servicesTotal + eBillAmount;
                               }
 
                               bool isPaid = paidIds.contains(subId);
                               bool isOccupied = status == 'Occupied';
 
-                              return FutureBuilder<double>(
-                                future: _dbService.calculateTotalOutstanding(subId, monthTotal, _selectedMonthStr),
-                                builder: (context, outstandingSnap) {
-                                  double totalOutstanding = outstandingSnap.data ?? monthTotal;
+                              return FutureBuilder<Map<String, dynamic>>(
+                                future: _dbService.calculateFinancialSummary(subId, monthTotal, _selectedMonthStr, subItemData: d),
+                                builder: (context, summarySnap) {
+                                  var summary = summarySnap.data;
+                                  double totalOutstanding = (summary?['total'] ?? monthTotal).toDouble();
+                                  List pendingMonths = summary?['pendingMonths'] ?? [];
+                                  List summaryManualDues = summary?['manualDues'] ?? [];
+                                  int arrearsCount = summary?['arrearsCount'] ?? 0;
+                                  bool hasAdvance = summaryManualDues.any((m) => (m['amount'] as num).toDouble() < -0.1);
 
                                   int itemIndex = i + entry.key + 1;
                                   final Color itemAccentColor = ThemeManager.getCardColor(itemIndex, isSubCard: true);
@@ -792,33 +791,34 @@ class _CategoryPageState extends State<CategoryPage> {
 
                                               ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
 
-                                              if (manualDues.isNotEmpty) ...[
+                                              if (summaryManualDues.isNotEmpty) ...[
                                                 const SizedBox(height: 12),
-                                                Builder(builder: (context) {
-                                                  var filtered = manualDues.where((m) => (m is Map && m['monthYear']?.toString().trim() == _selectedMonthStr.trim())).toList();
-                                                  if (filtered.isEmpty) return const SizedBox.shrink();
-                                                  return Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
-                                                      const SizedBox(height: 4),
-                                                      ...filtered.map((m) => Container(
-                                                        margin: const EdgeInsets.only(bottom: 4),
-                                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                        decoration: BoxDecoration(
-                                                          color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
-                                                          borderRadius: BorderRadius.circular(8),
-                                                          border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
-                                                        ),
-                                                        child: Row(
-                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                          children: [
-                                                            Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodySmall)),
-                                                            Text("৳${(m['amount'] as num).toDouble().toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
-                                                          ],
-                                                        ),
-                                                      )),
-                                                    ],
+                                                Text(
+                                                  "Additional Dues", 
+                                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                    color: Theme.of(context).colorScheme.error, 
+                                                    fontWeight: FontWeight.bold
+                                                  )
+                                                ),
+                                                const SizedBox(height: 4),
+                                                ...summaryManualDues.map((m) {
+                                                  double amt = (m['amount'] as num).toDouble();
+                                                  bool isAdv = amt < 0;
+                                                  return Container(
+                                                    margin: const EdgeInsets.symmetric(vertical: 2),
+                                                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                                                    decoration: BoxDecoration(
+                                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow, 
+                                                      borderRadius: BorderRadius.circular(12), 
+                                                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        Expanded(child: Text(isAdv ? "As An Advance" : m['reason'], style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold))),
+                                                        Text("৳${amt.toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                                                      ],
+                                                    ),
                                                   );
                                                 }),
                                               ],
@@ -1096,15 +1096,29 @@ class _CategoryPageState extends State<CategoryPage> {
                                           ),
                                           Padding(
                                             padding: const EdgeInsets.only(left: 30, top: 1),
-                                            child: Text(
-                                              isOccupied 
-                                                ? (isPaid 
-                                                    ? (totalOutstanding > monthTotal + 0.1 ? "Arrears Pending | Payment Clear (${DatabaseService.formatMonthYear(DateTime.now())})" : "${active.length} Services | Payment Clear") 
-                                                    : "${active.length} Services | Due${totalOutstanding > monthTotal + 0.1 ? ' + Arrears' : ''}") 
-                                                : "${active.length} Services | Ready for new tenant",
-                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
-                                              ),
+                                            child: Builder(
+                                              builder: (context) {
+                                                String statsText = "";
+                                                if (isOccupied) {
+                                                  if (isPaid) {
+                                                    statsText = "${active.length} Services | Payment Clear";
+                                                    if (arrearsCount > 0) statsText = "Arrears Pending | $statsText";
+                                                  } else {
+                                                    statsText = "${active.length} Services | Due";
+                                                    if (arrearsCount > 0) statsText += " + $arrearsCount Months Arrears";
+                                                  }
+                                                  if (hasAdvance) statsText += " (Advance Applied)";
+                                                } else {
+                                                  statsText = "${active.length} Services | Ready for new tenant";
+                                                }
+
+                                                return Text(
+                                                  statsText,
+                                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                    color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
+                                                  ),
+                                                );
+                                              }
                                             ),
                                           ),
                                         ],
@@ -1117,6 +1131,66 @@ class _CategoryPageState extends State<CategoryPage> {
                                             children: [
                                               if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
                                                 _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
+
+                                              if (isOccupied && pendingMonths.isNotEmpty)
+                                                _buildSectionBox(
+                                                  "Due Months (Pending)", 
+                                                  "", 
+                                                  Icons.history_toggle_off,
+                                                  color: Theme.of(context).colorScheme.error,
+                                                  customContent: Wrap(
+                                                    spacing: 8,
+                                                    runSpacing: 8,
+                                                    children: pendingMonths.map((m) {
+                                                      String mYear = m['monthYear'];
+                                                      return InkWell(
+                                                        onTap: () {
+                                                          Map<String, dynamic> reportData;
+                                                          if (m['isHistory']) {
+                                                            reportData = m['data'];
+                                                          } else {
+                                                            reportData = {
+                                                              'status': 'Due',
+                                                              'monthYear': mYear,
+                                                              'subItemName': subName,
+                                                              'TenantName': tenant,
+                                                              'subItemId': subId,
+                                                              'profilePictureUrl': d['profilePictureUrl'],
+                                                              'categoryId': catId,
+                                                              'mainCategoryName': catName,
+                                                              'manualDues': d['manualDues'] ?? [],
+                                                              'nidNumber': d['nidNumber'] ?? '',
+                                                              'services': active,
+                                                              'electricityDetails': ed,
+                                                              'electricityBill': eBillAmount,
+                                                              'totalAmount': monthTotal,
+                                                              'houseRentTotal': servicesTotal,
+                                                              'createdAt': Timestamp.now(),
+                                                              'paymentNotes': 'Monthly breakdown (Estimated)',
+                                                            };
+                                                          }
+                                                          UserReportPage.showDetailsDialog(context, reportData);
+                                                        },
+                                                        child: Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                          decoration: BoxDecoration(
+                                                            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                                                            borderRadius: BorderRadius.circular(8),
+                                                            border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
+                                                          ),
+                                                          child: Text(
+                                                            mYear,
+                                                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                              color: Theme.of(context).colorScheme.error,
+                                                              fontWeight: FontWeight.bold,
+                                                              decoration: TextDecoration.underline,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    }).toList(),
+                                                  )
+                                                ),
                                               
                                               if ((d['notes'] ?? '').toString().isNotEmpty)
                                                 _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
@@ -1148,33 +1222,34 @@ class _CategoryPageState extends State<CategoryPage> {
 
                                               ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
 
-                                              if (manualDues.isNotEmpty) ...[
+                                              if (summaryManualDues.isNotEmpty) ...[
                                                 const SizedBox(height: 12),
-                                                Builder(builder: (context) {
-                                                  var filtered = manualDues.where((m) => (m is Map && m['monthYear']?.toString().trim() == _selectedMonthStr.trim())).toList();
-                                                  if (filtered.isEmpty) return const SizedBox.shrink();
-                                                  return Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
-                                                      const SizedBox(height: 4),
-                                                      ...filtered.map((m) => Container(
-                                                        margin: const EdgeInsets.only(bottom: 4),
-                                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                        decoration: BoxDecoration(
-                                                          color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
-                                                          borderRadius: BorderRadius.circular(8),
-                                                          border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
-                                                        ),
-                                                        child: Row(
-                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                          children: [
-                                                            Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodySmall)),
-                                                            Text("৳${(m['amount'] as num).toDouble().toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
-                                                          ],
-                                                        ),
-                                                      )),
-                                                    ],
+                                                Text(
+                                                  "Additional Dues", 
+                                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                    color: Theme.of(context).colorScheme.error, 
+                                                    fontWeight: FontWeight.bold
+                                                  )
+                                                ),
+                                                const SizedBox(height: 4),
+                                                ...summaryManualDues.map((m) {
+                                                  double amt = (m['amount'] as num).toDouble();
+                                                  bool isAdv = amt < 0;
+                                                  return Container(
+                                                    margin: const EdgeInsets.symmetric(vertical: 2),
+                                                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                                                    decoration: BoxDecoration(
+                                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow, 
+                                                      borderRadius: BorderRadius.circular(12), 
+                                                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        Expanded(child: Text(isAdv ? "As An Advance" : m['reason'], style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold))),
+                                                        Text("৳${amt.toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                                                      ],
+                                                    ),
                                                   );
                                                 }),
                                               ],

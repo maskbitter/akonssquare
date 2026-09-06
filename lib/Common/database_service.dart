@@ -891,15 +891,29 @@ class DatabaseService {
         .snapshots();
   }
 
-  Future<double> calculateTotalOutstanding(String subId, double currentMonthAmount, String currentMonthYear) async {
+  Future<Map<String, dynamic>> calculateFinancialSummary(String subId, double currentMonthAmount, String currentMonthYear, {Map<String, dynamic>? subItemData}) async {
     QuerySnapshot historySnap = await _db.collection('billing_history').where('subItemId', isEqualTo: subId).get();
-    DocumentSnapshot subSnap = await _db.collection('sub_items').doc(subId).get();
-    
-    if (!subSnap.exists) return currentMonthAmount;
-    var subData = subSnap.data() as Map<String, dynamic>;
     
     double totalOutstanding = 0;
+    List<Map<String, dynamic>> pendingMonths = [];
     Set<String> processedMonths = {};
+    List manualDues = [];
+    double manualDuesTotal = 0;
+
+    if (subItemData != null) {
+      manualDues = subItemData['manualDues'] ?? [];
+    } else {
+      DocumentSnapshot subSnap = await _db.collection('sub_items').doc(subId).get();
+      if (subSnap.exists) {
+        manualDues = (subSnap.data() as Map<String, dynamic>)['manualDues'] ?? [];
+      }
+    }
+
+    for (var m in manualDues) {
+      if (m is Map) {
+        manualDuesTotal += (m['amount'] as num).toDouble();
+      }
+    }
 
     // 1. Sum recorded dues from history
     for (var doc in historySnap.docs) {
@@ -907,20 +921,57 @@ class DatabaseService {
       String my = data['monthYear'].toString().trim().toLowerCase();
       if (data['status'] == 'Due') {
         totalOutstanding += (data['totalAmount'] as num).toDouble();
+        pendingMonths.add({
+          'monthYear': data['monthYear'],
+          'data': {...data, 'docId': doc.id},
+          'isHistory': true,
+        });
       }
       processedMonths.add(my);
     }
 
-    // 2. Add current month if it's not already recorded
+    // 2. Add current month (Fixed costs only) if it's not already recorded
     if (!processedMonths.contains(currentMonthYear.trim().toLowerCase())) {
       totalOutstanding += currentMonthAmount;
-      processedMonths.add(currentMonthYear.trim().toLowerCase());
+      pendingMonths.add({
+        'monthYear': currentMonthYear,
+        'isHistory': false,
+      });
     }
 
-    // 3. (REMOVED) Estimate missing months (Arrears)
-    // The system will no longer estimate arrears for months without records.
+    // 3. Add all unrecorded manual dues/advances
+    totalOutstanding += manualDuesTotal;
+
+    int arrearsCount = pendingMonths.where((m) => m['isHistory'] == true).length;
+
+    // Sort pending months chronologically
+    pendingMonths.sort((a, b) {
+      try {
+        List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        var aParts = a['monthYear'].split('-');
+        var bParts = b['monthYear'].split('-');
+        int aMonth = months.indexOf(aParts[0]);
+        int bMonth = months.indexOf(bParts[0]);
+        int aYear = int.parse(aParts[1]);
+        int bYear = int.parse(bParts[1]);
+        if (aYear != bYear) return aYear.compareTo(bYear);
+        return aMonth.compareTo(bMonth);
+      } catch (e) {
+        return 0;
+      }
+    });
     
-    return totalOutstanding;
+    return {
+      'total': totalOutstanding,
+      'pendingMonths': pendingMonths,
+      'manualDues': manualDues,
+      'arrearsCount': arrearsCount,
+    };
+  }
+
+  Future<double> calculateTotalOutstanding(String subId, double currentMonthAmount, String currentMonthYear) async {
+    var summary = await calculateFinancialSummary(subId, currentMonthAmount, currentMonthYear);
+    return summary['total'] as double;
   }
 
 

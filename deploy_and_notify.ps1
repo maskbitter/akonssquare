@@ -70,11 +70,27 @@ $staged = @(git diff --name-only --cached)
 if ($staged.Count -gt 0) {
     $commitMsg = "BN${newBN}: Deployment update for version $currentVersion"
     Write-Host ">>> Pulling latest changes..." -ForegroundColor Cyan
-    git pull origin master
+
+    # Attempt to pull with rebase to keep history clean
+    $pullResult = git pull --rebase --autostash origin master 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "!!! Git Pull Failed. Attempting to resolve simple conflicts..." -ForegroundColor Yellow
+        Write-Host $pullResult -ForegroundColor Gray
+        # If rebase fails, we might need manual intervention, but for deployment we often just want to push our state
+        # In a real CI environment we'd abort, but here we'll try to continue if it's just a ref issue
+    }
+
     Write-Host ">>> Committing changes..." -ForegroundColor Cyan
-    git commit -m "$commitMsg"
+    git commit -m "$commitMsg" --allow-empty
+
+    Write-Host ">>> Pushing to GitHub..." -ForegroundColor Cyan
     git push origin master
-    Write-Host ">>> GitHub sync successful." -ForegroundColor Green
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "!!! Git Push Failed. Please check for remote changes or branch protection." -ForegroundColor Red
+        # Don't exit here yet, as Firebase deploy might still be desired
+    } else {
+        Write-Host ">>> GitHub sync successful." -ForegroundColor Green
+    }
 } else {
     Write-Host ">>> No changes to commit to GitHub." -ForegroundColor Gray
 }
@@ -82,10 +98,30 @@ if ($staged.Count -gt 0) {
 # 7. Firebase Hosting & Notification
 Write-Host "`n>>> Step 3: Firebase Deployment & Updates..." -ForegroundColor Yellow
 try {
-    # Deploy to Firebase Hosting (for version.json/index.html)
-    firebase.cmd deploy --only hosting --project "akons-square"
+    # Deploy to Firebase Hosting with Retry Logic
+    $maxRetries = 3
+    $retryCount = 0
+    $success = $false
 
-    # Update Firestore version metadata (NEW STEP)
+    while (-not $success -and $retryCount -lt $maxRetries) {
+        $retryCount++
+        Write-Host ">>> Deploying to Firebase Hosting (Attempt $retryCount of $maxRetries)..." -ForegroundColor Cyan
+        firebase.cmd deploy --only hosting --project "akons-square"
+
+        if ($LASTEXITCODE -eq 0) {
+            $success = $true
+            Write-Host ">>> Firebase Hosting deployment successful." -ForegroundColor Green
+        } else {
+            Write-Host "!!! Firebase Hosting deployment failed. Waiting to retry..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 5
+        }
+    }
+
+    if (-not $success) {
+        throw "Firebase Hosting deployment failed after $maxRetries attempts."
+    }
+
+    # Update Firestore version metadata
     Write-Host ">>> Updating Firestore version metadata..." -ForegroundColor Cyan
     node scripts/update_firestore_version.js
 

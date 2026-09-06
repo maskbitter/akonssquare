@@ -18,15 +18,29 @@ class SuperAdminDashboard extends StatefulWidget {
   State<SuperAdminDashboard> createState() => _SuperAdminDashboardState();
 }
 
-class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
+class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTickerProviderStateMixin {
   final DatabaseService _dbService = DatabaseService();
   String _appName = "";
+  late TabController _tabController;
+  final Set<String> _selectedLogIds = {};
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.index != 1 && _selectedLogIds.isNotEmpty) {
+        setState(() => _selectedLogIds.clear());
+      }
+    });
     _loadAppName();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkRollback());
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAppName() async {
@@ -235,128 +249,144 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   @override
   Widget build(BuildContext context) {
     bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          toolbarHeight: 70,
-          backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary,
-          foregroundColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
-          elevation: isOutline ? 0 : 2,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _appName.isEmpty ? "Loading..." : _appName,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "System",
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
-                  ),
-                  Text(
-                    " | ", 
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black.withValues(alpha: 0.5) : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7)),
-                  ),
-                  Text(
-                    "Super Admin(Master Access Mode)",
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, 
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          bottom: TabBar(
-            indicatorColor: isOutline ? Colors.black : Colors.white,
-            labelColor: isOutline ? Colors.black : Colors.white,
-            unselectedLabelColor: isOutline ? Colors.black54 : Colors.white70,
-            tabs: const [
-              Tab(icon: Icon(Icons.admin_panel_settings), text: "Permissions"),
-              Tab(icon: Icon(Icons.history), text: "Activity Log"),
-              Tab(icon: Icon(Icons.settings), text: "Settings"),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.share_outlined, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
-              onPressed: () => ShareHelper.shareApp(context),
-              tooltip: "Share App",
-            ),
-            StreamBuilder<DocumentSnapshot>(
-              stream: DatabaseService().getAppConfigStream(),
-              builder: (context, configSnap) {
-                return StreamBuilder<DocumentSnapshot>(
-                  stream: DatabaseService().getDatabaseInfoStream(),
-                  builder: (context, dbInfoSnap) {
-                    String local = appVersion; // Instant update from build_config.dart
-                    final configData = configSnap.data?.data() as Map<String, dynamic>?;
-                    String? remote = configData?['requiredVersion'];
-                    String dbVersion = "...";
-                    if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
-                      var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
-                    }
-                    
-                    bool isOutdated = false;
-                    if (remote != null && remote != local) {
-                      try {
-                        List<String> localParts = local.split('+');
-                        List<String> serverParts = remote.split('+');
-                        int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
-                        int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
-                        if (serverMain > localMain) {
-                          isOutdated = true;
-                        } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
-                          int localBuild = int.tryParse(localParts[1]) ?? 0;
-                          int serverBuild = int.tryParse(serverParts[1]) ?? 0;
-                          if (serverBuild > localBuild) isOutdated = true;
-                        }
-                      } catch (e) { isOutdated = remote != local; }
-                    }
-                    
-                    return InkWell(
-                      onTap: () {
-                        if (isOutdated) {
-                          String dUrl = configData?['downloadUrl'] ?? "";
-                          showUpdateLogoutDialog(
-                            context: context, 
-                            remoteVersion: remote ?? "Unknown", 
-                            downloadUrl: dUrl, 
-                            onLogout: () => _handleLogout(context)
-                          );
-                        } else {
-                          _showLogoutConfirmationDialog();
-                        }
-                      },
-                      child: AppVersionInfo(
-                        version: local,
-                        dbVersion: dbVersion,
-                        latestVersion: remote,
-                        isOutdated: isOutdated,
-                        color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
-                        secondaryColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
-                        showLogoutIcon: true,
-                      ),
-                    );
-                  }
-                );
-              }
-            ),
-            const SizedBox(width: 16),
-          ],
-        ),
-        body: TabBarView(
+    bool isSelectionMode = _selectedLogIds.isNotEmpty;
+
+    return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 70,
+        backgroundColor: isSelectionMode 
+            ? (isOutline ? Colors.black : Theme.of(context).colorScheme.surfaceContainerHighest)
+            : (isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primary),
+        foregroundColor: isSelectionMode
+            ? (isOutline ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant)
+            : (isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
+        elevation: isOutline ? 0 : 2,
+        leading: isSelectionMode ? IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => setState(() => _selectedLogIds.clear()),
+        ) : null,
+        title: isSelectionMode ? Text("${_selectedLogIds.length} selected") : Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SingleChildScrollView(child: _buildPermissionManagerSection()),
-            _buildActivityLogSection(),
-            const SettingsPage(),
+            Text(
+              _appName.isEmpty ? "Loading..." : _appName,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "System",
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
+                ),
+                Text(
+                  " | ", 
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black.withValues(alpha: 0.5) : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7)),
+                ),
+                Text(
+                  "Super Admin(Master Access Mode)",
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, 
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: isOutline ? (isSelectionMode ? Colors.white : Colors.black) : Colors.white,
+          labelColor: isOutline ? (isSelectionMode ? Colors.white : Colors.black) : Colors.white,
+          unselectedLabelColor: isOutline ? (isSelectionMode ? Colors.white70 : Colors.black54) : Colors.white70,
+          tabs: const [
+            Tab(icon: Icon(Icons.admin_panel_settings), text: "Permissions"),
+            Tab(icon: Icon(Icons.history), text: "Activity Log"),
+            Tab(icon: Icon(Icons.settings), text: "Settings"),
+          ],
+        ),
+        actions: isSelectionMode ? [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: _showBatchDeleteConfirm,
+            tooltip: "Delete Selected",
+          ),
+          const SizedBox(width: 8),
+        ] : [
+          IconButton(
+            icon: Icon(Icons.share_outlined, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary),
+            onPressed: () => ShareHelper.shareApp(context),
+            tooltip: "Share App",
+          ),
+          StreamBuilder<DocumentSnapshot>(
+            stream: DatabaseService().getAppConfigStream(),
+            builder: (context, configSnap) {
+              return StreamBuilder<DocumentSnapshot>(
+                stream: DatabaseService().getDatabaseInfoStream(),
+                builder: (context, dbInfoSnap) {
+                  String local = appVersion; // Instant update from build_config.dart
+                  final configData = configSnap.data?.data() as Map<String, dynamic>?;
+                  String? remote = configData?['requiredVersion'];
+                  String dbVersion = "...";
+                  if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
+                    var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
+                    dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                  }
+                  
+                  bool isOutdated = false;
+                  if (remote != null && remote != local) {
+                    try {
+                      List<String> localParts = local.split('+');
+                      List<String> serverParts = remote.split('+');
+                      int localMain = int.tryParse(localParts[0].replaceAll('.', '')) ?? 0;
+                      int serverMain = int.tryParse(serverParts[0].replaceAll('.', '')) ?? 0;
+                      if (serverMain > localMain) {
+                        isOutdated = true;
+                      } else if (serverMain == localMain && serverParts.length > 1 && localParts.length > 1) {
+                        int localBuild = int.tryParse(localParts[1]) ?? 0;
+                        int serverBuild = int.tryParse(serverParts[1]) ?? 0;
+                        if (serverBuild > localBuild) isOutdated = true;
+                      }
+                    } catch (e) { isOutdated = remote != local; }
+                  }
+                  
+                  return InkWell(
+                    onTap: () {
+                      if (isOutdated) {
+                        String dUrl = configData?['downloadUrl'] ?? "";
+                        showUpdateLogoutDialog(
+                          context: context, 
+                          remoteVersion: remote ?? "Unknown", 
+                          downloadUrl: dUrl, 
+                          onLogout: () => _handleLogout(context)
+                        );
+                      } else {
+                        _showLogoutConfirmationDialog();
+                      }
+                    },
+                    child: AppVersionInfo(
+                      version: local,
+                      dbVersion: dbVersion,
+                      latestVersion: remote,
+                      isOutdated: isOutdated,
+                      color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
+                      secondaryColor: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary,
+                      showLogoutIcon: true,
+                    ),
+                  );
+                }
+              );
+            }
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          SingleChildScrollView(child: _buildPermissionManagerSection()),
+          _buildActivityLogSection(),
+          const SettingsPage(),
+        ],
       ),
     );
   }
@@ -386,6 +416,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
 
   Widget _buildLogTile(String logId, Map<String, dynamic> data) {
     bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    bool isSelected = _selectedLogIds.contains(logId);
+    bool isSelectionMode = _selectedLogIds.isNotEmpty;
+    
     String actor = data['actor'] ?? 'System';
     String action = data['action'] ?? 'Unknown';
     String details = data['details'] ?? 'No details provided';
@@ -394,71 +427,170 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      elevation: isOutline ? 0 : 2,
+      elevation: isOutline ? 0 : (isSelected ? 4 : 2),
+      color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5) : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isOutline ? const BorderSide(color: Colors.black, width: 1.5) : BorderSide.none,
+        side: isSelected 
+            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
+            : (isOutline ? const BorderSide(color: Colors.black, width: 1.5) : BorderSide.none),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onLongPress: () {
+          DatabaseService.vibrate();
+          setState(() {
+            if (isSelected) {
+              _selectedLogIds.remove(logId);
+            } else {
+              _selectedLogIds.add(logId);
+            }
+          });
+        },
+        onTap: () {
+          if (isSelectionMode) {
+            setState(() {
+              if (isSelected) {
+                _selectedLogIds.remove(logId);
+              } else {
+                _selectedLogIds.add(logId);
+              }
+            });
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      if (isSelectionMode) ...[
+                        Checkbox(
+                          value: isSelected,
+                          onChanged: (val) {
+                            setState(() {
+                              if (val == true) _selectedLogIds.add(logId);
+                              else _selectedLogIds.remove(logId);
+                            });
+                          },
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        child: Text(actor.isNotEmpty ? actor[0].toUpperCase() : 'S', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(actor, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ],
+                  ),
+                  Text(
+                    DatabaseService.formatFullDateTime(ts),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, color: Theme.of(context).colorScheme.outline),
+                  ),
+                ],
+              ),
+              const Divider(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(4)),
+                    child: Text(category, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSecondaryContainer)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(action, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(details, style: Theme.of(context).textTheme.bodySmall),
+              if (!isSelectionMode) ...[
+                const SizedBox(height: 12),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                      child: Text(actor.isNotEmpty ? actor[0].toUpperCase() : 'S', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                    TextButton.icon(
+                      onPressed: () => _showEditLogDialog(logId, data),
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text("Edit", style: TextStyle(fontSize: 12)),
+                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                     ),
                     const SizedBox(width: 8),
-                    Text(actor, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    TextButton.icon(
+                      onPressed: () => _showDeleteLogConfirm(logId),
+                      icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                      label: const Text("Delete", style: TextStyle(fontSize: 12, color: Colors.red)),
+                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                    ),
                   ],
                 ),
-                Text(
-                  DatabaseService.formatFullDateTime(ts),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, color: Theme.of(context).colorScheme.outline),
-                ),
               ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBatchDeleteConfirm() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.delete_forever, color: Colors.red, size: 40),
             ),
-            const Divider(height: 16),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(4)),
-                  child: Text(category, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSecondaryContainer)),
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: Text(action, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(details, style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton.icon(
-                  onPressed: () => _showEditLogDialog(logId, data),
-                  icon: const Icon(Icons.edit, size: 16),
-                  label: const Text("Edit", style: TextStyle(fontSize: 12)),
-                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                ),
-                const SizedBox(width: 8),
-                TextButton.icon(
-                  onPressed: () => _showDeleteLogConfirm(logId),
-                  icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                  label: const Text("Delete", style: TextStyle(fontSize: 12, color: Colors.red)),
-                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                ),
-              ],
-            ),
+            const SizedBox(height: 16),
+            const Text("Bulk Delete", style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
+        content: Text("Are you sure you want to permanently delete ${_selectedLogIds.length} selected activity records?", textAlign: TextAlign.center),
+        actions: [
+          AppDialogActions(
+            actions: [
+              AppButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant, 
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: const Text("Cancel"),
+              ),
+              AppButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  String actor = prefs.getString('username') ?? 'SuperAdmin';
+                  List<String> idsToDelete = _selectedLogIds.toList();
+                  setState(() => _selectedLogIds.clear());
+                  await _dbService.deleteActivityLogsBatch(idsToDelete, actor);
+                  if (mounted) DatabaseService.showToast(context, "${idsToDelete.length} logs deleted");
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red, 
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text("Delete All"),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

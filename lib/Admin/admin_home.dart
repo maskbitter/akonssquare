@@ -1663,16 +1663,14 @@ class _AdminHomeState extends State<AdminHome> {
 
     for (var subDoc in occupied) {
       String subId = subDoc.id;
-      if (recordMap.containsKey(subId)) {
-        // Use recorded status
-        var data = recordMap[subId]!.data() as Map<String, dynamic>;
-        if (data['status'] == 'Due') {
-          totalDue += (data['totalAmount'] as num).toDouble();
-        }
-      } else {
-        // No record for this month? Estimate "Live Due"
-        totalDue += await _calculateSingleDue(subDoc, categories: categories);
-      }
+      
+      // Calculate month estimate (Fixed costs)
+      double estimatedMonthAmount = await _calculateSingleDue(subDoc, categories: categories, isCurrentMonth: true);
+      
+      // calculateFinancialSummary handles arrears and current records internally.
+      // If a record exists for the selected month, it's used. Otherwise, estimatedMonthAmount is used.
+      var summary = await _dbService.calculateFinancialSummary(subId, estimatedMonthAmount, _selectedMonthStr);
+      totalDue += summary['total'] as double;
     }
     return totalDue;
   }
