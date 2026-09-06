@@ -1,18 +1,27 @@
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const fs = require('fs');
 const path = require('path');
+const { initializeApp, cert, getApp, getApps } = require('firebase-admin/app');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
-// 1. Initialize Firebase Admin
-const serviceAccount = require('../service-account.json');
+const SERVICE_ACCOUNT_PATH = path.join(__dirname, '../service-account.json');
 
-initializeApp({
-  credential: cert(serviceAccount)
-});
+if (!fs.existsSync(SERVICE_ACCOUNT_PATH)) {
+  console.error('Error: service-account.json not found.');
+  process.exit(1);
+}
+
+const serviceAccount = require(SERVICE_ACCOUNT_PATH);
+
+// Robust initialization
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(serviceAccount)
+  });
+}
 
 const db = getFirestore();
 
-// 2. Read build_config.dart
+// Read current BN and Version from build_config.dart
 const buildConfigPath = path.join(__dirname, '../lib/Common/build_config.dart');
 const buildConfigContent = fs.readFileSync(buildConfigPath, 'utf8');
 
@@ -28,19 +37,15 @@ const buildNumber = parseInt(buildNumberMatch[1]);
 const appVersion = appVersionMatch[1];
 
 async function updateFirestore() {
-  console.log(`Updating Firestore with Version: ${appVersion} (BN${buildNumber})...`);
+  console.log(`Updating Firestore BN: ${buildNumber} (Version: ${appVersion})...`);
 
   try {
-    // Update database_info
+    // Update database_info (Tracking current build)
     await db.collection('app_config').doc('database_info').set({
       buildNumber: buildNumber,
-      bnUpdatedAt: FieldValue.serverTimestamp()
-    }, { merge: true });
-
-    // Update settings (requiredVersion)
-    await db.collection('app_config').doc('settings').set({
-      requiredVersion: appVersion,
-      versionUpdatedAt: FieldValue.serverTimestamp()
+      globalBuildNumber: buildNumber,
+      bnUpdatedAt: FieldValue.serverTimestamp(),
+      lastUpdatedBy: 'Deployment Script'
     }, { merge: true });
 
     console.log('Successfully updated Firestore version metadata.');
