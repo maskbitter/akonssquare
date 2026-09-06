@@ -458,7 +458,9 @@ class _UserDashboardState extends State<UserDashboard> {
         }
 
         double servicesSum = activeServices.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
-        double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+        String currentMonthYearStr = DatabaseService.formatMonthYear(DateTime.now());
+        List filteredManualDues = manualDues.where((m) => (m is Map && m['monthYear'] == currentMonthYearStr)).toList();
+        double mDuesSum = filteredManualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
 
         // --- BILLING HISTORY FETCH (CONSOLIDATED) ---
         List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

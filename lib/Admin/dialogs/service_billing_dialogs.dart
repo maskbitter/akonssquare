@@ -613,7 +613,7 @@ extension BillingServiceDialogs on CategoryDialogs {
         return StreamBuilder<QuerySnapshot>(
           stream: CategoryDialogs._dbService.getAllBillingRecordsStream(subItemId),
           builder: (context, snapshot) {
-            String monthYear = "${months[selectedDate.month - 1]}-${selectedDate.year.toString().substring(2)}";
+            String monthYear = DatabaseService.formatMonthYear(selectedDate);
             bool isFuture = selectedDate.year > now.year || (selectedDate.year == now.year && selectedDate.month > now.month);
             int letterCount = CategoryDialogs._getLetterCount(noteController.text);
 
@@ -771,7 +771,7 @@ extension BillingServiceDialogs on CategoryDialogs {
 
                     // Manual Dues/Advances Breakdown
                     Builder(builder: (context) {
-                      var filtered = manualDues.where((d) => d['monthYear'] == monthYear || d['monthYear'] == null).toList();
+                      var filtered = manualDues.where((d) => (d is Map && d['monthYear']?.toString().trim() == monthYear.trim())).toList();
                       if (filtered.isEmpty) return const SizedBox.shrink();
                       return Column(
                         children: [
@@ -845,7 +845,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                 
                 // Calculate Total Payable including manual dues AND selected previous dues
                 Builder(builder: (context) {
-                  var filtered = manualDues.where((d) => d['monthYear'] == monthYear || d['monthYear'] == null).toList();
+                  var filtered = manualDues.where((d) => (d is Map && d['monthYear']?.toString().trim() == monthYear.trim())).toList();
                   double mDuesSum = filtered.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
                   double currentTotal = houseRentTotal + dynamicElecBill + mDuesSum;
                   double grandTotal = (isCurrentSelected ? currentTotal : 0) + otherDuesSelectedSum;
@@ -1012,7 +1012,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                                   finalElecDetails['presentReading'] = currentRead;
                                 }
 
-                                var relevantDues = manualDues.where((d) => d['monthYear'] == monthYear || d['monthYear'] == null).toList();
+                                var relevantDues = manualDues.where((d) => (d is Map && d['monthYear']?.toString().trim() == monthYear.trim())).toList();
                                 double mDuesSum = relevantDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
 
                                 await CategoryDialogs._dbService.addBillingRecord({
@@ -1108,7 +1108,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                                     finalElecDetails['presentReading'] = currentRead;
                                   }
                                   
-                                  var relevantDues = manualDues.where((d) => d['monthYear'] == monthYear || d['monthYear'] == null).toList();
+                                  var relevantDues = manualDues.where((d) => d['monthYear'] == monthYear).toList();
                                   double mDuesSum = relevantDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
 
                                   await CategoryDialogs._dbService.addBillingRecord({

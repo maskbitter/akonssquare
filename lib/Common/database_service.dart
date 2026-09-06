@@ -50,6 +50,21 @@ class DatabaseService {
     await _db.collection('activity_log').doc(logId).delete();
   }
 
+  Future<void> deleteActivityLogsBatch(List<String> logIds, String actor) async {
+    WriteBatch batch = _db.batch();
+    for (String id in logIds) {
+      batch.delete(_db.collection('activity_log').doc(id));
+    }
+    await batch.commit();
+
+    await logActivity(
+      actor: actor,
+      action: "Batch Delete Logs",
+      details: "Permanently deleted ${logIds.length} activity records.",
+      category: "Maintenance",
+    );
+  }
+
   // ==========================================
   // 2. CATEGORY METHODS
   // ==========================================
@@ -902,39 +917,9 @@ class DatabaseService {
       processedMonths.add(currentMonthYear.trim().toLowerCase());
     }
 
-    // 3. Estimate missing months (Arrears)
-    Timestamp? occupiedAt = subData['occupiedAt'] as Timestamp?;
-    if (occupiedAt != null) {
-      DateTime start = occupiedAt.toDate();
-      DateTime now = DateTime.now();
-      DateTime current = DateTime(start.year, start.month);
-      DateTime limit = DateTime(now.year, now.month);
-
-      // Pre-calculate fixed services cost
-      String catId = subData['categoryId'] ?? '';
-      double servicesCost = 0;
-      if (catId.isNotEmpty) {
-        DocumentSnapshot catDoc = await getCategoryById(catId);
-        if (catDoc.exists) {
-          List catServices = (catDoc.data() as Map)['assignedServices'] ?? [];
-          List effective = getEffectiveServices(
-            categoryServices: catServices, 
-            excludedServices: subData['excludedServices'] ?? [], 
-            overriddenServices: subData['overriddenServices'] ?? []
-          );
-          servicesCost = effective.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
-        }
-      }
-
-      while (current.isBefore(limit)) {
-        String my = formatMonthYear(current).trim().toLowerCase();
-        if (!processedMonths.contains(my)) {
-          totalOutstanding += servicesCost;
-        }
-        current = DateTime(current.year, current.month + 1);
-      }
-    }
-
+    // 3. (REMOVED) Estimate missing months (Arrears)
+    // The system will no longer estimate arrears for months without records.
+    
     return totalOutstanding;
   }
 

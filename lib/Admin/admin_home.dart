@@ -1717,7 +1717,8 @@ class _AdminHomeState extends State<AdminHome> {
     
     // Manual Dues
     List manualDues = subData['manualDues'] ?? [];
-    double mDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
+    List filteredManualDues = manualDues.where((m) => (m is Map && m['monthYear'] == _selectedMonthStr)).toList();
+    double mDuesSum = filteredManualDues.fold(0.0, (acc, d) => acc + (d['amount'] as num).toDouble());
 
     var ed = subData['electricityDetails'];
     double eBill = 0;
