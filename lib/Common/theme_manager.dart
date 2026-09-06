@@ -12,6 +12,16 @@ class ThemeManager {
   // MASTER BACKGROUND FOR OUTLINE THEME (Can be updated via code or UI)
   static Color get outlineBackground => appOutlineBgNotifier.value;
 
+  // BRANDED COLORS FOR LOGIN & ADMIN HOME
+  static const Color brandBackground = Color(0xFFFDF1E9);
+  static const Color brandBrown = Color(0xFF8D5B41);
+  static const Color brandGreen = Color(0xFF6B6D3D);
+  static const Color brandBlue = Color(0xFF2196F3);
+  static const Color brandDarkBrown = Color(0xFF6D4C41);
+  static const Color cardYellow = Color(0xFFE8E5A1);
+  static const Color cardPink = Color(0xFFF6D0D0);
+  static const Color cardPeach = Color(0xFFF6D0B0);
+
   static final List<Color> _niceSeeds = [
     const Color(0xFF2C3E50), // Midnight Blue
     const Color(0xFF16A085), // Green Sea

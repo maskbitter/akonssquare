@@ -87,9 +87,9 @@ class DataRepository {
       String subId = subDoc.id;
       double estimatedMonthAmount = _calculateSingleMonthEstimateLocal(subDoc);
       
-      // Calculate using local data instead of Firestore queries
       var summary = calculateFinancialSummaryLocal(subId, estimatedMonthAmount, currentMonthStr);
-      newCache[subId] = (summary['totalPayable'] as num).toDouble();
+      // Cache only the bill for the CURRENT month (including what's already paid)
+      newCache[subId] = (summary['currentMonthBill'] as num).toDouble();
     }
     
     subItemPayableCache.value = newCache;
@@ -134,6 +134,7 @@ class DataRepository {
     
     double totalOutstanding = 0;
     double totalPayable = 0;
+    double currentMonthBill = 0;
     List<Map<String, dynamic>> pendingMonths = [];
     Set<String> processedMonths = {};
     
@@ -150,6 +151,10 @@ class DataRepository {
       String my = data['monthYear'].toString().trim().toLowerCase();
       double amt = (data['totalAmount'] as num).toDouble();
       
+      if (my == currentMonthYear.trim().toLowerCase()) {
+        currentMonthBill = amt;
+      }
+
       if (data['status'] == 'Due') {
         totalOutstanding += amt;
         pendingMonths.add({
@@ -165,6 +170,7 @@ class DataRepository {
 
     if (!processedMonths.contains(currentMonthYear.trim().toLowerCase())) {
       totalOutstanding += currentMonthAmount;
+      currentMonthBill = currentMonthAmount;
       pendingMonths.add({
         'monthYear': currentMonthYear,
         'isHistory': false,
@@ -192,6 +198,7 @@ class DataRepository {
     return {
       'total': totalOutstanding,
       'totalPayable': totalPayable,
+      'currentMonthBill': currentMonthBill,
       'pendingMonths': pendingMonths,
       'arrearsCount': pendingMonths.where((m) => m['isHistory'] == true).length,
     };

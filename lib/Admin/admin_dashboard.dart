@@ -346,45 +346,47 @@ class _AdminDashboardState extends State<AdminDashboard> {
         appBar: AppBar(
           automaticallyImplyLeading: false,
           centerTitle: false,
+          backgroundColor: ThemeManager.brandBackground,
+          elevation: 0,
           title: Padding(
             padding: const EdgeInsets.symmetric(vertical: 1),
-            child: GestureDetector(
-              onTap: null,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _appName.isEmpty ? "Loading..." : _appName,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _appName.isEmpty ? "Loading..." : _appName,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold, 
+                    color: ThemeManager.brandBrown,
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        titles[_currentIndex],
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      titles[_currentIndex],
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.brandBrown),
+                    ),
+                    Text(
+                      " | ", 
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.brandBrown.withOpacity(0.5)),
+                    ),
+                    Text(
+                      "Admin",
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: ThemeManager.brandBrown, 
                       ),
-                      Text(
-                        " | ", 
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
-                      ),
-                      Text(
-                        "Admin",
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.secondary, 
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.share_outlined),
+              icon: const Icon(Icons.share_outlined, color: ThemeManager.brandBrown),
               onPressed: () => ShareHelper.shareApp(context),
               tooltip: "Share App",
             ),
@@ -439,8 +441,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         dbVersion: dbVersion,
                         latestVersion: remote,
                         isOutdated: isOutdated,
-                        color: Theme.of(context).colorScheme.primary,
-                        secondaryColor: Theme.of(context).colorScheme.secondary,
+                        secondaryColor: ThemeManager.brandBrown,
                         showLogoutIcon: true,
                       ),
                     );
@@ -484,8 +485,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          selectedItemColor: ThemeManager.brandBrown,
+          unselectedItemColor: Colors.grey,
+          backgroundColor: ThemeManager.brandBackground,
           type: BottomNavigationBarType.fixed,
           onTap: (index) {
             if (index == 1) {

@@ -191,7 +191,7 @@ extension MeterDialogs on CategoryDialogs {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Text("Last updated: ${DatabaseService.formatFullDateTime(data['updatedAt'] as Timestamp?)}", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
-                              Text("${DatabaseService.formatDuration(data['updatedAt'] as Timestamp?)} ago", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                              Text("${DatabaseService.formatDuration(data['updatedAt'] as Timestamp?)}", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
                             ],
                           ),
                         ],

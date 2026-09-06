@@ -403,12 +403,11 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                             return (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal);
                           }
 
-                          return ValueListenableBuilder<Map<String, double>>(
-                            valueListenable: _repository.subItemPayableCache,
-                            builder: (context, payableCache, child) {
+                          return Builder(
+                            builder: (context) {
                               double catTotalPayable = 0;
                               for (var doc in subDocs) {
-                                catTotalPayable += payableCache[doc.id] ?? 0;
+                                catTotalPayable += _calculateUnitMonthTotal(doc);
                               }
                               bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
                               
@@ -560,12 +559,11 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                               bool isPaid = paidIds.contains(subId);
                               bool isOccupied = status == 'Occupied';
 
-                              return ValueListenableBuilder<Map<String, double>>(
-                                valueListenable: _repository.subItemPayableCache,
-                                builder: (context, payableCache, child) {
-                                  double totalPayable = payableCache[subId] ?? monthTotal;
+                              return Builder(
+                                builder: (context) {
+                                  double unitMonthBill = monthTotal;
                                   
-                                  var summary = _repository.calculateFinancialSummaryLocal(subId, monthTotal, _selectedMonthStr);
+                                  var summary = _repository.calculateFinancialSummaryLocal(subId, unitMonthBill, _selectedMonthStr);
                                   List pendingMonths = summary['pendingMonths'] ?? [];
                                   List summaryManualDues = d['manualDues'] ?? [];
                                   int arrearsCount = summary['arrearsCount'] ?? 0;
@@ -783,7 +781,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                                             if (ed != null && ed['isStopped'] != true)
                                                 _buildSectionBox(
                                                   "Sub-Meter Bills", 
-                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
+                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)}", 
                                                   Icons.electric_bolt, 
                                                   amount: eBillAmount, 
                                                   color: context.electric,
@@ -1090,7 +1088,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                                               if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                                               const SizedBox(width: 4),
                                               Text(
-                                                "৳${totalPayable.toStringAsFixed(0)}",
+                                                "৳${unitMonthBill.toStringAsFixed(0)}",
                                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                                   fontWeight: FontWeight.w900, 
                                                   color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, 
@@ -1214,7 +1212,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                                                   if (ed != null && ed['isStopped'] != true)
                                                 _buildSectionBox(
                                                   "Sub-Meter Bills", 
-                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)} ago", 
+                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)}", 
                                                   Icons.electric_bolt, 
                                                   amount: (existingRecord != null || isPaid) ? 0.0 : eBillAmount, 
                                                   color: context.electric,

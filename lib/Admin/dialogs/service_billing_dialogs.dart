@@ -48,7 +48,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                         isDense: true
                       )
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: amountController, 
                       keyboardType: TextInputType.number, 
@@ -89,7 +89,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                       }, 
                       child: Text(isLoading ? "Saving..." : "Add Service")
                     ),
-                    const Divider(height: 32),
+                    const Divider(height: 20),
                     Text("Existing Services", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     const SizedBox(height: 8),
                     StreamBuilder<QuerySnapshot>(
@@ -378,7 +378,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text("Last updated: ${DatabaseService.formatFullDateTime(existingData?['updatedAt'] as Timestamp?)}", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
-                            Text("${DatabaseService.formatDuration(existingData?['updatedAt'] as Timestamp?)} ago", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                            Text("${DatabaseService.formatDuration(existingData?['updatedAt'] as Timestamp?)}", textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
                           ],
                         ),
                       ],
@@ -682,7 +682,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                     ),
                     child: Icon(Icons.payments_outlined, color: Theme.of(context).colorScheme.primary, size: 40),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   Text("Payment: $subItemName", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -693,7 +693,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                     mainAxisSize: MainAxisSize.min, 
                     children: [
                     Text("Select month for this payment", style: Theme.of(context).textTheme.bodySmall),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center, 
                       children: [
@@ -725,7 +725,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                       ],
                     ),
 
-                    const Divider(height: 24),
+                    const Divider(height: 12),
 
                     // Current Month Breakdown
                     InkWell(
@@ -738,6 +738,8 @@ extension BillingServiceDialogs on CategoryDialogs {
                               Checkbox(
                                 value: isCurrentSelected, 
                                 activeColor: Theme.of(context).colorScheme.primary,
+                                visualDensity: VisualDensity.compact,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 onChanged: isPaid ? null : (v) => setDialogState(() => isCurrentSelected = v ?? false)
                               ),
                               Expanded(
@@ -772,9 +774,9 @@ extension BillingServiceDialogs on CategoryDialogs {
 
                     // Pending Arrears (Previous months with 'Due' status)
                     if (otherDues.isNotEmpty) ...[
-                      const Divider(height: 24),
-                      Text("Pending Arrears:", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.red)),
-                      const SizedBox(height: 8),
+                      const Divider(height: 12),
+                      Center(child: Text("Pending Arrears:", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.red))),
+                      const SizedBox(height: 4),
                       ...otherDues.map((d) {
                         var data = d.data() as Map;
                         double amt = (data['totalAmount'] as num).toDouble();
@@ -789,6 +791,8 @@ extension BillingServiceDialogs on CategoryDialogs {
                               Checkbox(
                                 value: isChecked, 
                                 activeColor: Colors.red,
+                                visualDensity: VisualDensity.compact,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 onChanged: (v) => setDialogState(() {
                                   if (v == true) selectedMonthIds.add(d.id); else selectedMonthIds.remove(d.id);
                                 })
@@ -802,9 +806,9 @@ extension BillingServiceDialogs on CategoryDialogs {
 
                     // Manual Dues/Advances
                     if (manualDues.isNotEmpty) ...[
-                      const Divider(height: 24),
-                      Text("Manual Dues / Advances:", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
+                      const Divider(height: 12),
+                      Center(child: Text("Manual Dues / Advances:", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold))),
+                      const SizedBox(height: 4),
                       ...manualDues.asMap().entries.map((entry) {
                         int idx = entry.key;
                         var d = entry.value as Map;
@@ -820,6 +824,8 @@ extension BillingServiceDialogs on CategoryDialogs {
                               Checkbox(
                                 value: isChecked, 
                                 activeColor: isAdv ? Colors.green : Colors.red,
+                                visualDensity: VisualDensity.compact,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 onChanged: (v) => setDialogState(() {
                                   if (v == true) selectedManualDueIndices.add(idx); else selectedManualDueIndices.remove(idx);
                                 })
@@ -838,7 +844,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                       }),
                     ],
                     
-                    const Divider(height: 32),
+                    const Divider(height: 20),
                     CategoryDialogs._buildRow(
                       context, 
                       "Total Payable:", 
@@ -849,7 +855,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                     ),
 
                     if (notes != null && notes!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(10),
@@ -876,7 +882,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                       ),
                     ],
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     if (!isFuture) ...[
                        TextField(
                         controller: noteController, 
@@ -1406,7 +1412,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                       controller: TextEditingController(text: unitPrice.toStringAsFixed(0))..selection = TextSelection.fromPosition(TextSelection.fromPosition(TextPosition(offset: unitPrice.toStringAsFixed(0).length)).extent),
                     ),
                     
-                    const Divider(height: 32),
+                    const Divider(height: 20),
                     
                     // MAC Address Management
                     Row(

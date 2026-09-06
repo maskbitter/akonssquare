@@ -718,7 +718,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: ThemeManager.brandBackground,
       body: SafeArea(
         child: StreamBuilder<DocumentSnapshot>(
           stream: _dbService.getDatabaseInfoStream(),
@@ -783,7 +783,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 return Column(
                   children: [
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
                     GestureDetector(
                       onTap: null,
                       onLongPress: _showMasterKeyDialog,
@@ -792,28 +792,18 @@ class _LoginPageState extends State<LoginPage> {
                           Text(
                             "AkonsSquare",
                             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary, 
-                              letterSpacing: 0.5
+                              color: ThemeManager.brandBrown, 
+                              fontWeight: FontWeight.w900,
+                              fontSize: 32,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          InkWell(
-                            onTap: isOutdated ? () {
-                              String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
-                              if (dUrl.isNotEmpty) {
-                                showUpdateDialog(context: context, remoteVersion: latestV, downloadUrl: dUrl);
-                              }
-                            } : null,
-                            child: AppVersionInfo(
-                              version: _currentVersion,
-                              dbVersion: dbVersion,
-                              latestVersion: latestV,
-                              statusMessage: _temporaryMessage,
-                              isOutdated: isOutdated,
-                              color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.tertiary,
-                              connectionStatus: _connectionStatus,
-                              connectionColor: _connectionColor,
-                            ),
+                          const SizedBox(height: 8),
+                          AppVersionInfo(
+                            version: _currentVersion,
+                            dbVersion: dbVersion,
+                            latestVersion: latestV,
+                            statusMessage: _temporaryMessage,
+                            isOutdated: isOutdated,
                           ),
                         ],
                       ),
@@ -821,190 +811,180 @@ class _LoginPageState extends State<LoginPage> {
                     Expanded(
                       child: Center(
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Card(
-                                elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                                elevation: 0,
                                 margin: EdgeInsets.zero,
-                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                                color: const Color(0xFFFFF9F6),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
+                                  borderRadius: BorderRadius.circular(32),
                                 ),
                                 child: Padding(
-                                  padding: const EdgeInsets.all(1),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow,
-                                      borderRadius: BorderRadius.circular(23),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          "Welcome",
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary, 
-                                            fontWeight: FontWeight.bold, 
-                                          ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        "Welcome",
+                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                          color: ThemeManager.brandBrown, 
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 20,
                                         ),
-                                        const SizedBox(height: 48),
-                                        StreamBuilder<QuerySnapshot>(
-                                          stream: FirebaseFirestore.instance.collection('sub_items').snapshots(),
-                                          builder: (context, snapshot) {
-                                            List<Map<String, dynamic>> items = [];
-                                            if (snapshot.hasData) {
-                                              items = snapshot.data!.docs.map((doc) {
-                                                var data = doc.data() as Map<String, dynamic>;
-                                                data['id'] = doc.id;
-                                                return data;
-                                              }).where((d) {
-                                                // Only show units that are strictly 'Occupied'
-                                                String status = d['status'] ?? 'Vacant';
-                                                return status == 'Occupied';
-                                              }).toList();
-                                              items.sort((a, b) => (a['subItemName'] ?? '').compareTo(b['subItemName'] ?? ''));
-                                            }
+                                      ),
+                                      const SizedBox(height: 40),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 4, bottom: 8),
+                                            child: Text("Select User Name", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.brandBrown)),
+                                          ),
+                                          StreamBuilder<QuerySnapshot>(
+                                            stream: FirebaseFirestore.instance.collection('sub_items').snapshots(),
+                                            builder: (context, snapshot) {
+                                              List<Map<String, dynamic>> items = [];
+                                              if (snapshot.hasData) {
+                                                items = snapshot.data!.docs.map((doc) {
+                                                  var data = doc.data() as Map<String, dynamic>;
+                                                  data['id'] = doc.id;
+                                                  return data;
+                                                }).where((d) {
+                                                  // Only show units that are strictly 'Occupied'
+                                                  String status = d['status'] ?? 'Vacant';
+                                                  return status == 'Occupied';
+                                                }).toList();
+                                                items.sort((a, b) => (a['subItemName'] ?? '').compareTo(b['subItemName'] ?? ''));
+                                              }
 
-                                            // Safety check: if selected ID is not in items, clear it
-                                            if (_selectedSubItemId != null && !items.any((i) => i['id'] == _selectedSubItemId)) {
-                                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                                if (mounted) setState(() { _selectedSubItemId = null; });
-                                              });
-                                            }
+                                              // Safety check: if selected ID is not in items, clear it
+                                              if (_selectedSubItemId != null && !items.any((i) => i['id'] == _selectedSubItemId)) {
+                                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                                  if (mounted) setState(() { _selectedSubItemId = null; });
+                                                });
+                                              }
 
-                                            return DropdownButtonFormField<String>(
-                                              isExpanded: true,
-                                              alignment: Alignment.center,
-                                              decoration: InputDecoration(
-                                                labelText: "Select User Name",
-                                                labelStyle: TextStyle(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant),
-                                                prefixIcon: Icon(Icons.meeting_room_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSurface),
-                                                suffixIcon: const SizedBox(width: 48), // Balancing prefixIcon
-                                                contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-                                              ),
-                                              icon: const Icon(Icons.arrow_drop_down),
-                                              value: _selectedSubItemId,
-                                              selectedItemBuilder: (BuildContext context) {
-                                                return items.map<Widget>((data) {
+                                              return DropdownButtonFormField<String>(
+                                                isExpanded: true,
+                                                decoration: InputDecoration(
+                                                  fillColor: Colors.white,
+                                                  prefixIcon: const Icon(Icons.meeting_room_outlined, color: ThemeManager.brandBrown),
+                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                    borderSide: BorderSide.none,
+                                                  ),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                    borderSide: BorderSide.none,
+                                                  ),
+                                                ),
+                                                value: _selectedSubItemId,
+                                                selectedItemBuilder: (BuildContext context) {
+                                                  return items.map<Widget>((data) {
+                                                    String tName = data['TenantName'] ?? 'No Name';
+                                                    String unit = data['subItemName'] ?? 'Unit';
+                                                    return Text(
+                                                      "$unit ($tName)", 
+                                                      style: const TextStyle(fontWeight: FontWeight.bold, color: ThemeManager.brandBrown),
+                                                      overflow: TextOverflow.ellipsis
+                                                    );
+                                                  }).toList();
+                                                },
+                                                items: items.map((data) {
                                                   String tName = data['TenantName'] ?? 'No Name';
                                                   String unit = data['subItemName'] ?? 'Unit';
-                                                  return Center(
+                                                  return DropdownMenuItem<String>(
+                                                    value: data['id'], 
                                                     child: Text(
                                                       "$unit ($tName)", 
-                                                      textAlign: TextAlign.center,
-                                                      style: TextStyle(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                                                      style: const TextStyle(color: ThemeManager.brandBrown),
                                                       overflow: TextOverflow.ellipsis
                                                     ),
                                                   );
-                                                }).toList();
-                                              },
-                                              items: items.map((data) {
-                                                String tName = data['TenantName'] ?? 'No Name';
-                                                String unit = data['subItemName'] ?? 'Unit';
-                                                return DropdownMenuItem<String>(
-                                                  value: data['id'], 
-                                                  alignment: Alignment.center,
-                                                  child: Text(
-                                                    "$unit ($tName)", 
-                                                    textAlign: TextAlign.center,
-                                                    style: TextStyle(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
-                                                    overflow: TextOverflow.ellipsis
-                                                  ),
-                                                );
-                                              }).toList(),
-                                              onChanged: (v) => setState(() => _selectedSubItemId = v),
-                                              hint: Center(child: Text("Select User Name", style: TextStyle(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null))),
-                                            );
-                                          },
-                                        ),
-                                        const SizedBox(height: 32),
-                                        SizedBox(
-                                          width: double.infinity, height: 65, 
-                                          child: AppButton.icon(
-                                            onLongPress: (_isLoading || _isOffline) ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
-                                            onPressed: _isLoading ? null : () { 
-                                              if (_isOffline) {
-                                                _showOfflineDialog();
-                                                return;
-                                              }
-                                              HapticFeedback.mediumImpact(); 
-                                              setState(() => _isLoading = true);
-                                              _loginBasicUser().then((_) {
-                                                if (mounted) setState(() => _isLoading = false);
-                                              }).catchError((_) {
-                                                if (mounted) setState(() => _isLoading = false);
-                                              });
+                                                }).toList(),
+                                                onChanged: (v) => setState(() => _selectedSubItemId = v),
+                                                hint: const Text("Select User Name", style: TextStyle(color: Colors.grey)),
+                                              );
                                             },
-                                            icon: _isLoading 
-                                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
-                                              : Icon(_isOffline ? Icons.cloud_off_outlined : Icons.dashboard_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
-                                            child: Text(_isLoading ? "Connecting..." : (_isOffline ? "Offline Mode" : "Login to dashboard"), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary), maxLines: 1),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: _isOffline 
-                                                ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Colors.grey.shade600)
-                                                : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiary),
-                                              foregroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onTertiary,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(16),
-                                                side: (ThemeManager.appThemeNotifier.value == "Outline Theme" || _isOffline) ? BorderSide(color: _isOffline ? Colors.grey : Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
-                                              ),
-                                              elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-                                            ),
-                                          ),
-                                        ),
-                                        if (isOutdated) ...[
-                                          const SizedBox(height: 8),
-                                          SizedBox(
-                                            width: double.infinity,
-                                            height: 50,
-                                            child: AppButton.icon(
-                                              onPressed: () {
-                                                String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
-                                                if (dUrl.isNotEmpty) {
-                                                  showUpdateDialog(context: context, remoteVersion: latestV, downloadUrl: dUrl);
-                                                }
-                                              },
-                                              icon: const Icon(Icons.system_update_alt, color: Colors.white),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.blue,
-                                                foregroundColor: Colors.white,
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                              ),
-                                              child: const Text("UPDATE NOW", style: TextStyle(fontWeight: FontWeight.bold)),
-                                            ),
                                           ),
                                         ],
+                                      ),
+                                      const SizedBox(height: 32),
+                                      SizedBox(
+                                        width: double.infinity, height: 65, 
+                                        child: AppButton.icon(
+                                          onLongPress: (_isLoading || _isOffline) ? null : () { HapticFeedback.heavyImpact(); _showHiddenLoginDialog(); },
+                                          onPressed: _isLoading ? null : () { 
+                                            if (_isOffline) {
+                                              _showOfflineDialog();
+                                              return;
+                                            }
+                                            HapticFeedback.mediumImpact(); 
+                                            setState(() => _isLoading = true);
+                                            _loginBasicUser().then((_) {
+                                              if (mounted) setState(() => _isLoading = false);
+                                            }).catchError((_) {
+                                              if (mounted) setState(() => _isLoading = false);
+                                            });
+                                          },
+                                          icon: _isLoading 
+                                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                                            : Icon(_isOffline ? Icons.cloud_off_outlined : Icons.dashboard_outlined, color: Colors.white),
+                                          child: Text(_isLoading ? "Connecting..." : (_isOffline ? "Offline Mode" : "Login to dashboard"), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18)),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: ThemeManager.brandGreen,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(16),
+                                            ),
+                                            elevation: 4,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isOutdated) ...[
+                                        const SizedBox(height: 12),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          height: 55,
+                                          child: AppButton.icon(
+                                            onPressed: () {
+                                              String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
+                                              if (dUrl.isNotEmpty) {
+                                                showUpdateDialog(context: context, remoteVersion: latestV, downloadUrl: dUrl);
+                                              }
+                                            },
+                                            icon: const Icon(Icons.system_update_alt, color: Colors.white),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: ThemeManager.brandBlue,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                            ),
+                                            child: const Text("UPDATE NOW", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                          ),
+                                        ),
                                       ],
-                                    ),
+                                    ],
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 16),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: SizedBox(
-                                  width: double.infinity, height: 60,
-                                  child: AppButton.icon(
-                                    onPressed: () {
-                                      HapticFeedback.lightImpact();
-                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const GameZonePage()));
-                                    },
-                                    icon: Icon(Icons.videogame_asset_outlined, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.secondary,
-                                      foregroundColor: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSecondary,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
-                                      ),
-                                      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity, height: 60,
+                                child: AppButton.icon(
+                                  onPressed: () {
+                                    HapticFeedback.lightImpact();
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => const GameZonePage()));
+                                  },
+                                  icon: const Icon(Icons.videogame_asset_outlined, color: Colors.white),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: ThemeManager.brandDarkBrown,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
-                                    child: Text("Enter GameZone", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSecondary)),
                                   ),
+                                  child: const Text("Enter GameZone", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18)),
                                 ),
                               ),
                             ],
@@ -1016,24 +996,23 @@ class _LoginPageState extends State<LoginPage> {
                       padding: const EdgeInsets.only(bottom: 24),
                       child: Column(
                         children: [
-                          Image.asset('assets/images/signature.png', height: 90, errorBuilder: (c, e, s) => const SizedBox.shrink()),
-                          const SizedBox(height: 4),
-                          Text(
+                          Image.asset('assets/images/signature.png', height: 80, errorBuilder: (c, e, s) => const SizedBox.shrink()),
+                          const SizedBox(height: 8),
+                          const Text(
                             "AkonsAutomation by AkonS",
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold, 
-                              color: Theme.of(context).colorScheme.primary, 
-                              letterSpacing: 0.5, 
-                              fontStyle: FontStyle.italic,
+                              color: ThemeManager.brandBrown, 
+                              fontSize: 12,
                             ),
                           ),
                           const SizedBox(height: 2),
                           // BN Displayed lively at the bottom
                           Text(
                             bnText,
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold, 
-                              color: Theme.of(context).colorScheme.tertiary,
+                              color: ThemeManager.brandBrown,
                               fontSize: 10,
                             ),
                           ),

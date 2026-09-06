@@ -129,13 +129,12 @@ class AppDialogActions extends StatelessWidget {
   }
 }
 
-class AppVersionInfo extends StatefulWidget {
+class AppVersionInfo extends StatelessWidget {
   final String version;
   final String dbVersion;
   final String? latestVersion;
   final String? statusMessage;
   final bool isOutdated;
-  final bool animate;
   final Color? color;
   final Color? secondaryColor;
   final CrossAxisAlignment crossAxisAlignment;
@@ -150,7 +149,6 @@ class AppVersionInfo extends StatefulWidget {
     this.latestVersion,
     this.statusMessage,
     this.isOutdated = false,
-    this.animate = true,
     this.color,
     this.secondaryColor,
     this.crossAxisAlignment = CrossAxisAlignment.center,
@@ -160,186 +158,49 @@ class AppVersionInfo extends StatefulWidget {
   });
 
   @override
-  State<AppVersionInfo> createState() => _AppVersionInfoState();
-}
-
-class _AppVersionInfoState extends State<AppVersionInfo> {
-  bool _showUpdateInfo = false;
-  Timer? _timer;
-  StreamSubscription? _connectivitySub;
-  bool _isInternalOffline = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkConnectivity();
-    if (widget.isOutdated && widget.animate) {
-      _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-        if (mounted) {
-          setState(() {
-            _showUpdateInfo = !_showUpdateInfo;
-          });
-        }
-      });
-    }
-  }
-
-  void _checkConnectivity() async {
-    final results = await Connectivity().checkConnectivity();
-    if (mounted) {
-      setState(() {
-        _isInternalOffline = results.contains(ConnectivityResult.none);
-      });
-    }
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
-      if (mounted) {
-        setState(() {
-          _isInternalOffline = results.contains(ConnectivityResult.none);
-        });
-      }
-    });
-  }
-
-  @override
-  void didUpdateWidget(AppVersionInfo oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isOutdated && widget.animate && _timer == null) {
-      _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-        if (mounted) {
-          setState(() {
-            _showUpdateInfo = !_showUpdateInfo;
-          });
-        }
-      });
-    } else if ((!widget.isOutdated || !widget.animate) && _timer != null) {
-      _timer?.cancel();
-      _timer = null;
-      _showUpdateInfo = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _connectivitySub?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // CENTRALIZED STYLE CONFIG
-    const double mainFontSize = 8.0;
-    const double statusFontSize = 9.0;
+    const double fontSize = 10.0;
+    
+    // Determine colors
+    final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    final Color versionColor = isOutdated ? Colors.red : (color ?? Colors.green);
+    final Color dbColor = secondaryColor ?? ThemeManager.brandBrown;
 
-    final effectiveColor = widget.color ?? Theme.of(context).colorScheme.tertiary;
-    
-    // Logic for status message color and text
-    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
-    Color effectiveSecondary = widget.secondaryColor ?? (isOutline ? Colors.black : Theme.of(context).colorScheme.secondary);
-    String displayDBText = "DB V-${widget.dbVersion}";
-    
-    if (widget.statusMessage != null && widget.statusMessage!.isNotEmpty) {
-      displayDBText = widget.statusMessage!;
-      if (widget.statusMessage!.contains("Delet") || widget.statusMessage!.contains("Failed") || widget.statusMessage!.contains("Backup")) {
-        effectiveSecondary = Theme.of(context).colorScheme.error;
-      }
+    String displayDBText = "DB V-$dbVersion";
+    if (statusMessage != null && statusMessage!.isNotEmpty) {
+      displayDBText = statusMessage!;
     }
 
-    // Toggle logic for update notification
-    bool isShowingUpdateIcon = widget.isOutdated && _showUpdateInfo;
-
-    // Determine connectivity info (Prioritize widget prop if provided)
-    final bool showOffline = widget.connectionStatus != null 
-        ? widget.connectionStatus == "Offline" 
-        : _isInternalOffline;
-    
-    final String? statusText = widget.connectionStatus ?? (showOffline ? "Offline" : null);
-    final Color statusColor = widget.connectionColor ?? (showOffline ? Colors.red : Colors.green);
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: widget.crossAxisAlignment,
-        children: [
-          RichText(
-            textAlign: widget.crossAxisAlignment == CrossAxisAlignment.center ? TextAlign.center : TextAlign.start,
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: "V: ${widget.version}", 
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isOutline ? Colors.black : Colors.green, 
-                    fontWeight: FontWeight.bold, 
-                    fontSize: mainFontSize
-                  )
-                ),
-                if (widget.isOutdated && widget.latestVersion != null) ...[
-                  TextSpan(
-                    text: " (Update to ${widget.latestVersion} available)", 
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: isOutline ? Colors.black : Colors.red, 
-                      fontWeight: FontWeight.bold, 
-                      fontSize: mainFontSize - 1
-                    )
-                  ),
-                ]
-              ]
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: crossAxisAlignment,
+      children: [
+        Text(
+          "V: ${latestVersion ?? version}",
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: versionColor,
+            fontWeight: FontWeight.bold,
+            fontSize: fontSize,
           ),
-          if (widget.showLogoutIcon) ...[
-            const SizedBox(height: 1),
-            Icon(
-              isShowingUpdateIcon ? Icons.system_update_alt : Icons.logout, 
-              size: 18, 
-              color: isShowingUpdateIcon ? Theme.of(context).colorScheme.primary : Colors.red,
-            ),
-          ],
-          const SizedBox(height: 1),
-          Text(
-            displayDBText,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontSize: mainFontSize,
-              color: (isOutline && !displayDBText.contains("BN")) ? Colors.black : effectiveSecondary, 
-              fontWeight: FontWeight.bold, 
-            ),
+        ),
+        if (showLogoutIcon) ...[
+          const SizedBox(height: 2),
+          Icon(
+            isOutdated ? Icons.system_update_alt : Icons.logout, 
+            size: 18, // SLIGHTLY LARGER
+            color: isOutdated ? Colors.blue : Colors.red, // RED LOGOUT
           ),
-          // FIXED HEIGHT STATUS AREA to prevent layout jumps
-          SizedBox(
-            height: 14,
-            child: (statusText != null) 
-              ? Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: statusColor.withOpacity(0.4),
-                            blurRadius: 2,
-                            spreadRadius: 1,
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      statusText,
-                      style: TextStyle(
-                        fontSize: statusFontSize,
-                        color: statusColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                )
-              : const SizedBox.shrink(),
-          ),
+          const SizedBox(height: 2),
         ],
-      ),
+        Text(
+          displayDBText,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: isOutline ? Colors.black : dbColor,
+            fontWeight: FontWeight.bold,
+            fontSize: fontSize,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -383,7 +244,7 @@ class _UpdateProgressDialogState extends State<UpdateProgressDialog> {
         destinationFilename: filename,
         // MUST match the authority in AndroidManifest.xml
         androidProviderAuthority: "com.example.akonssquare.ota_update_provider",
-        usePackageInstaller: true, 
+        usePackageInstaller: false, 
       ).listen(
         (OtaEvent event) {
           print("OTA Progress: Status=${event.status}, Value=${event.value}");

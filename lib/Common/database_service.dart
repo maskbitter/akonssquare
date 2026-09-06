@@ -904,6 +904,7 @@ class DatabaseService {
     
     double totalOutstanding = 0;
     double totalPayable = 0;
+    double currentMonthBill = 0;
     List<Map<String, dynamic>> pendingMonths = [];
     Set<String> processedMonths = {};
     List manualDues = [];
@@ -929,6 +930,10 @@ class DatabaseService {
       var data = doc.data() as Map<String, dynamic>;
       String my = data['monthYear'].toString().trim();
       
+      if (my.toLowerCase() == currentMonthYear.trim().toLowerCase()) {
+        currentMonthBill = (data['totalAmount'] as num).toDouble();
+      }
+
       // Filter out records from future months relative to currentMonthYear
       if (compareMonthYear(my, currentMonthYear) > 0) continue;
 
@@ -952,6 +957,7 @@ class DatabaseService {
     // 2. Add current month estimation if not already recorded
     if (!processedMonths.contains(currentMonthYear.trim().toLowerCase())) {
       totalOutstanding += currentMonthAmount;
+      currentMonthBill = currentMonthAmount;
       pendingMonths.add({
         'monthYear': currentMonthYear,
         'isHistory': false,
@@ -973,6 +979,7 @@ class DatabaseService {
     return {
       'total': totalOutstanding,
       'totalPayable': totalPayable,
+      'currentMonthBill': currentMonthBill,
       'pendingMonths': pendingMonths,
       'manualDues': manualDues,
       'arrearsCount': arrearsCount,
@@ -1440,7 +1447,10 @@ class DatabaseService {
     }
     Duration diff = DateTime.now().difference(lastUpdate);
     if (diff.isNegative) diff = Duration.zero;
-    return "${diff.inDays} days ${diff.inHours % 24} hours ${diff.inMinutes % 60} mins ${diff.inSeconds % 60} secs";
+    
+    if (diff.inDays == 0) return "Today";
+    if (diff.inDays == 1) return "1 day ago";
+    return "${diff.inDays} days ago";
   }
 
   // --- PRIVATE SERIALIZATION HELPERS ---

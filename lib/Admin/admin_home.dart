@@ -64,6 +64,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
+      backgroundColor: ThemeManager.brandBackground,
       body: ValueListenableBuilder<List<QueryDocumentSnapshot>>(
         valueListenable: _repository.categories,
         builder: (context, categories, child) {
@@ -110,20 +111,20 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                           children: [
                             if (settings['showAccounts']!) ...[
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       children: [
-                                        Icon(Icons.account_balance_wallet_outlined, size: 22, color: Theme.of(context).colorScheme.primary),
+                                        const Icon(Icons.account_balance_wallet_outlined, size: 24, color: ThemeManager.brandBrown),
                                         const SizedBox(width: 8),
                                         Text(
                                           "Accounts",
                                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                             fontWeight: FontWeight.bold, 
-                                            letterSpacing: 0.8,
-                                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSurface,
+                                            color: ThemeManager.brandBrown,
+                                            fontSize: 22,
                                           ),
                                         ),
                                       ],
@@ -131,7 +132,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                                     Row(
                                       children: [
                                         IconButton(
-                                          icon: Icon(Icons.chevron_left, size: 20, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                                          icon: const Icon(Icons.chevron_left, size: 20, color: ThemeManager.brandBrown),
                                           onPressed: () => _moveMonth(-1),
                                           visualDensity: VisualDensity.compact,
                                           padding: EdgeInsets.zero,
@@ -140,11 +141,11 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                                           _selectedMonthStr,
                                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                             fontWeight: FontWeight.bold, 
-                                            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary
+                                            color: ThemeManager.brandBrown,
                                           ),
                                         ),
                                         IconButton(
-                                          icon: Icon(Icons.chevron_right, size: 20, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null),
+                                          icon: const Icon(Icons.chevron_right, size: 20, color: ThemeManager.brandBrown),
                                           onPressed: () => _moveMonth(1),
                                           visualDensity: VisualDensity.compact,
                                           padding: EdgeInsets.zero,
@@ -185,18 +186,17 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
         Align(
           alignment: Alignment.centerLeft,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.electric_bolt, size: 20, color: Theme.of(context).colorScheme.primary),
+                const Icon(Icons.electric_bolt, size: 20, color: ThemeManager.brandBrown),
                 const SizedBox(width: 8),
                 Text(
                   "Electricity",
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold, 
-                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSurface, 
-                    letterSpacing: 0.8
+                    color: ThemeManager.brandBrown, 
                   ),
                 ),
               ],
@@ -269,24 +269,6 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
       builder: (context, allRecords, child) {
         var receivedSnapshot = allRecords.where((d) => (d.data() as Map)['monthYear'] == _selectedMonthStr).toList();
         
-        double receivedTotal = 0;
-        double rentTotal = 0;
-        
-        for (var doc in receivedSnapshot) {
-          var data = doc.data() as Map<String, dynamic>;
-          if (data['status'] == 'Due') continue;
-
-          receivedTotal += (doc['totalAmount'] as num).toDouble();
-          List services = data.containsKey('services') ? data['services'] : [];
-          for (var s in services) {
-            if (s['name'].toString().toLowerCase().contains('rent')) {
-              rentTotal += (s['amount'] as num).toDouble();
-            }
-          }
-        }
-
-        double utilityTotal = receivedTotal - rentTotal;
-
         return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
           valueListenable: _repository.subItems,
           builder: (context, allSubItems, child) {
@@ -323,115 +305,78 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                 return Column(
                   children: [
                     Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 1,
-                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.transparent : Theme.of(context).colorScheme.primary,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      elevation: 4,
+                      color: ThemeManager.brandDarkBrown,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
-                            : BorderSide.none,
+                        borderRadius: BorderRadius.circular(32),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12), // TIGHTER PADDING
                         child: Column(
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.analytics_outlined, color: Theme.of(context).colorScheme.primary, size: 14),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      "$_selectedMonthStr Total Revenue",
-                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                                if (ThemeManager.appThemeNotifier.value != "Black & White Theme")
-                                  _buildChartToggle(
-                                    pieActive: _showPieChart,
-                                    barActive: _showBarChart,
-                                    onPieToggle: () => setState(() => _showPieChart = !_showPieChart),
-                                    onBarToggle: () => setState(() => _showBarChart = !_showBarChart),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "$_selectedMonthStr Total Revenue",
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white70, fontWeight: FontWeight.bold),
                                   ),
-                              ],
+                                  Row(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.pie_chart_outline, color: Colors.white70, size: 20),
+                                        onPressed: () => setState(() => _showPieChart = !_showPieChart),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.bar_chart, color: Colors.white70, size: 20),
+                                        onPressed: () => setState(() => _showBarChart = !_showBarChart),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               "৳${grandTotal.toStringAsFixed(2)}",
                               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w900, 
-                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onPrimary, 
-                                letterSpacing: -0.5
+                                color: Colors.white, 
+                                fontSize: 28, // REDUCED
+                                letterSpacing: -0.5,
                               ),
                             ),
-                            
-                            if (ThemeManager.appThemeNotifier.value != "Black & White Theme" && (_showPieChart || _showBarChart)) 
+                            if (grandTotal > 0 && (_showPieChart || _showBarChart))
                               Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 8),
-                                child: Row(
-                                  children: [
-                                    if (_showPieChart)
-                                      Expanded(child: SizedBox(height: 80, child: _buildPieChart(receivedTotal, dueTotal))),
-                                    if (_showPieChart && _showBarChart) const SizedBox(width: 16),
-                                    if (_showBarChart)
-                                      Expanded(child: SizedBox(height: 80, child: _buildBarChart(rentTotal, utilityTotal, dueTotal))),
-                                  ],
+                                child: SizedBox(
+                                  height: 120, // REDUCED
+                                  child: Row(
+                                    children: [
+                                      if (_showPieChart) Expanded(child: _buildPieChart(receivedTotal, dueTotal)),
+                                      if (_showBarChart) Expanded(child: _buildBarChart(rentTotal, utilityTotal, dueTotal)),
+                                    ],
+                                  ),
                                 ),
                               ),
-
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildInteractiveStat(
-                                    "Received", 
-                                    receivedTotal, 
-                                    Theme.of(context).colorScheme.primary, 
-                                    Theme.of(context).colorScheme.tertiaryContainer,
-                                    Icons.check_circle_outline,
-                                    () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 0)
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: _buildInteractiveStat(
-                                    "Due", 
-                                    dueTotal, 
-                                    Theme.of(context).colorScheme.primary, 
-                                    Theme.of(context).colorScheme.errorContainer,
-                                    Icons.pending_actions,
-                                    () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 1)
-                                  ),
-                                ),
-                              ],
-                            ),
                             const SizedBox(height: 8),
-                            Row(
+                            GridView.count(
+                              crossAxisCount: 2,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              mainAxisSpacing: 8,
+                              crossAxisSpacing: 8,
+                              childAspectRatio: 2.5, // INCREASED TO REDUCE HEIGHT
                               children: [
-                                Expanded(
-                                  child: _buildInteractiveStat(
-                                    "Rent", 
-                                    rentTotal, 
-                                    Theme.of(context).colorScheme.primary, 
-                                    Theme.of(context).colorScheme.primaryContainer,
-                                    Icons.home_work_outlined,
-                                    () => _showRentUtilityPopup(context, receivedSnapshot, isRent: true)
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: _buildInteractiveStat(
-                                    "Utility", 
-                                    utilityTotal, 
-                                    Theme.of(context).colorScheme.primary, 
-                                    Theme.of(context).colorScheme.secondaryContainer,
-                                    Icons.settings_suggest_outlined,
-                                    () => _showRentUtilityPopup(context, receivedSnapshot, isRent: false)
-                                  ),
-                                ),
+                                _buildStatCard("Received", receivedTotal, ThemeManager.cardYellow, Icons.check_circle_outline, () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 0)),
+                                _buildStatCard("Due", dueTotal, ThemeManager.cardPink, Icons.pending_actions, () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 1)),
+                                _buildStatCard("Rent", rentTotal, ThemeManager.cardPeach, Icons.home_work_outlined, () => _showRentUtilityPopup(context, receivedSnapshot, isRent: true)),
+                                _buildStatCard("Utility", utilityTotal, ThemeManager.cardPeach, Icons.settings_suggest_outlined, () => _showRentUtilityPopup(context, receivedSnapshot, isRent: false)),
                               ],
                             ),
                           ],
@@ -445,6 +390,43 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
           },
         );
       },
+    );
+  }
+
+  Widget _buildStatCard(String label, double amount, Color color, IconData icon, VoidCallback onTap) {
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      color: color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // SLIGHTLY REDUCED RADIUS
+      child: InkWell(
+        onTap: () {
+          DatabaseService.vibrate();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), // REDUCED PADDING
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 11, color: ThemeManager.brandBrown), // REDUCED ICON SIZE
+                  const SizedBox(width: 4),
+                  Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: ThemeManager.brandBrown, fontSize: 10)), // REDUCED FONT SIZE
+                ],
+              ),
+              const SizedBox(height: 1), // REDUCED HEIGHT
+              Text(
+                "৳${amount.toStringAsFixed(2)}",
+                style: const TextStyle(color: ThemeManager.brandBrown, fontWeight: FontWeight.w900, fontSize: 15), // REDUCED FONT SIZE
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -484,23 +466,23 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
     
     return PieChart(
       PieChartData(
-        sectionsSpace: 3,
-        centerSpaceRadius: 20,
+        sectionsSpace: 2,
+        centerSpaceRadius: 40, // INCREASED TO THIN THE RING
         sections: [
           PieChartSectionData(
-            color: isOutline ? Colors.transparent : Colors.greenAccent,
-            value: received,
-            title: '${((received/total)*100).toStringAsFixed(0)}%',
-            radius: 35,
-            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Colors.black87, fontWeight: FontWeight.bold),
+            color: isOutline ? Colors.transparent : Colors.redAccent, 
+            value: due,
+            title: '${((due/total)*100).toInt()}%',
+            radius: 20, // REDUCED TO THIN THE RING
+            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 9), 
             borderSide: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
           ),
           PieChartSectionData(
-            color: isOutline ? Colors.transparent : Colors.redAccent,
-            value: due,
-            title: '${((due/total)*100).toStringAsFixed(0)}%',
-            radius: 30,
-            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.bold),
+            color: isOutline ? Colors.transparent : Colors.greenAccent, 
+            value: received,
+            title: '${((received/total)*100).toInt()}%',
+            radius: 18, // REDUCED TO THIN THE RING
+            titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Colors.black87, fontWeight: FontWeight.bold, fontSize: 7), 
             borderSide: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
           ),
         ],
@@ -927,97 +909,72 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
     required IconData titleIcon,
     Map<int, TableColumnWidth>? customColumnWidths,
   }) {
-    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold);
+    final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: (ThemeManager.appThemeNotifier.value == "Outline Theme")
-                ? BoxDecoration(
-                    color: ThemeManager.outlineBackground,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5),
-                  )
-                : null,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(titleIcon, size: 18, color: (ThemeManager.appThemeNotifier.value == "Outline Theme") ? Theme.of(context).colorScheme.primary : context.electric),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(color: (ThemeManager.appThemeNotifier.value == "Outline Theme") ? Colors.black : Theme.of(context).colorScheme.primary),
-                ),
-              ],
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(titleIcon, size: 18, color: ThemeManager.brandBrown),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: ThemeManager.brandBrown),
+              ),
+            ],
           ),
         ),
-        InkWell(
-          onTap: widget.isReadOnly ? null : () {
-            DatabaseService.vibrate();
-            widget.onElectricityTap?.call();
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Card(
-            elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-            color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : containerColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                  ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
-                  : BorderSide.none,
-            ),
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Table(
-                  columnWidths: customColumnWidths ?? {
-                    0: const FixedColumnWidth(25),
-                    1: const FlexColumnWidth(2.5),
-                    for (int i = 2; i < headers.length; i++) i: const FlexColumnWidth(2),
-                  },
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  border: const TableBorder(
-                    verticalInside: BorderSide.none,
-                  ),
-                  children: [
-                    TableRow(
-                      decoration: BoxDecoration(
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : accentColor,
-                        border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5)) : null,
-                      ),
-                      children: headers.map((h) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
-                        child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null))),
-                      )).toList(),
+        Card(
+          elevation: 0,
+          color: const Color(0xFFFFF1F1), // Light pinkish background for the table area
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Table(
+                columnWidths: customColumnWidths ?? {
+                  0: const FixedColumnWidth(25),
+                  1: const FlexColumnWidth(2.5),
+                  for (int i = 2; i < headers.length; i++) i: const FlexColumnWidth(2),
+                },
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: [
+                  TableRow(
+                    decoration: const BoxDecoration(
+                      color: ThemeManager.brandDarkBrown,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                     ),
-                    ...List.generate(meters.length, (index) {
-                      var doc = meters[index];
-                      var data = doc.data() as Map<String, dynamic>;
-                      var rows = rowBuilder(data, index);
-                      
-                      return TableRow(
-                        decoration: BoxDecoration(
-                          color: (ThemeManager.appThemeNotifier.value == "Outline Theme") 
-                              ? ThemeManager.outlineBackground 
-                              : (index % 2 == 0 ? Theme.of(context).colorScheme.surface : Colors.transparent),
-                        ),
-                        children: rows.map((cell) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
-                          child: Center(child: cell),
-                        )).toList(),
-                      );
-                    }),
-                  ],
-                ),
+                    children: headers.map((h) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                      child: Center(child: Text(h, textAlign: TextAlign.center, style: headerTextStyle)),
+                    )).toList(),
+                  ),
+                  ...List.generate(meters.length, (index) {
+                    var doc = meters[index];
+                    var data = doc.data() as Map<String, dynamic>;
+                    var rows = rowBuilder(data, index);
+                    
+                    return TableRow(
+                      decoration: BoxDecoration(
+                        color: index % 2 == 0 ? Colors.transparent : Colors.white.withOpacity(0.5),
+                      ),
+                      children: rows.map((cell) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                        child: Center(child: cell),
+                      )).toList(),
+                    );
+                  }),
+                ],
               ),
             ),
           ),
@@ -1074,15 +1031,15 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                   double balance = mainUsed - totalSubPaid;
                   
                   return [
-                    Text("${index + 1}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
-                    Text(meterNo, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
-                    Text(mainUsed.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
-                    Text(totalSubPaid.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
-                    Text("৳${unitRate.toStringAsFixed(2)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    Text("${index + 1}", style: const TextStyle(color: ThemeManager.brandBrown)),
+                    Text(meterNo, style: const TextStyle(fontWeight: FontWeight.bold, color: ThemeManager.brandBrown)),
+                    Text(mainUsed.toStringAsFixed(1), style: const TextStyle(color: ThemeManager.brandBrown)),
+                    Text(totalSubPaid.toStringAsFixed(1), style: const TextStyle(color: ThemeManager.brandBrown)),
+                    Text("৳${unitRate.toStringAsFixed(2)}", style: const TextStyle(color: ThemeManager.brandBrown)),
                     Text(
                       balance.toStringAsFixed(1),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: balance > 0 ? Colors.red : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary),
+                      style: TextStyle(
+                        color: balance > 0 ? Colors.red : ThemeManager.brandBrown,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1108,14 +1065,14 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                   bool isRed = balance != 0;
 
                   return [
-                    Text("${index + 1}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
-                    Text(data['meterNo'] ?? 'N/A', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
-                    Text(present.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
-                    Text(govtPresent.toStringAsFixed(1), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : null)),
+                    Text("${index + 1}", style: const TextStyle(color: ThemeManager.brandBrown)),
+                    Text(data['meterNo'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, color: ThemeManager.brandBrown)),
+                    Text(present.toStringAsFixed(1), style: const TextStyle(color: ThemeManager.brandBrown)),
+                    Text(govtPresent.toStringAsFixed(1), style: const TextStyle(color: ThemeManager.brandBrown)),
                     Text(
                       "${balance.toStringAsFixed(1)}$suffix",
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isRed ? Colors.red : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.primary),
+                      style: TextStyle(
+                        color: isRed ? Colors.red : ThemeManager.brandBrown,
                         fontWeight: isRed ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
@@ -1162,7 +1119,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                 : BorderSide.none,
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
                 CircleAvatar(
@@ -1679,7 +1636,8 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
       double estimatedMonthAmount = await _calculateSingleMonthEstimate(subDoc, categories: categories);
       
       var summary = await _dbService.calculateFinancialSummary(subId, estimatedMonthAmount, _selectedMonthStr);
-      grandTotal += (summary['totalPayable'] as num).toDouble();
+      // Return only the bill for the SELECTED month
+      grandTotal += (summary['currentMonthBill'] as num).toDouble();
     }
     return grandTotal;
   }
