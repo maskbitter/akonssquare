@@ -681,7 +681,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       const SizedBox(height: 16),
                       LinearProgressIndicator(value: _progress, backgroundColor: Theme.of(context).colorScheme.outlineVariant, color: Theme.of(context).colorScheme.primary, minHeight: 6),
                       const SizedBox(height: 4),
-                      Text("${(_progress * 100).toStringAsFixed(1)}%", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                      Text("${(_progress * 100).toStringAsFixed(2)}%", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
                     ],
                     const SizedBox(height: 8),
                     Text(

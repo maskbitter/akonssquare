@@ -55,7 +55,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
 
   String get _selectedMonthStr => DatabaseService.formatMonthYear(_selectedDate);
 
-  Color get dueColor => Theme.of(context).colorScheme.error;
+  Color get dueColor => ThemeManager.dueColor;
 
   void _moveMonth(int delta) {
     DatabaseService.vibrate();
@@ -365,10 +365,10 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                                               crossAxisSpacing: 8,
                                               childAspectRatio: 2.5, 
                                               children: [
-                                                _buildStatCard("Received", receivedTotal, ThemeManager.cardYellow, Icons.check_circle_outline, () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 0)),
-                                                _buildStatCard("Due", dueTotal, ThemeManager.cardPink, Icons.pending_actions, () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 1)),
-                                                _buildStatCard("Rent", rentTotal, ThemeManager.cardPeach, Icons.home_work_outlined, () => _showRentUtilityPopup(context, receivedSnapshot, isRent: true)),
-                                                _buildStatCard("Utility", utilityTotal, ThemeManager.cardPeach, Icons.settings_suggest_outlined, () => _showRentUtilityPopup(context, receivedSnapshot, isRent: false)),
+                                                _buildStatCard("Received", receivedTotal, ThemeManager.cardPaidGreen, ThemeManager.paidColor, Icons.check_circle_outline, () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 0)),
+                                                _buildStatCard("Due", dueTotal, ThemeManager.cardDueRed, ThemeManager.dueColor, Icons.pending_actions, () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 1)),
+                                                _buildStatCard("Rent", rentTotal, ThemeManager.cardPeach, ThemeManager.brandBrown, Icons.home_work_outlined, () => _showRentUtilityPopup(context, receivedSnapshot, isRent: true)),
+                                                _buildStatCard("Utility", utilityTotal, ThemeManager.cardPeach, ThemeManager.brandBrown, Icons.settings_suggest_outlined, () => _showRentUtilityPopup(context, receivedSnapshot, isRent: false)),
                                               ],
                                             ),
                                           ],
@@ -393,7 +393,10 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
     );
   }
 
-  Widget _buildStatCard(String label, double amount, Color color, IconData icon, VoidCallback onTap) {
+  Widget _buildStatCard(String label, double amount, Color color, Color textColor, IconData icon, VoidCallback onTap) {
+    // For Received and Due, use a slightly darker version of the main color for text readability if it's too bright
+    // paidColor and dueColor are already quite dark/vibrant enough.
+    
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -413,15 +416,15 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, size: 11, color: ThemeManager.brandBrown), // REDUCED ICON SIZE
+                  Icon(icon, size: 11, color: textColor), // REDUCED ICON SIZE
                   const SizedBox(width: 4),
-                  Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: ThemeManager.brandBrown, fontSize: 10)), // REDUCED FONT SIZE
+                  Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: textColor, fontSize: 10)), // REDUCED FONT SIZE
                 ],
               ),
               const SizedBox(height: 1), // REDUCED HEIGHT
               Text(
                 "৳${amount.toStringAsFixed(2)}",
-                style: const TextStyle(color: ThemeManager.brandBrown, fontWeight: FontWeight.w900, fontSize: 15), // REDUCED FONT SIZE
+                style: TextStyle(color: textColor, fontWeight: FontWeight.w900, fontSize: 15), // REDUCED FONT SIZE
               ),
             ],
           ),
@@ -464,23 +467,27 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
     double total = received + due;
     if (total == 0) return Center(child: Text("No Data", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary)));
     
+    // Improved rounding logic to ensure 100% total
+    int duePercentage = ((due / total) * 100).round();
+    int receivedPercentage = 100 - duePercentage;
+
     return PieChart(
       PieChartData(
         sectionsSpace: 2,
         centerSpaceRadius: 40, // INCREASED TO THIN THE RING
         sections: [
           PieChartSectionData(
-            color: isOutline ? Colors.transparent : Colors.redAccent, 
+            color: isOutline ? Colors.transparent : ThemeManager.dueColor, 
             value: due,
-            title: '${((due/total)*100).toInt()}%',
+            title: '$duePercentage%',
             radius: 20, // REDUCED TO THIN THE RING
             titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 9), 
             borderSide: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
           ),
           PieChartSectionData(
-            color: isOutline ? Colors.transparent : Colors.greenAccent, 
+            color: isOutline ? Colors.transparent : ThemeManager.paidColor, 
             value: received,
-            title: '${((received/total)*100).toInt()}%',
+            title: '$receivedPercentage%',
             radius: 18, // REDUCED TO THIN THE RING
             titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Colors.black87, fontWeight: FontWeight.bold, fontSize: 7), 
             borderSide: isOutline ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2) : BorderSide.none,
@@ -503,7 +510,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
           touchTooltipData: BarTouchTooltipData(
             getTooltipColor: (_) => ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.secondary,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              return BarTooltipItem(rod.toY.toInt().toString(), Theme.of(context).textTheme.labelSmall!.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSecondary));
+              return BarTooltipItem(rod.toY.toStringAsFixed(2), Theme.of(context).textTheme.labelSmall!.copyWith(color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : Theme.of(context).colorScheme.onSecondary));
             },
           ),
         ),
@@ -519,7 +526,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
         barGroups: [
           _makeGroupData(0, v1, Colors.amberAccent),
           _makeGroupData(1, v2, Colors.cyanAccent),
-          _makeGroupData(2, v3, Colors.redAccent),
+          _makeGroupData(2, v3, ThemeManager.dueColor),
         ],
       ),
     );
@@ -764,7 +771,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                         title: "Total Vacant",
                         count: vacantCount,
                         color: ThemeManager.getCardColor(1),
-                        countColor: Colors.red,
+                        countColor: ThemeManager.dueColor,
                         icon: Icons.meeting_room_outlined,
                         onTap: () {
                           DatabaseService.vibrate();
@@ -1033,13 +1040,13 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                   return [
                     Text("${index + 1}", style: const TextStyle(color: ThemeManager.brandBrown)),
                     Text(meterNo, style: const TextStyle(fontWeight: FontWeight.bold, color: ThemeManager.brandBrown)),
-                    Text(mainUsed.toStringAsFixed(1), style: const TextStyle(color: ThemeManager.brandBrown)),
-                    Text(totalSubPaid.toStringAsFixed(1), style: const TextStyle(color: ThemeManager.brandBrown)),
+                    Text(mainUsed.toStringAsFixed(2), style: const TextStyle(color: ThemeManager.brandBrown)),
+                    Text(totalSubPaid.toStringAsFixed(2), style: const TextStyle(color: ThemeManager.brandBrown)),
                     Text("৳${unitRate.toStringAsFixed(2)}", style: const TextStyle(color: ThemeManager.brandBrown)),
                     Text(
-                      balance.toStringAsFixed(1),
+                      balance.toStringAsFixed(2),
                       style: TextStyle(
-                        color: balance > 0 ? Colors.red : ThemeManager.brandBrown,
+                        color: balance > 0 ? ThemeManager.dueColor : ThemeManager.brandBrown,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1067,12 +1074,12 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                   return [
                     Text("${index + 1}", style: const TextStyle(color: ThemeManager.brandBrown)),
                     Text(data['meterNo'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, color: ThemeManager.brandBrown)),
-                    Text(present.toStringAsFixed(1), style: const TextStyle(color: ThemeManager.brandBrown)),
-                    Text(govtPresent.toStringAsFixed(1), style: const TextStyle(color: ThemeManager.brandBrown)),
+                    Text(present.toStringAsFixed(2), style: const TextStyle(color: ThemeManager.brandBrown)),
+                    Text(govtPresent.toStringAsFixed(2), style: const TextStyle(color: ThemeManager.brandBrown)),
                     Text(
-                      "${balance.toStringAsFixed(1)}$suffix",
+                      "${balance.toStringAsFixed(2)}$suffix",
                       style: TextStyle(
-                        color: isRed ? Colors.red : ThemeManager.brandBrown,
+                        color: isRed ? ThemeManager.dueColor : ThemeManager.brandBrown,
                         fontWeight: isRed ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
@@ -1149,7 +1156,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                 const SizedBox(width: 12),
                 _buildNestedStatItem("Occupied", occupied, Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 12),
-                _buildNestedStatItem("Vacant", vacant, Colors.red),
+                _buildNestedStatItem("Vacant", vacant, ThemeManager.dueColor),
               ],
             ),
           ),
@@ -1340,12 +1347,13 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                                 onTap: () {
                                   try {
                                     UserReportPage.showDetailsDialog(context, {
+                                      ...data,
                                       'docId': receivedDocs[index].id,
                                       'subItemName': resolvedSubName,
                                       'TenantName': tName,
                                       'categoryName': categoryName,
                                       'profilePictureUrl': snapData?['profilePictureUrl'],
-                                    });
+                                    }, filterType: isRent ? 'rent' : 'utility');
                                   } catch (e, stack) {
                                     debugPrint("ERROR in admin_home recentPayments onTap: $e\n$stack");
                                     DatabaseService.showToast(context, "Error: $e", backgroundColor: Colors.red);
@@ -1411,7 +1419,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                     title: "$resolvedSubName ($tName)",
                     subtitle: categoryName,
                     amount: (data['totalAmount'] as num).toDouble(),
-                    color: Theme.of(context).colorScheme.tertiary,
+                    color: ThemeManager.paidColor,
                     icon: Icons.check_circle_outline,
                     paidBy: data['paidBy'],
                     paidAt: data['paidAt'],
@@ -1441,7 +1449,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
               title: "$resolvedSubName ($tName)",
               subtitle: categoryName,
               amount: (data['totalAmount'] as num).toDouble(),
-              color: Theme.of(context).colorScheme.tertiary,
+              color: ThemeManager.paidColor,
               icon: Icons.check_circle_outline,
             );
           },
@@ -1623,7 +1631,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "৳${amount.toStringAsFixed(0)}",
+              "৳${amount.toStringAsFixed(2)}",
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: color),
             ),
             const SizedBox(width: 4),

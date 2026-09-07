@@ -58,7 +58,8 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
   void _startDBVersionListener() {
     _dbVersionSubscription = DatabaseService().getDatabaseInfoStream().listen((snap) {
       if (snap.exists) {
-        double currentVer = snap['dbVersion']?.toDouble() ?? 1.0;
+        var data = snap.data() as Map<String, dynamic>?;
+        double currentVer = (data?['dbVersion'] as num?)?.toDouble() ?? 1.0;
         if (_lastDBVersion != null && currentVer != _lastDBVersion) {
           DatabaseService.showToast(context, "System Data Updated (V$currentVer)");
           setState(() {}); 
@@ -237,7 +238,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
                     String dbVersion = "...";
                     if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
                       var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(2);
                     }
                     
                     bool isOutdated = false;

@@ -202,7 +202,7 @@ extension MeterDialogs on CategoryDialogs {
                   ],
                   CategoryDialogs._buildReadOnlyRow(context, "Meter Type", data['meterType']),
                   CategoryDialogs._buildReadOnlyRow(context, "Meter No", data['meterNo']),
-                  CategoryDialogs._buildReadOnlyRow(context, "Last Reading", lastReading.toStringAsFixed(1)),
+                  CategoryDialogs._buildReadOnlyRow(context, "Last Reading", lastReading.toStringAsFixed(2)),
                   const SizedBox(height: 12),
                   TextField(
                     controller: presentReadingController,
@@ -220,7 +220,7 @@ extension MeterDialogs on CategoryDialogs {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text("Govt. Bill Details", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
                   ),
-                  CategoryDialogs._buildReadOnlyRow(context, "Last Govt. Bill Reading", lastGovtReading.toStringAsFixed(1)),
+                  CategoryDialogs._buildReadOnlyRow(context, "Last Govt. Bill Reading", lastGovtReading.toStringAsFixed(2)),
                   const SizedBox(height: 8),
                   TextField(
                     controller: govtReadingController,
@@ -248,16 +248,16 @@ extension MeterDialogs on CategoryDialogs {
                       isDense: true
                     ),
                   ),
-                  CategoryDialogs._buildReadOnlyRow(context, "Govt. Bill Unit", govtBillUnit.toStringAsFixed(1)),
+                  CategoryDialogs._buildReadOnlyRow(context, "Govt. Bill Unit", govtBillUnit.toStringAsFixed(2)),
                   CategoryDialogs._buildReadOnlyRow(context, "Last Month Unit Rate", "৳${lastMonthRate.toStringAsFixed(2)}"),
                   CategoryDialogs._buildReadOnlyRow(context, "This Month Unit Rate", "৳${thisMonthRate.toStringAsFixed(2)}"),
-                  CategoryDialogs._buildReadOnlyRow(context, "Govt. Due/Adv Units", govtDueAdv.toStringAsFixed(1)),
+                  CategoryDialogs._buildReadOnlyRow(context, "Govt. Due/Adv Units", govtDueAdv.toStringAsFixed(2)),
                   
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text("Detailed Statistics (Calculated)", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
                   ),
-                  CategoryDialogs._buildReadOnlyRow(context, "Main Meter Used Unit", mainUsed.toStringAsFixed(1)),
+                  CategoryDialogs._buildReadOnlyRow(context, "Main Meter Used Unit", mainUsed.toStringAsFixed(2)),
                   
                   StreamBuilder<QuerySnapshot>(
                     stream: CategoryDialogs._dbService.getSubItemsByMainMeter(data['meterNo']),
@@ -275,8 +275,8 @@ extension MeterDialogs on CategoryDialogs {
                       double balance = mainUsed - totalSubUnits;
                       return Column(
                         children: [
-                          CategoryDialogs._buildReadOnlyRow(context, "Total Sub-meter Units", totalSubUnits.toStringAsFixed(1)),
-                          CategoryDialogs._buildReadOnlyRow(context, "Balance Units (Main-Sub)", balance.toStringAsFixed(1), valueColor: balance > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary),
+                          CategoryDialogs._buildReadOnlyRow(context, "Total Sub-meter Units", totalSubUnits.toStringAsFixed(2)),
+                          CategoryDialogs._buildReadOnlyRow(context, "Balance Units (Main-Sub)", balance.toStringAsFixed(2), valueColor: balance > 0 ? ThemeManager.dueColor : Theme.of(context).colorScheme.primary),
                         ],
                       );
                     }

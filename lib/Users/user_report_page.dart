@@ -26,7 +26,7 @@ class UserReportPage extends StatelessWidget {
     return parts.isEmpty ? "Joined today" : parts.join(", ");
   }
 
-  static void showDetailsDialog(BuildContext context, Map<String, dynamic> data) {
+  static void showDetailsDialog(BuildContext context, Map<String, dynamic> data, {String? filterType}) {
     debugPrint("DEBUG: showDetailsDialog called with data: $data");
     try {
       bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
@@ -97,7 +97,7 @@ class UserReportPage extends StatelessWidget {
                   ),
                   child: Icon(
                     isDue ? Icons.insert_drive_file : Icons.calendar_month_outlined, 
-                    color: isDue ? const Color(0xFFE53935) : Theme.of(context).colorScheme.primary, 
+                    color: isDue ? ThemeManager.dueColor : ThemeManager.paidColor, 
                     size: 36
                   ),
                 ),
@@ -127,85 +127,106 @@ class UserReportPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 8),
-                  _buildDetailRow(context, isDue ? "Status:" : "Payment Time:", isDue ? "PENDING (DUE)" : paidTime, isBold: true, valueColor: isDue ? const Color(0xFFE53935) : null),
-                  if (isDue) _buildDetailRow(context, "Recorded at:", paidTime, valueColor: const Color(0xFFE53935)),
+                  _buildDetailRow(context, isDue ? "Status:" : "Payment Time:", isDue ? "PENDING (DUE)" : paidTime, isBold: true, valueColor: isDue ? ThemeManager.dueColor : null),
+                  if (isDue) _buildDetailRow(context, "Recorded at:", paidTime, valueColor: ThemeManager.dueColor),
                   
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.list_alt, color: Color(0xFF8D4F37), size: 18),
-                      const SizedBox(width: 8),
-                      Text("Rent & Services", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black)),
+                  if (filterType == null || filterType == 'rent') ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.list_alt, color: Color(0xFF8D4F37), size: 18),
+                        const SizedBox(width: 8),
+                        Text("Rent & Services", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDetailRow(context, "House Rent", "৳${rentAmount.toStringAsFixed(2)}"),
+                    if (filterType == null) ...[
+                      ...otherServices.map((s) {
+                        String name = s['name'] ?? 'Service';
+                        return _buildDetailRow(context, name, "৳${(s['amount'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'}");
+                      }),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 0, right: 0),
+                        child: Divider(height: 16),
+                      ),
+                      _buildDetailRow(
+                        context,
+                        "Subtotal (Rent & Services)",
+                        "৳${rentAndServicesSubtotal.toStringAsFixed(2)}",
+                        isBold: true,
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-                  _buildDetailRow(context, "House Rent", "৳${rentAmount.toStringAsFixed(2)}"),
-                  ...otherServices.map((s) {
-                    String name = s['name'] ?? 'Service';
-                    return _buildDetailRow(context, name, "৳${(s['amount'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'}");
-                  }),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 0, right: 0),
-                    child: Divider(height: 16),
-                  ),
-                  _buildDetailRow(
-                    context,
-                    "Subtotal (Rent & Services)",
-                    "৳${rentAndServicesSubtotal.toStringAsFixed(2)}",
-                    isBold: true,
-                  ),
+                  ],
 
-                  if (manualDuesTotal != 0)
-                    _buildDetailRow(
-                      context,
-                      manualDuesTotal < 0 ? "Advance Adjusted" : "Previous Dues",
-                      "৳${manualDuesTotal.abs().toStringAsFixed(2)}",
-                      valueColor: manualDuesTotal < 0 ? Colors.green : Colors.red,
-                      isBold: true,
+                  if (filterType == 'utility') ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.settings_suggest_outlined, color: Color(0xFF8D4F37), size: 18),
+                        const SizedBox(width: 8),
+                        Text("Utility Details", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black)),
+                      ],
                     ),
+                    const SizedBox(height: 8),
+                    ...otherServices.map((s) {
+                      String name = s['name'] ?? 'Service';
+                      return _buildDetailRow(context, name, "৳${(s['amount'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'}");
+                    }),
+                  ],
 
-                  if (ed != null || electricityBill > 0) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7F2),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFFFE0CC).withValues(alpha: 0.5)),
+                  if (filterType == null || filterType == 'utility') ...[
+                    if (manualDuesTotal != 0 && (filterType == null || filterType == 'utility'))
+                      _buildDetailRow(
+                        context,
+                        manualDuesTotal < 0 ? "Advance Adjusted" : "Previous Dues",
+                        "৳${manualDuesTotal.abs().toStringAsFixed(2)}",
+                        valueColor: manualDuesTotal < 0 ? Colors.green : Colors.red,
+                        isBold: true,
                       ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.bolt, color: Color(0xFF5D4037), size: 18),
-                              const SizedBox(width: 8),
-                              Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF5D4037))),
+
+                    if (ed != null || electricityBill > 0) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7F2),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: const Color(0xFFFFE0CC).withValues(alpha: 0.5)),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.bolt, color: Color(0xFF5D4037), size: 18),
+                                const SizedBox(width: 8),
+                                Text("Electricity Breakdown", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF5D4037))),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            if (ed != null) ...[
+                              _buildDetailRow(context, "Meter No:", (ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A').toString()),
+                              _buildDetailRow(context, "Last Units:", "${DatabaseService.parseNum(ed['lastReading'])}"),
+                              _buildDetailRow(context, "Present Units:", "${DatabaseService.parseNum(ed['presentReading'])}"),
+                              _buildDetailRow(context, "Used Units:", "${DatabaseService.parseNum(ed['presentReading']).toDouble() - DatabaseService.parseNum(ed['lastReading']).toDouble()}", isBold: true),
+                              _buildDetailRow(context, "Price per Unit:", "৳${DatabaseService.parseNum(ed['pricePerUnit'])}"),
+                            ] else ...[
+                               const Center(child: Text("(Detailed readings not available)", style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic))),
                             ],
-                          ),
-                          const SizedBox(height: 12),
-                          if (ed != null) ...[
-                            _buildDetailRow(context, "Meter No:", (ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A').toString()),
-                            _buildDetailRow(context, "Last Units:", "${DatabaseService.parseNum(ed['lastReading'])}"),
-                            _buildDetailRow(context, "Present Units:", "${DatabaseService.parseNum(ed['presentReading'])}"),
-                            _buildDetailRow(context, "Used Units:", "${DatabaseService.parseNum(ed['presentReading']).toDouble() - DatabaseService.parseNum(ed['lastReading']).toDouble()}", isBold: true),
-                            _buildDetailRow(context, "Price per Unit:", "৳${DatabaseService.parseNum(ed['pricePerUnit'])}"),
-                          ] else ...[
-                             const Center(child: Text("(Detailed readings not available)", style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic))),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(height: 1),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("Electric Bill", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                                Text("৳${electricityBill.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: const Color(0xFF5D4037))),
+                              ],
+                            ),
                           ],
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Divider(height: 1),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("Electric Bill", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                              Text("৳${electricityBill.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: const Color(0xFF5D4037))),
-                            ],
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                   const SizedBox(height: 20),
                   Container(
@@ -221,13 +242,16 @@ class UserReportPage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Grand Total", 
+                          filterType == 'rent' ? "Rent Total" : (filterType == 'utility' ? "Utility Total" : "Grand Total"), 
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: Colors.white, 
                             fontWeight: FontWeight.bold
                           ),
                         ),
-                        Text("৳${totalAmount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
+                        Text(
+                          "৳${(filterType == 'rent' ? rentAmount : (filterType == 'utility' ? totalAmount - rentAmount : totalAmount)).toStringAsFixed(2)}", 
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)
+                        ),
                       ],
                     ),
                   ),
@@ -237,77 +261,19 @@ class UserReportPage extends StatelessWidget {
                       child: Text("Note: ${data['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
                     ),
                   const SizedBox(height: 20),
-                  FutureBuilder<SharedPreferences>(
-                    future: SharedPreferences.getInstance(),
-                    builder: (context, prefsSnap) {
-                      final bool isAdmin = prefsSnap.hasData && (prefsSnap.data!.getString('userRole') == 'admin' || prefsSnap.data!.getString('userRole') == 'operator');
-                      
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey.shade200,
-                                foregroundColor: Colors.black87,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                elevation: 0,
-                              ),
-                              onPressed: () => Navigator.pop(ctx), 
-                              child: const Text("Close", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))
-                            ),
-                          ),
-                          if (isDue && isAdmin) ...[
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.tertiary,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  elevation: 4,
-                                ),
-                                onPressed: () async {
-                                  final String? docId = data['docId'];
-                                  if (docId != null) {
-                                    // Update existing Due record
-                                    String actor = prefsSnap.data!.getString('username') ?? "Admin";
-                                    await DatabaseService().updateBillingRecordStatus(docId, 'Paid', actor);
-                                    if (context.mounted) {
-                                      Navigator.pop(ctx);
-                                      DatabaseService.showToast(context, "Marked as Paid!");
-                                    }
-                                  } else {
-                                    // Open Mark as Paid dialog for estimated record
-                                    Navigator.pop(ctx);
-                                    CategoryDialogs.showMarkAsPaidDialog(
-                                      context: context, 
-                                      subItemId: data['subItemId'], 
-                                      subItemName: data['subItemName'], 
-                                      TenantName: data['TenantName'], 
-                                      nidNumber: data['nidNumber'] ?? '', 
-                                      houseRentTotal: DatabaseService.parseNum(data['houseRentTotal']).toDouble(), 
-                                      electricityBill: DatabaseService.parseNum(data['electricityBill']).toDouble(), 
-                                      services: (data['services'] as List).cast<Map<String, dynamic>>(), 
-                                      electricityDetails: data['electricityDetails'], 
-                                      mainCategoryName: data['mainCategoryName'] ?? 'Unknown', 
-                                      manualDues: data['manualDues'] ?? [],
-                                      profilePictureUrl: data['profilePictureUrl'],
-                                      nidPictureUrl: data['nidPictureUrl'] ?? data['unitNidPictureUrl'],
-                                      occupiedAt: data['occupiedAt'] as Timestamp?,
-                                      createdAt: data['unitCreatedAt'] as Timestamp?,
-                                      status: data['unitStatus'] as String?
-                                    );
-                                  }
-                                }, 
-                                child: const Text("Mark as Paid", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))
-                              ),
-                            ),
-                          ],
-                        ],
-                      );
-                    }
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8D4F37),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        elevation: 4,
+                      ),
+                      onPressed: () => Navigator.pop(ctx), 
+                      child: const Text("Close", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))
+                    ),
                   ),
                 ],
               ),
@@ -538,11 +504,11 @@ class UserReportPage extends StatelessWidget {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                             decoration: BoxDecoration(
-                                              color: isOutline ? ThemeManager.outlineBackground : (isDue ? Colors.red.withValues(alpha: 0.1) : Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1)),
+                                              color: isOutline ? ThemeManager.outlineBackground : (isDue ? ThemeManager.cardDueRed : ThemeManager.cardPaidGreen),
                                               borderRadius: BorderRadius.circular(30),
-                                              border: isOutline ? Border.all(color: isDue ? Colors.red : Colors.green, width: 1.5) : null,
+                                              border: isOutline ? Border.all(color: isDue ? ThemeManager.dueColor : Colors.green, width: 1.5) : null,
                                             ),
-                                            child: Text(status.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? (isDue ? Colors.red : Colors.green) : (isDue ? Colors.red : Theme.of(context).colorScheme.tertiary), fontWeight: FontWeight.w900)),
+                                            child: Text(status.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? (isDue ? ThemeManager.dueColor : Colors.green) : (isDue ? ThemeManager.dueColor : ThemeManager.paidColor), fontWeight: FontWeight.w900)),
                                           ),
                                           if ((data['paymentNotes'] ?? '').toString().isNotEmpty && !(isDue == false && data['paymentNotes'] == "Marked as Due"))
                                             Padding(
@@ -570,7 +536,7 @@ class UserReportPage extends StatelessWidget {
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                                       children: [
-                                        _buildCompactSummary(context, "Rent", "৳${rentAmount.toStringAsFixed(0)}", isOutline ? Colors.black : Theme.of(context).colorScheme.onSurface),
+                                        _buildCompactSummary(context, "Rent", "৳${rentAmount.toStringAsFixed(2)}", isOutline ? Colors.black : Theme.of(context).colorScheme.onSurface),
                                         Container(width: 1, height: 16, color: Theme.of(context).colorScheme.outlineVariant),
                                         InkWell(
                                           onTap: () {
@@ -585,12 +551,12 @@ class UserReportPage extends StatelessWidget {
                                               DatabaseService.showToast(context, "Error: $e", backgroundColor: Colors.red);
                                             }
                                           },
-                                          child: _buildCompactSummary(context, "Elec", "৳${electricityBill.toStringAsFixed(0)}", isOutline ? Colors.black : context.electric),
+                                          child: _buildCompactSummary(context, "Elec", "৳${electricityBill.toStringAsFixed(2)}", isOutline ? Colors.black : context.electric),
                                         ),
                                         Container(width: 1, height: 16, color: Theme.of(context).colorScheme.outlineVariant),
-                                        _buildCompactSummary(context, "Util", "৳${utilityAmount.toStringAsFixed(0)}", isOutline ? Colors.black : Theme.of(context).colorScheme.secondary),
+                                        _buildCompactSummary(context, "Util", "৳${utilityAmount.toStringAsFixed(2)}", isOutline ? Colors.black : Theme.of(context).colorScheme.secondary),
                                         Container(width: 1, height: 16, color: Theme.of(context).colorScheme.outlineVariant),
-                                        _buildCompactSummary(context, "Total", "৳${totalAmount.toStringAsFixed(0)}", isOutline ? Colors.black : ThemeManager.getCardColor(index + 2, isSubCard: true), isBold: true),
+                                        _buildCompactSummary(context, "Total", "৳${totalAmount.toStringAsFixed(2)}", isOutline ? Colors.black : ThemeManager.getCardColor(index + 2, isSubCard: true), isBold: true),
                                       ],
                                     ),
                                   ),

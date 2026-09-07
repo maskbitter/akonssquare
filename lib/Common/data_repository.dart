@@ -263,7 +263,13 @@ class DataRepository {
     double manualDuesTotal = 0;
 
     for (var m in manualDues) {
-      if (m is Map) manualDuesTotal += (m['amount'] as num).toDouble();
+      if (m is Map) {
+        String? dMY = m['monthYear']?.toString();
+        // Only include if it belongs to the selected month OR has no specific month assigned (legacy data)
+        if (dMY == null || dMY == 'null' || dMY.isEmpty || dMY.trim().toLowerCase() == currentMonthYear.trim().toLowerCase()) {
+          manualDuesTotal += (m['amount'] as num).toDouble();
+        }
+      }
     }
 
     // Get active services for estimation details
@@ -328,6 +334,10 @@ class DataRepository {
               if (DatabaseService.compareMonthYear(currentMonthYear, occMY) < 0) {
                 isCurrentlyVacantInSelectedMonth = true;
               }
+            } else {
+              // If occupiedAt is null, and there's no record for this past month,
+              // it's safer to assume it was vacant.
+              isCurrentlyVacantInSelectedMonth = true;
             }
           } else if (!isCurrentlyVacantInSelectedMonth && status == 'Vacant') {
             isCurrentlyVacantInSelectedMonth = true;

@@ -154,7 +154,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     minHeight: 10,
                   ),
                   const SizedBox(height: 10),
-                  Text("${(value * 100).toStringAsFixed(1)}% Complete", style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text("${(value * 100).toStringAsFixed(2)}% Complete", style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               );
             },
@@ -184,7 +184,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void _startDBVersionListener() {
     _dbVersionSubscription = _dbService.getDatabaseInfoStream().listen((snap) {
       if (snap.exists) {
-        double currentVer = snap['dbVersion']?.toDouble() ?? 1.0;
+        var data = snap.data() as Map<String, dynamic>?;
+        double currentVer = (data?['dbVersion'] as num?)?.toDouble() ?? 1.0;
         if (_lastDBVersion != null && currentVer != _lastDBVersion) {
           // Version changed (Restore happened)
           DatabaseService.showToast(context, "System Data Updated (V$currentVer)");
@@ -402,7 +403,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     String dbVersion = "...";
                     if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
                       var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(2);
                     }
                     
                     bool isOutdated = false;

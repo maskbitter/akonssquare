@@ -729,7 +729,7 @@ class _LoginPageState extends State<LoginPage> {
             if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
               var info = dbInfoSnap.data!.data() as Map<String, dynamic>;
               serverStatus = info['serverStatus'] ?? 'completed';
-              dbVersion = (info['dbVersion'] ?? DatabaseService.defaultDbVersion).toStringAsFixed(1);
+              dbVersion = (info['dbVersion'] ?? DatabaseService.defaultDbVersion).toStringAsFixed(2);
               
               if (serverStatus == 'completed' && _temporaryMessage != null && _temporaryMessage!.contains("Updating")) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -122,7 +122,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(sName, style: Theme.of(context).textTheme.titleSmall),
-                                        Text("৳${amt.toStringAsFixed(0)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+                                        Text("৳${amt.toStringAsFixed(2)}", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
                                   ),
@@ -191,7 +191,7 @@ extension BillingServiceDialogs on CategoryDialogs {
     required double currentAmount,
   }) {
     final nameController = TextEditingController(text: currentName);
-    final amountController = TextEditingController(text: currentAmount.toStringAsFixed(0));
+    final amountController = TextEditingController(text: currentAmount.toStringAsFixed(2));
     bool isLoading = false;
 
     showDialog(
@@ -814,12 +814,12 @@ extension BillingServiceDialogs on CategoryDialogs {
                               children: [
                                 ...services.map((s) => Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 2),
-                                  child: CategoryDialogs._buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(1)}"),
+                                  child: CategoryDialogs._buildRow(context, "${s['name']}:", "৳${(s['amount'] as num).toDouble().toStringAsFixed(2)}"),
                                 )),
                                 if (electricityDetails != null && electricityDetails['isStopped'] != true)
-                                  CategoryDialogs._buildRow(context, "Sub-Meter Bill:", "৳${dynamicElecBill.toStringAsFixed(1)}"),
+                                  CategoryDialogs._buildRow(context, "Sub-Meter Bill:", "৳${dynamicElecBill.toStringAsFixed(2)}"),
                                 const Divider(),
-                                CategoryDialogs._buildRow(context, "Sub-Total:", "৳${currentMonthTotal.toStringAsFixed(1)}", isBold: true),
+                                CategoryDialogs._buildRow(context, "Sub-Total:", "৳${currentMonthTotal.toStringAsFixed(2)}", isBold: true),
                               ],
                             ),
                           ),
@@ -850,14 +850,14 @@ extension BillingServiceDialogs on CategoryDialogs {
                             children: [
                               Checkbox(
                                 value: isChecked, 
-                                activeColor: Colors.red,
+                                activeColor: ThemeManager.dueColor,
                                 visualDensity: VisualDensity.compact,
                                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 onChanged: (v) => setDialogState(() {
                                   if (v == true) selectedMonthIds.add(d.id); else selectedMonthIds.remove(d.id);
                                 })
                               ),
-                              Expanded(child: CategoryDialogs._buildRow(context, "$my Due:", "৳${amt.toStringAsFixed(1)}", color: Colors.red)),
+                              Expanded(child: CategoryDialogs._buildRow(context, "$my Due:", "৳${amt.toStringAsFixed(2)}", color: ThemeManager.dueColor)),
                             ],
                           ),
                         );
@@ -882,7 +882,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                             children: [
                               Checkbox(
                                 value: isChecked, 
-                                activeColor: isAdv ? Colors.green : Colors.red,
+                                activeColor: isAdv ? ThemeManager.paidColor : ThemeManager.dueColor,
                                 visualDensity: VisualDensity.compact,
                                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 onChanged: (v) => setDialogState(() {
@@ -893,8 +893,8 @@ extension BillingServiceDialogs on CategoryDialogs {
                                 child: CategoryDialogs._buildRow(
                                   context, 
                                   "${fd['reason']}${fd['monthYear'] != null && fd['monthYear'].toString().isNotEmpty && fd['monthYear'].toString() != 'null' ? ' (${fd['monthYear']})' : ''}:", 
-                                  "৳${amt.abs().toStringAsFixed(1)}", 
-                                  color: isAdv ? Colors.green : Colors.red
+                                  "৳${amt.abs().toStringAsFixed(2)}", 
+                                  color: isAdv ? ThemeManager.paidColor : ThemeManager.dueColor
                                 )
                               ),
                             ],
@@ -907,7 +907,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                     CategoryDialogs._buildRow(
                       context, 
                       "Total Payable:", 
-                      "৳${grandTotal.toStringAsFixed(1)}", 
+                      "৳${grandTotal.toStringAsFixed(2)}", 
                       isBold: true, 
                       fontSize: 22,
                       color: Theme.of(context).colorScheme.primary
@@ -982,11 +982,11 @@ extension BillingServiceDialogs on CategoryDialogs {
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       Text("$idx. ${isDue ? 'Due for' : 'Paid by'}: ${hData['TenantName'] ?? TenantName}", 
-                                        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: isDue ? Colors.red : null)),
+                                        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: isDue ? ThemeManager.dueColor : null)),
                                       Text("${isDue ? 'Recorded at' : 'Paid at'}: ${CategoryDialogs._formatTimestamp((hData['paidAt'] ?? hData['createdAt']) as Timestamp?)}", 
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isDue ? Colors.red.withOpacity(0.8) : null)),
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isDue ? ThemeManager.dueColor.withValues(alpha: 0.8) : null)),
                                       if ((hData['paymentNotes'] ?? '').toString().isNotEmpty)
-                                        Text("Note: ${hData['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: isDue ? Colors.red.withValues(alpha: 0.7) : null)),
+                                        Text("Note: ${hData['paymentNotes']}", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: isDue ? ThemeManager.dueColor.withValues(alpha: 0.7) : null)),
                                       const SizedBox(height: 4),
                                     ],
                                   ),
@@ -1119,7 +1119,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                           showConfirmDialog(
                             context: context,
                             title: "Confirm Payment?",
-                            content: "Process selected payments for a total of ৳${grandTotal.toStringAsFixed(1)}?",
+                            content: "Process selected payments for a total of ৳${grandTotal.toStringAsFixed(2)}?",
                             icon: Icons.check_circle_outline,
                             confirmText: "Confirm",
                             confirmColor: Theme.of(context).colorScheme.tertiary,
@@ -1255,13 +1255,13 @@ extension BillingServiceDialogs on CategoryDialogs {
                   decoration: BoxDecoration(
                     color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                         ? ThemeManager.outlineBackground 
-                        : (isAdvance ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1)),
+                        : (isAdvance ? ThemeManager.paidColor.withValues(alpha: 0.1) : ThemeManager.dueColor.withValues(alpha: 0.1)),
                     shape: BoxShape.circle,
                     border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                        ? Border.all(color: isAdvance ? Colors.green : Colors.red, width: 1.5) 
+                        ? Border.all(color: isAdvance ? ThemeManager.paidColor : ThemeManager.dueColor, width: 1.5) 
                         : null,
                   ),
-                  child: Icon(isAdvance ? Icons.add_chart_outlined : Icons.remove_circle_outline, color: isAdvance ? Colors.green : Colors.red, size: 40),
+                  child: Icon(isAdvance ? Icons.add_chart_outlined : Icons.remove_circle_outline, color: isAdvance ? ThemeManager.paidColor : ThemeManager.dueColor, size: 40),
                 ),
                 const SizedBox(height: 16),
                 Text("Adjust Dues/Adv: $subItemName", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
@@ -1279,8 +1279,8 @@ extension BillingServiceDialogs on CategoryDialogs {
                         AppButton(
                           onPressed: () => setDialogState(() => isAdvance = false),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: !isAdvance ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).colorScheme.surfaceContainerHigh,
-                            foregroundColor: !isAdvance ? Colors.red : Theme.of(context).colorScheme.onSurfaceVariant,
+                            backgroundColor: !isAdvance ? ThemeManager.cardDueRed : Theme.of(context).colorScheme.surfaceContainerHigh,
+                            foregroundColor: !isAdvance ? ThemeManager.dueColor : Theme.of(context).colorScheme.onSurfaceVariant,
                             elevation: 0,
                           ),
                           child: const Text("Due"),
@@ -1288,8 +1288,8 @@ extension BillingServiceDialogs on CategoryDialogs {
                         AppButton(
                           onPressed: () => setDialogState(() => isAdvance = true),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isAdvance ? Theme.of(context).colorScheme.tertiaryContainer : Theme.of(context).colorScheme.surfaceContainerHigh,
-                            foregroundColor: isAdvance ? Colors.green : Theme.of(context).colorScheme.onSurfaceVariant,
+                            backgroundColor: isAdvance ? ThemeManager.cardPaidGreen : Theme.of(context).colorScheme.surfaceContainerHigh,
+                            foregroundColor: isAdvance ? ThemeManager.paidColor : Theme.of(context).colorScheme.onSurfaceVariant,
                             elevation: 0,
                           ),
                           child: const Text("Advance"),
@@ -1303,7 +1303,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                     decoration: InputDecoration(
                       labelText: isAdvance ? "Advance Amount (৳)" : "Due Amount (৳)", 
                       prefixText: "৳ ",
-                      labelStyle: TextStyle(color: isAdvance ? Colors.green : Colors.red),
+                      labelStyle: TextStyle(color: isAdvance ? ThemeManager.paidColor : ThemeManager.dueColor),
                     ),
                   ),
                   TextField(
@@ -1392,8 +1392,8 @@ extension BillingServiceDialogs on CategoryDialogs {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  "৳${amt.abs().toStringAsFixed(1)}", 
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: isAdv ? Colors.green : Colors.red)
+                                  "৳${amt.abs().toStringAsFixed(2)}", 
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: isAdv ? ThemeManager.paidColor : ThemeManager.dueColor)
                                 ),
                                 if (!isOperator) ...[
                                   IconButton(
@@ -1573,7 +1573,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                         double? p = double.tryParse(val);
                         if (p != null) setDialogState(() => unitPrice = p);
                       },
-                      controller: TextEditingController(text: unitPrice.toStringAsFixed(0))..selection = TextSelection.fromPosition(TextSelection.fromPosition(TextPosition(offset: unitPrice.toStringAsFixed(0).length)).extent),
+                      controller: TextEditingController(text: unitPrice.toStringAsFixed(2))..selection = TextSelection.fromPosition(TextSelection.fromPosition(TextPosition(offset: unitPrice.toStringAsFixed(2).length)).extent),
                     ),
                     
                     const Divider(height: 20),
@@ -1710,7 +1710,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                       )),
                     
                     const SizedBox(height: 16),
-                    Text("Total Bill: ৳${total.toStringAsFixed(0)}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+                    Text("Total Bill: ৳${total.toStringAsFixed(2)}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),

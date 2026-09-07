@@ -931,7 +931,7 @@ else {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    "This unit has a pending electricity bill of ৳${eBillAmount.toStringAsFixed(1)} (${units.toStringAsFixed(1)} units).",
+                    "This unit has a pending electricity bill of ৳${eBillAmount.toStringAsFixed(2)} (${units.toStringAsFixed(2)} units).",
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),

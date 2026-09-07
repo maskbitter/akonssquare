@@ -145,7 +145,7 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
                     String dbVersion = "...";
                     if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
                       var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                      dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(2);
                     }
                     
                     bool isOutdated = false;

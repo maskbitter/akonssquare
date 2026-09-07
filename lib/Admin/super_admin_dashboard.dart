@@ -167,7 +167,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
                   minHeight: 10,
                 ),
                 const SizedBox(height: 10),
-                Text("${(value * 100).toStringAsFixed(1)}% Complete", style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text("${(value * 100).toStringAsFixed(2)}% Complete", style: const TextStyle(fontWeight: FontWeight.bold)),
               ],
             );
           },
@@ -339,7 +339,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
                   String dbVersion = "...";
                   if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
                     var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                    dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                    dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(2);
                   }
                   
                   bool isOutdated = false;

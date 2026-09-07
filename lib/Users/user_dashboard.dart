@@ -316,7 +316,7 @@ class _UserDashboardState extends State<UserDashboard> {
                       String dbVersion = "...";
                       if (dbInfoSnap.hasData && dbInfoSnap.data!.exists) {
                         var data = dbInfoSnap.data!.data() as Map<String, dynamic>?;
-                        dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(1);
+                        dbVersion = (data?['dbVersion'] ?? DatabaseService.defaultDbVersion).toDouble().toStringAsFixed(2);
                       }
                       
                       bool isOutdated = false;
@@ -726,7 +726,7 @@ class _UserDashboardState extends State<UserDashboard> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(pendingMonths.isEmpty ? Icons.check_circle : Icons.pending_actions, color: pendingMonths.isEmpty ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.error, size: 20),
+                                Icon(pendingMonths.isEmpty ? Icons.check_circle : Icons.pending_actions, color: pendingMonths.isEmpty ? ThemeManager.paidColor : ThemeManager.dueColor, size: 20),
                                 const SizedBox(width: 8),
                                 Text(pendingMonths.isEmpty ? "MONTHLY BILL (PAID)" : "CURRENT OUTSTANDING", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                               ],
@@ -734,7 +734,7 @@ class _UserDashboardState extends State<UserDashboard> {
                             const SizedBox(height: 8),
                             Text(
                               "৳${totalOutstanding.toStringAsFixed(2)}",
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: pendingMonths.isEmpty ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: pendingMonths.isEmpty ? ThemeManager.paidColor : ThemeManager.dueColor, fontWeight: FontWeight.w900),
                             ),
                             const SizedBox(height: 4),
                             Text("Last Paid: $lastPaidMonth", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
@@ -840,9 +840,9 @@ class _UserDashboardState extends State<UserDashboard> {
                       const Divider(height: 1),
                       const SizedBox(height: 8),
                       _buildInfoRow("Meter Number", ed['subMeterNo'] ?? 'N/A', icon: Icons.numbers),
-                      _buildInfoRow("Last Units", (ed['lastReading'] as num?)?.toDouble().toStringAsFixed(1) ?? '0.0', icon: Icons.history),
-                      _buildInfoRow("Present Units", (ed['presentReading'] as num?)?.toDouble().toStringAsFixed(1) ?? '0.0', icon: Icons.speed),
-                      _buildInfoRow("Used Units", (((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)).toStringAsFixed(1), icon: Icons.bolt, isBold: true),
+                      _buildInfoRow("Last Units", (ed['lastReading'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00', icon: Icons.history),
+                      _buildInfoRow("Present Units", (ed['presentReading'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00', icon: Icons.speed),
+                      _buildInfoRow("Used Units", (((ed['presentReading'] ?? 0) as num) - ((ed['lastReading'] ?? 0) as num)).toStringAsFixed(2), icon: Icons.bolt, isBold: true),
                       _buildInfoRow("Price per Unit", "৳${(ed['pricePerUnit'] as num?)?.toDouble().toStringAsFixed(2)}", icon: Icons.payments_outlined),
                       const SizedBox(height: 12),
                     ],
@@ -965,7 +965,7 @@ class _UserDashboardState extends State<UserDashboard> {
                   double amt = (d['amount'] as num).toDouble();
                   bool isAdv = amt < 0;
                   bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
-                  Color itemColor = isAdv ? Colors.green : Theme.of(context).colorScheme.error;
+                  Color itemColor = isAdv ? ThemeManager.paidColor : ThemeManager.dueColor;
                   
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

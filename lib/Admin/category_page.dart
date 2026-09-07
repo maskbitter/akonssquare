@@ -373,40 +373,40 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                       String catName = catData['categoryName'] ?? 'Unnamed';
                       List assignedServices = catData['assignedServices'] ?? [];
 
-                      return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
-                        valueListenable: _repository.subItems,
-                        builder: (context, allSubItems, child) {
-                          var subDocs = allSubItems.where((doc) {
-                            var d = doc.data() as Map<String, dynamic>;
-                            if (d['categoryId'] != catId) return false;
+                      return SliverToBoxAdapter(
+                        key: ValueKey(catId),
+                        child: ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+                          valueListenable: _repository.subItems,
+                          builder: (context, allSubItems, child) {
+                            var subDocs = allSubItems.where((doc) {
+                              var d = doc.data() as Map<String, dynamic>;
+                              if (d['categoryId'] != catId) return false;
 
-                            // Determine historical status
-                            var summary = _repository.subItemSummaryCache.value[doc.id] ?? {};
-                            bool wasVacantInMonth = summary['isVacant'] == true;
+                              // Use current status for tab filtering as requested
+                              String currentStatus = d['status'] ?? 'Vacant';
+                              
+                              if (status == 'Occupied') return currentStatus == 'Occupied';
+                              return currentStatus == 'Vacant';
+                            }).toList();
+
+                            subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
+
+                            if (status == 'Occupied' && subDocs.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            double catTotalPayable = 0;
+                            for (var doc in subDocs) {
+                              catTotalPayable += _repository.subItemPayableCache.value[doc.id] ?? 0;
+                            }
+                            bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
+                            bool isExpanded = _expandedCategoryIds.contains(catId);
                             
-                            if (status == 'Occupied') return !wasVacantInMonth;
-                            return wasVacantInMonth;
-                          }).toList();
+                            final Color accentColor = ThemeManager.getCardColor(i);
+                            final Color bgColor = ThemeManager.getCardContainerColor(i);
+                            final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
 
-                          subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
-
-                          if (status == 'Occupied' && subDocs.isEmpty) {
-                            return const SliverToBoxAdapter(child: SizedBox.shrink());
-                          }
-
-                          double catTotalPayable = 0;
-                          for (var doc in subDocs) {
-                            catTotalPayable += _repository.subItemPayableCache.value[doc.id] ?? 0;
-                          }
-                          bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
-                          bool isExpanded = _expandedCategoryIds.contains(catId);
-                          
-                          final Color accentColor = ThemeManager.getCardColor(i);
-                          final Color bgColor = ThemeManager.getCardContainerColor(i);
-                          final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
-
-                          return SliverToBoxAdapter(
-                            child: AnimatedContainer(
+                            return AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               padding: EdgeInsets.only(bottom: isExpanded ? 12 : 0),
@@ -519,7 +519,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                                                     if (hasElectric) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                                                     const SizedBox(width: 4),
                                                     Text(
-                                                      "Total: ৳${catTotalPayable.toStringAsFixed(0)}",
+                                                      "Total: ৳${catTotalPayable.toStringAsFixed(2)}",
                                                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                                         fontWeight: FontWeight.w900, 
                                                         color: onBgColor
@@ -584,11 +584,12 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                                   ],
                                 ],
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       );
                     }).toList(),
+
                   const SliverToBoxAdapter(child: SizedBox(height: 80)),
                 ],
               );
@@ -619,7 +620,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
               Icon(icon, size: 16, color: effectiveColor),
               const SizedBox(width: 8),
               Expanded(child: Text(title, style: Theme.of(context).textTheme.titleSmall)),
-              if (amount != null) Text("৳${amount.toStringAsFixed(1)}", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+              if (amount != null) Text("৳${amount.toStringAsFixed(2)}", style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
               if (trailing != null) ...[
                 const SizedBox(width: 8),
                 trailing,
@@ -644,13 +645,13 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
     double? unitPrice = isWifi ? (s['wifiCost'] as num?)?.toDouble() : null;
     
     String displayName = isWifi && devices != null 
-        ? "$name (৳${unitPrice?.toStringAsFixed(0) ?? '0'} / device) (x$devices)" 
+        ? "$name (৳${unitPrice?.toStringAsFixed(2) ?? '0.00'} / device) (x$devices)" 
         : name;
 
     Widget trailing = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text("৳${s['amount'].toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, height: 1.2)),
+        Text("৳${s['amount'].toStringAsFixed(2)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, height: 1.2)),
         const SizedBox(width: 4),
         InkWell(
           onTap: () {
@@ -989,18 +990,18 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                               Text(DatabaseService.formatDuration(data['updatedAt'] as Timestamp?), style: dataStyle?.copyWith(fontSize: 9, color: isOutline ? Colors.black54 : Theme.of(context).colorScheme.outline, fontStyle: FontStyle.italic)),
                             ],
                           )),
-                          wrapCell(Text(last.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
-                          wrapCell(Text(pres.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
-                          wrapCell(Text(lastGovt.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
-                          wrapCell(Text(newGovt.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
-                          wrapCell(Text(govtAmt.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
-                          wrapCell(Text(govtUnit.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
-                          wrapCell(Text(lastRate.toStringAsFixed(1), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
-                          wrapCell(Text(thisRate.toStringAsFixed(1), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
-                          wrapCell(Text("${govtDueAdv.toStringAsFixed(0)}$advDueSuffix", style: dataStyle?.copyWith(color: isAdvDueRed ? Theme.of(context).colorScheme.error : (isOutline ? Colors.black : null), fontWeight: isAdvDueRed ? FontWeight.bold : null))),
-                          wrapCell(Text(mainUsed.toStringAsFixed(0), style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null))),
-                          wrapCell(Text(totalSubPaid.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
-                          wrapCell(Text(balance.toStringAsFixed(0), style: dataStyle?.copyWith(color: balance > 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.tertiary, fontWeight: FontWeight.bold))),
+                          wrapCell(Text(last.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(pres.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(lastGovt.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(newGovt.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(govtAmt.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(govtUnit.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(lastRate.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(thisRate.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text("${govtDueAdv.toStringAsFixed(2)}$advDueSuffix", style: dataStyle?.copyWith(color: isAdvDueRed ? Theme.of(context).colorScheme.error : (isOutline ? Colors.black : null), fontWeight: isAdvDueRed ? FontWeight.bold : null))),
+                          wrapCell(Text(mainUsed.toStringAsFixed(2), style: dataStyle?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(totalSubPaid.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null))),
+                          wrapCell(Text(balance.toStringAsFixed(2), style: dataStyle?.copyWith(color: balance > 0 ? ThemeManager.dueColor : ThemeManager.paidColor, fontWeight: FontWeight.bold))),
                           if (!isOp)
                             Padding(
                               padding: const EdgeInsets.all(4),
@@ -1115,9 +1116,9 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                                 ],
                               ))),
                               Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(sData['mainMeterNo'] ?? '', style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(last.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(pres.toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
-                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text((pres - last).toStringAsFixed(0), style: dataStyle?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(last.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text(pres.toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : null)))),
+                              Padding(padding: const EdgeInsets.all(12), child: Center(child: Text((pres - last).toStringAsFixed(2), style: dataStyle?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)))),
                               if (!isOp)
                                 Padding(
                                   padding: const EdgeInsets.all(4),
@@ -1186,8 +1187,8 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
           subItemId: subId, 
           subItemName: subName, 
           currentStatus: 'Vacant', 
-          currentTenant: tenant, 
-          currentNid: d['nidNumber'] ?? 'No Number',
+          currentTenant: 'No Name', 
+          currentNid: 'No Number',
           electricityDetails: ed
         );
       },
@@ -1247,7 +1248,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                             CategoryDialogs.showConfirmDialog(
                               context: context,
                               title: "Confirm Stop Sub-Meter Billing",
-                              content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
+                              content: "There are unused units (${(pres - last).toStringAsFixed(2)}). Stopping will reset Present Reading to Last Reading. Proceed?",
                               onConfirm: () async {
                                 await _dbService.updateSubItemElectricity(subId, {
                                   ...ed!,
@@ -1320,18 +1321,17 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                     padding: const EdgeInsets.only(left: 30),
                     child: Text(
                       'Vacant',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.dueColor),
                     ),
                   ),
                   const Spacer(),
                   if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                   const SizedBox(width: 4),
                   Text(
-                    summary['isVacant'] == true ? "Was Vacant" : "৳${monthTotal.toStringAsFixed(0)}",
+                    "৳${monthTotal.toStringAsFixed(2)}",
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900, 
                       color: onBgColor, 
-                      fontSize: summary['isVacant'] == true ? 16 : null,
                     ),
                   ),
                 ],
@@ -1374,7 +1374,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                   if (ed != null && ed['isStopped'] != true)
                       _buildSectionBox(
                         "Sub-Meter Bills", 
-                        "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)}", 
+                        "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(2)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)}", 
                         Icons.electric_bolt, 
                         amount: (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble(), 
                         color: context.electric,
@@ -1413,19 +1413,37 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
     String subName = d['subItemName'] ?? 'Unnamed';
     var ed = d['electricityDetails'];
     var existingRecord = historyMap[subId];
-    
-    // Historical Data Logic
-    String tenant = existingRecord != null ? (existingRecord['TenantName'] ?? 'No Name') : (d['TenantName'] ?? 'No Name');
-    String nid = existingRecord != null ? (existingRecord['nidNumber'] ?? 'No Number') : (d['nidNumber'] ?? 'No Number');
-    String? profileUrl = existingRecord != null ? existingRecord['profilePictureUrl'] : d['profilePictureUrl'];
-    String? nidUrl = existingRecord != null ? existingRecord['nidPictureUrl'] : d['nidPictureUrl'];
+    Map<String, dynamic>? hData = existingRecord?.data() as Map<String, dynamic>?;
     
     double monthTotal = _repository.subItemPayableCache.value[subId] ?? 0;
     var summary = _repository.calculateFinancialSummaryLocal(subId, monthTotal, _selectedMonthStr);
+
+    // Historical Data Logic
+    String tenant = hData != null 
+        ? (hData['TenantName'] ?? 'No Name') 
+        : (summary['isVacant'] == true ? 'No Name' : (d['TenantName'] ?? 'No Name'));
+    String nid = hData != null 
+        ? (hData['nidNumber'] ?? 'No Number') 
+        : (summary['isVacant'] == true ? 'No Number' : (d['nidNumber'] ?? 'No Number'));
+    String? profileUrl = hData != null 
+        ? hData['profilePictureUrl'] 
+        : (summary['isVacant'] == true ? null : d['profilePictureUrl']);
+    String? nidUrl = hData != null 
+        ? hData['nidPictureUrl'] 
+        : (summary['isVacant'] == true ? null : d['nidPictureUrl']);
+    
     List pendingMonths = summary['pendingMonths'] ?? [];
     int arrearsCount = summary['arrearsCount'] ?? 0;
     List manualDues = d['manualDues'] ?? [];
-    bool hasAdvance = manualDues.any((m) => (m['amount'] as num).toDouble() < -0.1);
+    List filteredManualDues = manualDues.where((m) {
+      String? dMY = m['monthYear']?.toString();
+      return dMY == null || dMY == 'null' || dMY.isEmpty || dMY.trim().toLowerCase() == _selectedMonthStr.trim().toLowerCase();
+    }).toList();
+
+    var filteredAdvances = filteredManualDues.where((m) => (m['amount'] as num).toDouble() < -0.1).toList();
+    var filteredDues = filteredManualDues.where((m) => (m['amount'] as num).toDouble() > 0.1).toList();
+
+    bool hasAdvance = filteredAdvances.isNotEmpty;
 
     double eBillAmount = 0;
     double servicesTotal = 0;
@@ -1449,13 +1467,15 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
       }
     }
 
-    List activeServices = historicalServices != null 
-        ? List<Map<String, dynamic>>.from(historicalServices)
-        : DatabaseService.getEffectiveServices(
-            categoryServices: assignedServices, 
-            excludedServices: d['excludedServices'] ?? [], 
-            overriddenServices: d['overriddenServices'] ?? []
-          );
+    List activeServices = (summary['isVacant'] == true && hData == null)
+        ? [] 
+        : (historicalServices != null 
+            ? List<Map<String, dynamic>>.from(historicalServices)
+            : DatabaseService.getEffectiveServices(
+                categoryServices: assignedServices, 
+                excludedServices: d['excludedServices'] ?? [], 
+                overriddenServices: d['overriddenServices'] ?? []
+              ));
     List overridden = d['overriddenServices'] ?? [];
 
     return InkWell(
@@ -1488,8 +1508,8 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         color: isPaid 
-            ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiaryContainer) 
-            : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : bgColor),
+            ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : ThemeManager.cardPaidGreen) 
+            : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : ThemeManager.cardDueRed),
         elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -1503,8 +1523,8 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
           shape: const Border(),
           collapsedShape: const Border(),
           tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-          iconColor: isPaid ? Theme.of(context).colorScheme.tertiary : accentColor,
-          collapsedIconColor: isPaid ? Theme.of(context).colorScheme.tertiary : accentColor,
+          iconColor: isPaid ? ThemeManager.paidColor : ThemeManager.dueColor,
+          collapsedIconColor: isPaid ? ThemeManager.paidColor : ThemeManager.dueColor,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1524,7 +1544,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                   ),
                   Icon(
                     isPaid ? Icons.check_circle : Icons.door_front_door_outlined,
-                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? (isPaid ? Colors.green : Colors.black) : (isPaid ? Theme.of(context).colorScheme.tertiary : accentColor),
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? (isPaid ? Colors.green : Colors.black) : (isPaid ? ThemeManager.paidColor : ThemeManager.dueColor),
                     size: 22,
                   ),
                   const SizedBox(width: 8),
@@ -1539,7 +1559,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                       subName,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w900, 
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : (isPaid ? Theme.of(context).colorScheme.tertiary : accentColor), 
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : (isPaid ? ThemeManager.paidColor : ThemeManager.dueColor), 
                       ),
                     ),
                   ),
@@ -1573,7 +1593,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                         services: activeServices.cast<Map<String, dynamic>>(), electricityDetails: ed, 
                         mainCategoryName: catName, manualDues: d['manualDues'] ?? [],
                         notes: d['notes'] ?? '', profilePictureUrl: profileUrl,
-                        nidPictureUrl: existingRecord != null ? existingRecord['nidPictureUrl'] : d['nidPictureUrl'],
+                        nidPictureUrl: hData != null ? hData['nidPictureUrl'] : d['nidPictureUrl'],
                         occupiedAt: d['occupiedAt'] as Timestamp?, createdAt: d['createdAt'] as Timestamp?, status: d['status']
                       )
                     ),
@@ -1594,7 +1614,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                             CategoryDialogs.showConfirmDialog(
                               context: context,
                               title: "Confirm Stop Sub-Meter Billing",
-                              content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
+                              content: "There are unused units (${(pres - last).toStringAsFixed(2)}). Stopping will reset Present Reading to Last Reading. Proceed?",
                               onConfirm: () async {
                                 await _dbService.updateSubItemElectricity(subId, {
                                   ...ed!,
@@ -1663,18 +1683,21 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                   Padding(
                     padding: const EdgeInsets.only(left: 30),
                     child: Text(
-                      tenant.isNotEmpty && tenant != 'No Name' ? tenant : 'No Tenant',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                      summary['isVacant'] == true ? 'Was Vacant' : (tenant.isNotEmpty && tenant != 'No Name' ? tenant : 'No Tenant'),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: summary['isVacant'] == true ? Colors.grey : null,
+                      ),
                     ),
                   ),
                   const Spacer(),
                   if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                   const SizedBox(width: 4),
                   Text(
-                    summary['isVacant'] == true ? "Was Vacant" : "৳${monthTotal.toStringAsFixed(0)}",
+                    summary['isVacant'] == true ? "Was Vacant" : "৳${monthTotal.toStringAsFixed(2)}",
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900, 
-                      color: isPaid ? Theme.of(context).colorScheme.tertiary : onBgColor, 
+                      color: isPaid ? ThemeManager.paidColor : ThemeManager.dueColor, 
                       fontSize: summary['isVacant'] == true ? 16 : null,
                     ),
                   ),
@@ -1706,7 +1729,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                     return Text(
                       statsText,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: isPaid ? Theme.of(context).colorScheme.tertiary : onBgColor.withValues(alpha: 0.8), 
+                        color: isPaid ? ThemeManager.paidColor : ThemeManager.dueColor, 
                       ),
                     );
                   }
@@ -1726,7 +1749,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                   if (pendingMonths.isNotEmpty)
                     _buildSectionBox(
                       "Due Months (Pending)", "", Icons.history_toggle_off,
-                      color: Theme.of(context).colorScheme.error,
+                      color: ThemeManager.dueColor,
                       customContent: Wrap(
                         spacing: 8, runSpacing: 8,
                         children: pendingMonths.map((m) {
@@ -1751,13 +1774,13 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                                color: ThemeManager.dueColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
+                                border: Border.all(color: ThemeManager.dueColor.withValues(alpha: 0.2)),
                               ),
                               child: Text(
                                 mYear, style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold,
+                                  color: ThemeManager.dueColor, fontWeight: FontWeight.bold,
                                   decoration: TextDecoration.underline,
                                 ),
                               ),
@@ -1779,10 +1802,10 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                       ),
                     )),
                   
-                    if (ed != null && ed['isStopped'] != true)
+                  if (ed != null && ed['isStopped'] != true && summary['isVacant'] != true)
                     _buildSectionBox(
                       "Sub-Meter Bills", 
-                      "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)}", 
+                      "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(2)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)}", 
                       Icons.electric_bolt, 
                       amount: (existingRecord != null || isPaid) ? 0.0 : eBillAmount, 
                       color: context.electric,
@@ -1792,28 +1815,53 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                       )
                     ),
 
-                  ...activeServices.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
+                  if (summary['isVacant'] != true)
+                    ...activeServices.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
 
-                  if (manualDues.isNotEmpty) ...[
+                  if (filteredAdvances.isNotEmpty && summary['isVacant'] != true) ...[
                     const SizedBox(height: 12),
-                    Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                    Text("Additional Advances", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.paidColor, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    ...manualDues.map((m) {
-                      double amt = (m['amount'] as num).toDouble();
-                      bool isAdv = amt < 0;
+                    ...filteredAdvances.map((m) {
+                      double amt = (m['amount'] as num).toDouble().abs();
                       return Container(
                         margin: const EdgeInsets.symmetric(vertical: 2),
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                         decoration: BoxDecoration(
                           color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow, 
                           borderRadius: BorderRadius.circular(12), 
-                          border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                          border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: ThemeManager.paidColor, width: 1.5) : null,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(child: Text(isAdv ? "As An Advance" : m['reason'], style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold))),
-                            Text("৳${amt.toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                            Expanded(child: Text("As An Advance", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold))),
+                            Text("৳${amt.toStringAsFixed(2)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.paidColor)),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+
+                  if (filteredDues.isNotEmpty && summary['isVacant'] != true) ...[
+                    const SizedBox(height: 12),
+                    Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ThemeManager.dueColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    ...filteredDues.map((m) {
+                      double amt = (m['amount'] as num).toDouble();
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow, 
+                          borderRadius: BorderRadius.circular(12), 
+                          border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: ThemeManager.dueColor, width: 1.5) : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(child: Text(m['reason'], style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold))),
+                            Text("৳${amt.toStringAsFixed(2)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: ThemeManager.dueColor)),
                           ],
                         ),
                       );
