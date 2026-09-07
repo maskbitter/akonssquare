@@ -23,6 +23,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:akons_square/Common/data_repository.dart';
+import 'package:akons_square/Common/update_manager.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 bool isUserLoggedIn = false; // গ্লোবাল ফ্ল্যাগ
@@ -54,14 +55,19 @@ class MyApp extends StatelessWidget {
             return ValueListenableBuilder<Color>(
               valueListenable: ThemeManager.appOutlineBgNotifier,
               builder: (context, outlineBg, child) {
-                return ConnectivityWrapper(
-                  child: MaterialApp(
-                    navigatorKey: navigatorKey,
-                    title: 'AkonsSquare',
-                    debugShowCheckedModeBanner: false,
-                    theme: ThemeManager.getThemeByName(themeName, fontName: fontName),
-                    home: const SplashScreen(),
-                  ),
+                return MaterialApp(
+                  navigatorKey: navigatorKey,
+                  title: 'AkonsSquare',
+                  debugShowCheckedModeBanner: false,
+                  theme: ThemeManager.getThemeByName(themeName, fontName: fontName),
+                  builder: (context, child) {
+                    return ConnectivityWrapper(
+                      child: GlobalUpdateOverlay(
+                        child: child!,
+                      ),
+                    );
+                  },
+                  home: const SplashScreen(),
                 );
               }
             );
@@ -953,7 +959,12 @@ class _LoginPageState extends State<LoginPage> {
                                             onPressed: () {
                                               String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
                                               if (dUrl.isNotEmpty) {
-                                                showUpdateDialog(context: context, remoteVersion: latestV, downloadUrl: dUrl);
+                                                UpdateManager.instance.startUpdate(dUrl);
+                                                showDialog(
+                                                  context: context,
+                                                  barrierDismissible: false,
+                                                  builder: (context) => const UpdateProgressDialog(),
+                                                );
                                               }
                                             },
                                             icon: const Icon(Icons.system_update_alt, color: Colors.white),

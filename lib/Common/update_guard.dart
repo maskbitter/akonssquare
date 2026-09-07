@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:akons_square/Common/database_service.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Common/build_config.dart';
+import 'package:akons_square/Common/update_manager.dart';
 import 'package:akons_square/main.dart';
 
 class UpdateGuard extends StatefulWidget {
@@ -186,6 +187,9 @@ class _UpdateGuardState extends State<UpdateGuard> {
 
   void _showUpdatePopup() {
     if (_isPopupShowing) return;
+    
+    // If an update is already in progress in the background, don't show the nag popup.
+    if (UpdateManager.instance.hasActiveUpdate) return;
 
     _isPopupShowing = true;
     showDialog(
@@ -226,7 +230,14 @@ class _UpdateGuardState extends State<UpdateGuard> {
                   backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                   elevation: 0,
                 ),
-                onPressed: () => Navigator.of(ctx).pop(), 
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  // Snooze the timer for 30 minutes if "Later" is pressed
+                  _nagTimer?.cancel();
+                  _nagTimer = Timer(const Duration(minutes: 30), () {
+                    _startNagging();
+                  });
+                }, 
                 child: const Text("Later")
               ),
               AppButton(
@@ -242,11 +253,14 @@ class _UpdateGuardState extends State<UpdateGuard> {
                      if (dUrl.isNotEmpty) {
                         Navigator.of(ctx).pop(); // Close the notification popup
                         if (context.mounted) {
+                          // Start update via manager
+                          UpdateManager.instance.startUpdate(dUrl);
+
                           // Show the progress dialog directly
                           showDialog(
                             context: context,
                             barrierDismissible: false,
-                            builder: (context) => UpdateProgressDialog(url: dUrl),
+                            builder: (context) => const UpdateProgressDialog(),
                           );
                         }
                      } else {

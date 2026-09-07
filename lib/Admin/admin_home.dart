@@ -453,11 +453,11 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: (active && !isOutline) ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.2) : Colors.transparent,
+          color: (active && !isOutline) ? Theme.of(context).colorScheme.onPrimary : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: (active && isOutline) ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
         ),
-        child: Icon(icon, color: isOutline ? Colors.black : Theme.of(context).colorScheme.onPrimary, size: 18),
+        child: Icon(icon, color: isOutline ? Colors.black : (active ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary), size: 18),
       ),
     );
   }
@@ -589,7 +589,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                color: Theme.of(context).colorScheme.primaryContainer,
                 shape: BoxShape.circle,
               ),
               child: Icon(headerIcon, size: 80, color: Theme.of(context).colorScheme.primary),
@@ -673,11 +673,11 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: isOutline ? ThemeManager.outlineBackground : color.withOpacity(0.1), 
+                  backgroundColor: isOutline ? ThemeManager.outlineBackground : color, 
                   child: Container(
                     decoration: isOutline ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: color, width: 1)) : null,
                     alignment: Alignment.center,
-                    child: Icon(icon, color: color, size: 20)
+                    child: Icon(icon, color: Colors.white, size: 20)
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -686,7 +686,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: isOutline ? Colors.black : (isHighlighted ? null : Colors.grey))),
-                      Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(isHighlighted ? 1.0 : 0.5))),
+                      Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: isOutline ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant)),
                     ],
                   ),
                 ),

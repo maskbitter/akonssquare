@@ -411,7 +411,11 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               padding: EdgeInsets.only(bottom: isExpanded ? 12 : 0),
                               decoration: BoxDecoration(
-                                color: isExpanded ? accentColor.withValues(alpha: 0.15) : Colors.transparent,
+                                color: isExpanded 
+                                    ? (ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                        ? ThemeManager.outlineBackground 
+                                        : Theme.of(context).colorScheme.surfaceContainerHighest) 
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(24),
                               ),
                               child: Column(
@@ -495,7 +499,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                                                 const SizedBox(width: 12),
                                                 Icon(
                                                   isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                                  color: onBgColor.withValues(alpha: 0.7),
+                                                  color: onBgColor,
                                                   size: 24,
                                                 ),
                                               ],
@@ -509,7 +513,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                                                   child: Text(
                                                     "${subDocs.length} units | ${assignedServices.length} Services",
                                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                      color: onBgColor.withValues(alpha: 0.7),
+                                                      color: onBgColor,
                                                       fontWeight: FontWeight.bold
                                                     ),
                                                   ),
@@ -670,7 +674,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
           },
           child: Padding(
             padding: const EdgeInsets.all(4),
-            child: Icon(Icons.edit_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+            child: Icon(Icons.edit_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       ],
@@ -732,7 +736,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
       child: Row(
         children: [
-          Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
+          Icon(isWifi ? Icons.wifi : Icons.check_circle_outline, size: 14, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -1202,42 +1206,52 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
               ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
               : BorderSide.none,
         ),
-        child: ExpansionTile(
-          backgroundColor: Colors.transparent,
-          collapsedBackgroundColor: Colors.transparent,
-          shape: const Border(),
-          collapsedShape: const Border(),
-          tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-          iconColor: accentColor,
-          collapsedIconColor: accentColor,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.meeting_room_outlined, color: accentColor, size: 22),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(6),
-                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
-                    ),
-                    child: Text(
-                      subName,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900, 
-                        color: accentColor, 
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border(
+              left: BorderSide(
+                color: ThemeManager.dueColor, 
+                width: 6
+              ),
+            ),
+          ),
+          child: ExpansionTile(
+            backgroundColor: Colors.transparent,
+            collapsedBackgroundColor: Colors.transparent,
+            shape: const Border(),
+            collapsedShape: const Border(),
+            tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+            iconColor: onBgColor,
+            collapsedIconColor: onBgColor,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.meeting_room_outlined, color: onBgColor, size: 22),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(6),
+                        border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
+                      ),
+                      child: Text(
+                        subName,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900, 
+                          color: onBgColor, 
+                        ),
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  PopupMenuButton<String>(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(Icons.more_vert, size: 22, color: onBgColor.withValues(alpha: 0.7)),
-                    onSelected: (val) async {
+                    const Spacer(),
+                    PopupMenuButton<String>(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(Icons.more_vert, size: 22, color: onBgColor),
+                      onSelected: (val) async {
                       if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate);
                       if (val == 'stop') {
                         bool isStopping = ed?['isStopped'] != true;
@@ -1341,7 +1355,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                 child: Text(
                   "${active.length} Services | Ready for new tenant",
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: onBgColor.withValues(alpha: 0.8), 
+                    color: onBgColor, 
                   ),
                 ),
               ),
@@ -1354,7 +1368,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (nid != null && nid != 'No Name' && nid != 'No Number' && nid.toString().isNotEmpty)
-                    _buildSectionBox("Tenant NID", nid, Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
+                    _buildSectionBox("Tenant NID", nid, Icons.badge_outlined, color: onBgColor),
                     
                   if ((d['notes'] ?? '').toString().isNotEmpty)
                     _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
@@ -1391,8 +1405,9 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildOccupiedUnitCard(
     BuildContext context, 
@@ -1507,9 +1522,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
       },
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        color: isPaid 
-            ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : ThemeManager.cardPaidGreen) 
-            : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : ThemeManager.cardDueRed),
+        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : bgColor,
         elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -1517,93 +1530,103 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
               ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
               : BorderSide.none,
         ),
-        child: ExpansionTile(
-          backgroundColor: Colors.transparent,
-          collapsedBackgroundColor: Colors.transparent,
-          shape: const Border(),
-          collapsedShape: const Border(),
-          tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-          iconColor: isPaid ? ThemeManager.paidColor : ThemeManager.dueColor,
-          collapsedIconColor: isPaid ? ThemeManager.paidColor : ThemeManager.dueColor,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: profileUrl != null ? () => _showFullScreenImage(context, profileUrl, "Tenant Profile") : null,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: CircleAvatar(
-                        radius: 14,
-                        backgroundImage: profileUrl != null ? NetworkImage(profileUrl) : null,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
-                        child: profileUrl == null ? const Icon(Icons.person, size: 18, color: Colors.grey) : null,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border(
+              left: BorderSide(
+                color: isPaid ? ThemeManager.paidColor : ThemeManager.dueColor, 
+                width: 6
+              ),
+            ),
+          ),
+          child: ExpansionTile(
+            backgroundColor: Colors.transparent,
+            collapsedBackgroundColor: Colors.transparent,
+            shape: const Border(),
+            collapsedShape: const Border(),
+            tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+            iconColor: onBgColor,
+            collapsedIconColor: onBgColor,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: profileUrl != null ? () => _showFullScreenImage(context, profileUrl, "Tenant Profile") : null,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: CircleAvatar(
+                          radius: 14,
+                          backgroundImage: profileUrl != null ? NetworkImage(profileUrl) : null,
+                          backgroundColor: Theme.of(context).colorScheme.surface,
+                          child: profileUrl == null ? const Icon(Icons.person, size: 18, color: Colors.grey) : null,
+                        ),
                       ),
                     ),
-                  ),
-                  Icon(
-                    isPaid ? Icons.check_circle : Icons.door_front_door_outlined,
-                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? (isPaid ? Colors.green : Colors.black) : (isPaid ? ThemeManager.paidColor : ThemeManager.dueColor),
-                    size: 22,
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(6),
-                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
+                    Icon(
+                      isPaid ? Icons.check_circle : Icons.door_front_door_outlined,
+                      color: isPaid ? ThemeManager.paidColor : ThemeManager.dueColor,
+                      size: 22,
                     ),
-                    child: Text(
-                      subName,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900, 
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : (isPaid ? ThemeManager.paidColor : ThemeManager.dueColor), 
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(Icons.edit_note, size: 22, color: onBgColor.withValues(alpha: 0.7)),
-                    onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
-                      context: context, subItemId: subId, currentName: subName, currentTenantName: tenant, 
-                      currentNidNumber: nid, currentNotes: d['notes'] ?? '',
-                      currentProfileUrl: profileUrl, currentNidUrl: nidUrl,
-                    ),
-                  ),
-                  if ((d['notes'] ?? '').toString().isNotEmpty)
+                    const SizedBox(width: 8),
                     Container(
-                      margin: const EdgeInsets.only(left: 6),
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(4)),
-                      child: Icon(Icons.notes, color: Theme.of(context).colorScheme.tertiary, size: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(6),
+                        border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
+                      ),
+                      child: Text(
+                        subName,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900, 
+                          color: onBgColor, 
+                        ),
+                      ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: IconButton(
+                    const Spacer(),
+                    IconButton(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : onBgColor, size: 24), 
-                      onPressed: () => CategoryDialogs.showMarkAsPaidDialog(
-                        context: context, subItemId: subId, subItemName: subName, TenantName: tenant, 
-                        nidNumber: nid, houseRentTotal: servicesTotal, electricityBill: eBillAmount, 
-                        services: activeServices.cast<Map<String, dynamic>>(), electricityDetails: ed, 
-                        mainCategoryName: catName, manualDues: d['manualDues'] ?? [],
-                        notes: d['notes'] ?? '', profilePictureUrl: profileUrl,
-                        nidPictureUrl: hData != null ? hData['nidPictureUrl'] : d['nidPictureUrl'],
-                        occupiedAt: d['occupiedAt'] as Timestamp?, createdAt: d['createdAt'] as Timestamp?, status: d['status']
-                      )
+                      icon: Icon(Icons.edit_note, size: 22, color: onBgColor),
+                      onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
+                        context: context, subItemId: subId, currentName: subName, currentTenantName: tenant, 
+                        currentNidNumber: nid, currentNotes: d['notes'] ?? '',
+                        currentProfileUrl: profileUrl, currentNidUrl: nidUrl,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  PopupMenuButton<String>(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(Icons.more_vert, size: 22, color: onBgColor.withValues(alpha: 0.7)),
-                    onSelected: (val) async {
+                    if ((d['notes'] ?? '').toString().isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(4)),
+                        child: Icon(Icons.notes, color: Theme.of(context).colorScheme.tertiary, size: 16),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : onBgColor, size: 24), 
+                        onPressed: () => CategoryDialogs.showMarkAsPaidDialog(
+                          context: context, subItemId: subId, subItemName: subName, TenantName: tenant, 
+                          nidNumber: nid, houseRentTotal: servicesTotal, electricityBill: eBillAmount, 
+                          services: activeServices.cast<Map<String, dynamic>>(), electricityDetails: ed, 
+                          mainCategoryName: catName, manualDues: d['manualDues'] ?? [],
+                          notes: d['notes'] ?? '', profilePictureUrl: profileUrl,
+                          nidPictureUrl: hData != null ? hData['nidPictureUrl'] : d['nidPictureUrl'],
+                          occupiedAt: d['occupiedAt'] as Timestamp?, createdAt: d['createdAt'] as Timestamp?, status: d['status']
+                        )
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    PopupMenuButton<String>(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(Icons.more_vert, size: 22, color: onBgColor),
+                      onSelected: (val) async {
                       if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate);
                       if (val == 'stop') {
                         bool isStopping = ed?['isStopped'] != true;
@@ -1711,7 +1734,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                       return Text(
                         "Unit was vacant during $_selectedMonthStr",
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: onBgColor.withValues(alpha: 0.6),
+                          color: onBgColor,
                           fontStyle: FontStyle.italic,
                         ),
                       );
@@ -1744,7 +1767,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (nid != null && nid != 'No Name' && nid != 'No Number' && nid.toString().isNotEmpty)
-                    _buildSectionBox("Tenant NID", nid, Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
+                    _buildSectionBox("Tenant NID", nid, Icons.badge_outlined, color: onBgColor),
 
                   if (pendingMonths.isNotEmpty)
                     _buildSectionBox(
@@ -1873,8 +1896,9 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showFullScreenImage(BuildContext context, String imageUrl, String title) {
     AppImageHelper.showInteractiveImage(context, url: imageUrl, title: title);

@@ -18,10 +18,10 @@ class ThemeManager {
   static const Color brandGreen = Color(0xFF6B6D3D);
   static const Color brandBlue = Color(0xFF2196F3);
   static const Color brandDarkBrown = Color(0xFF6D4C41);
-  static const Color paidColor = Color(0xFF69F0AE); // Colors.greenAccent
-  static const Color dueColor = Color(0xFFFF5252);  // Colors.redAccent
-  static Color get cardPaidGreen => paidColor.withValues(alpha: 0.3); 
-  static Color get cardDueRed => dueColor.withValues(alpha: 0.3);
+  static const Color paidColor = Color(0xFF2E7D32); // Solid Green
+  static const Color dueColor = Color(0xFFD32F2F);  // Solid Red
+  static Color get cardPaidGreen => const Color(0xFFE8F5E9); // Solid Light Green
+  static Color get cardDueRed => const Color(0xFFFFEBEE);   // Solid Light Red
   static const Color cardPeach = Color(0xFFF6D0B0);
 
   static final List<Color> _niceSeeds = [

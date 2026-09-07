@@ -62,7 +62,7 @@ class CategoryDialogs {
               decoration: BoxDecoration(
                 color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                     ? ThemeManager.outlineBackground 
-                    : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                    : Theme.of(context).colorScheme.errorContainer,
                 shape: BoxShape.circle,
                 border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                     ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) 
@@ -113,7 +113,7 @@ class CategoryDialogs {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.errorContainer,
                 shape: BoxShape.circle,
                 border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) : null,
               ),

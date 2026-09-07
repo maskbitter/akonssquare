@@ -60,7 +60,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               decoration: BoxDecoration(
                 color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                     ? ThemeManager.outlineBackground 
-                    : Colors.orange.withValues(alpha: 0.1),
+                    : Theme.of(context).colorScheme.errorContainer,
                 shape: BoxShape.circle,
                 border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                     ? Border.all(color: Colors.orange, width: 1.5) 
@@ -126,7 +126,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               decoration: BoxDecoration(
                 color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                     ? ThemeManager.outlineBackground 
-                    : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    : Theme.of(context).colorScheme.primaryContainer,
                 shape: BoxShape.circle,
                 border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                     ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) 
@@ -260,7 +260,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 decoration: BoxDecoration(
                   color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                       ? ThemeManager.outlineBackground 
-                      : Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                      : Theme.of(context).colorScheme.errorContainer,
                   shape: BoxShape.circle,
                   border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
                       ? Border.all(color: Theme.of(context).colorScheme.error, width: 1.5) 
