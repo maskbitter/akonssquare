@@ -38,6 +38,10 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
     super.initState();
     _selectedDate = DateTime.now();
     _loadRole();
+    // Ensure repository is in sync with the selected month
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _repository.recalculateForMonth(_selectedMonthStr);
+    });
   }
 
   Future<void> _loadRole() async {
@@ -58,6 +62,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
     setState(() {
       _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + delta);
     });
+    _repository.recalculateForMonth(_selectedMonthStr);
   }
 
   @override
@@ -274,116 +279,111 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
           builder: (context, allSubItems, child) {
             var occupiedSnapshot = allSubItems.where((d) => (d.data() as Map)['status'] == 'Occupied').toList();
 
-            return FutureBuilder<double>(
-              future: _calculateGrandTotal(occupiedSnapshot, receivedSnapshot, categories),
-              builder: (context, grandTotalSnapshot) {
-                double grandTotal = grandTotalSnapshot.data ?? 0;
-                
-                // Calculate receivedTotal, rentTotal, utilityTotal strictly from currently occupied units
-                double receivedTotal = 0;
-                double rentTotal = 0;
-                
-                Set<String> occupiedIds = occupiedSnapshot.map((d) => d.id).toSet();
-                for (var doc in receivedSnapshot) {
-                  var data = doc.data() as Map<String, dynamic>;
-                  // Only count if unit is currently occupied
-                  if (!occupiedIds.contains(data['subItemId'])) continue;
-                  if (data['status'] == 'Due') continue;
-
-                  receivedTotal += (doc['totalAmount'] as num).toDouble();
-                  List services = data.containsKey('services') ? data['services'] : [];
-                  for (var s in services) {
-                    if (s['name'].toString().toLowerCase().contains('rent')) {
-                      rentTotal += (s['amount'] as num).toDouble();
-                    }
-                  }
-                }
-
-                double utilityTotal = receivedTotal - rentTotal;
-                double dueTotal = grandTotal - receivedTotal;
-
-                return Column(
-                  children: [
-                    Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      elevation: 4,
-                      color: ThemeManager.brandDarkBrown,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12), // TIGHTER PADDING
-                        child: Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    "$_selectedMonthStr Total Revenue",
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white70, fontWeight: FontWeight.bold),
-                                  ),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.pie_chart_outline, color: Colors.white70, size: 20),
-                                        onPressed: () => setState(() => _showPieChart = !_showPieChart),
-                                        visualDensity: VisualDensity.compact,
+            return ValueListenableBuilder<double>(
+              valueListenable: _repository.grandTotalNotifier,
+              builder: (context, grandTotal, child) {
+                return ValueListenableBuilder<double>(
+                  valueListenable: _repository.receivedTotalNotifier,
+                  builder: (context, receivedTotal, child) {
+                    return ValueListenableBuilder<double>(
+                      valueListenable: _repository.dueTotalNotifier,
+                      builder: (context, dueTotal, child) {
+                        return ValueListenableBuilder<double>(
+                          valueListenable: _repository.rentTotalNotifier,
+                          builder: (context, rentTotal, child) {
+                            return ValueListenableBuilder<double>(
+                              valueListenable: _repository.utilityTotalNotifier,
+                              builder: (context, utilityTotal, child) {
+                                return Column(
+                                  children: [
+                                    Card(
+                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      elevation: 4,
+                                      color: ThemeManager.brandDarkBrown,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(32),
                                       ),
-                                      IconButton(
-                                        icon: const Icon(Icons.bar_chart, color: Colors.white70, size: 20),
-                                        onPressed: () => setState(() => _showBarChart = !_showBarChart),
-                                        visualDensity: VisualDensity.compact,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                                        child: Column(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    "$_selectedMonthStr Total Revenue",
+                                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white70, fontWeight: FontWeight.bold),
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      IconButton(
+                                                        icon: const Icon(Icons.pie_chart_outline, color: Colors.white70, size: 20),
+                                                        onPressed: () => setState(() => _showPieChart = !_showPieChart),
+                                                        visualDensity: VisualDensity.compact,
+                                                      ),
+                                                      IconButton(
+                                                        icon: const Icon(Icons.bar_chart, color: Colors.white70, size: 20),
+                                                        onPressed: () => setState(() => _showBarChart = !_showBarChart),
+                                                        visualDensity: VisualDensity.compact,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              "৳${grandTotal.toStringAsFixed(2)}",
+                                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                                fontWeight: FontWeight.w900, 
+                                                color: Colors.white, 
+                                                fontSize: 28, 
+                                                letterSpacing: -0.5,
+                                              ),
+                                            ),
+                                            if (grandTotal > 0 && (_showPieChart || _showBarChart))
+                                              Padding(
+                                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                                child: SizedBox(
+                                                  height: 120, 
+                                                  child: Row(
+                                                    children: [
+                                                      if (_showPieChart) Expanded(child: _buildPieChart(receivedTotal, dueTotal)),
+                                                      if (_showBarChart) Expanded(child: _buildBarChart(rentTotal, utilityTotal, dueTotal)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            const SizedBox(height: 8),
+                                            GridView.count(
+                                              crossAxisCount: 2,
+                                              shrinkWrap: true,
+                                              physics: const NeverScrollableScrollPhysics(),
+                                              mainAxisSpacing: 8,
+                                              crossAxisSpacing: 8,
+                                              childAspectRatio: 2.5, 
+                                              children: [
+                                                _buildStatCard("Received", receivedTotal, ThemeManager.cardYellow, Icons.check_circle_outline, () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 0)),
+                                                _buildStatCard("Due", dueTotal, ThemeManager.cardPink, Icons.pending_actions, () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 1)),
+                                                _buildStatCard("Rent", rentTotal, ThemeManager.cardPeach, Icons.home_work_outlined, () => _showRentUtilityPopup(context, receivedSnapshot, isRent: true)),
+                                                _buildStatCard("Utility", utilityTotal, ThemeManager.cardPeach, Icons.settings_suggest_outlined, () => _showRentUtilityPopup(context, receivedSnapshot, isRent: false)),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "৳${grandTotal.toStringAsFixed(2)}",
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.w900, 
-                                color: Colors.white, 
-                                fontSize: 28, // REDUCED
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            if (grandTotal > 0 && (_showPieChart || _showBarChart))
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                child: SizedBox(
-                                  height: 120, // REDUCED
-                                  child: Row(
-                                    children: [
-                                      if (_showPieChart) Expanded(child: _buildPieChart(receivedTotal, dueTotal)),
-                                      if (_showBarChart) Expanded(child: _buildBarChart(rentTotal, utilityTotal, dueTotal)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(height: 8),
-                            GridView.count(
-                              crossAxisCount: 2,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              mainAxisSpacing: 8,
-                              crossAxisSpacing: 8,
-                              childAspectRatio: 2.5, // INCREASED TO REDUCE HEIGHT
-                              children: [
-                                _buildStatCard("Received", receivedTotal, ThemeManager.cardYellow, Icons.check_circle_outline, () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 0)),
-                                _buildStatCard("Due", dueTotal, ThemeManager.cardPink, Icons.pending_actions, () => _showBillingDetailsPopup(context, receivedSnapshot, occupiedSnapshot, initialTab: 1)),
-                                _buildStatCard("Rent", rentTotal, ThemeManager.cardPeach, Icons.home_work_outlined, () => _showRentUtilityPopup(context, receivedSnapshot, isRent: true)),
-                                _buildStatCard("Utility", utilityTotal, ThemeManager.cardPeach, Icons.settings_suggest_outlined, () => _showRentUtilityPopup(context, receivedSnapshot, isRent: false)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
                 );
               },
             );
@@ -1451,68 +1451,91 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
   }
 
   Widget _buildDueList(List<QueryDocumentSnapshot> occupiedDocs, List<QueryDocumentSnapshot> receivedDocs) {
-    var dueItems = receivedDocs.where((d) => (d.data() as Map)['status'] == 'Due').toList();
-    if (dueItems.isEmpty) return _buildEmptyState("No pending dues for $_selectedMonthStr.");
+    return ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
+      valueListenable: _repository.subItemSummaryCache,
+      builder: (context, summaryCache, child) {
+        // Find all occupied units that have a total outstanding balance > 0
+        var unitsWithDue = occupiedDocs.where((doc) {
+          var summary = summaryCache[doc.id];
+          return summary != null && (summary['total'] as num).toDouble() > 0;
+        }).toList();
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: dueItems.length,
-      itemBuilder: (context, index) {
-        var data = dueItems[index].data() as Map<String, dynamic>;
-        String subId = data['subItemId'];
+        if (unitsWithDue.isEmpty) return _buildEmptyState("No pending dues for $_selectedMonthStr.");
 
-        return FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('sub_items').doc(subId).get(),
-          builder: (context, snap) {
-            String categoryName = "Loading...";
-            String resolvedSubName = data['subItemName'] ?? '...';
-
-            if (snap.hasData && snap.data!.exists) {
-              final snapData = snap.data!.data() as Map<String, dynamic>?;
-              if (data['subItemName'] == null) {
-                resolvedSubName = snapData?['subItemName'] ?? 'Unnamed';
-              }
-              String catId = snapData?['categoryId'] ?? '';
-              return FutureBuilder<DocumentSnapshot>(
-                future: _dbService.getCategoryById(catId),
-                builder: (context, catSnap) {
-                  categoryName = (catSnap.data?.data() as Map?)?['categoryName'] ?? 'Unknown';
-                  String tName = data['TenantName'] ?? snapData?['TenantName'] ?? 'No Name';
-
-                  return _buildBillingTile(
-                    index: index,
-                    title: "$resolvedSubName ($tName)",
-                    subtitle: categoryName,
-                    amount: (data['totalAmount'] as num).toDouble(),
-                    color: dueColor,
-                    icon: Icons.pending_actions,
-                    profilePictureUrl: data['profilePictureUrl'] ?? snapData?['profilePictureUrl'],
-                    onTap: () {
-                      try {
-                        UserReportPage.showDetailsDialog(context, {
-                          ...data,
-                          'docId': dueItems[index].id,
-                          'subItemName': resolvedSubName,
-                          'TenantName': tName,
-                          'categoryName': categoryName,
-                        });
-                      } catch (e, stack) {
-                        debugPrint("ERROR in admin_home dueList onTap: $e\n$stack");
-                        DatabaseService.showToast(context, "Error: $e", backgroundColor: Colors.red);
-                      }
-                    },
-                  );
-                },
-              );
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: unitsWithDue.length,
+          itemBuilder: (context, index) {
+            var subDoc = unitsWithDue[index];
+            var summary = summaryCache[subDoc.id]!;
+            var subData = subDoc.data() as Map<String, dynamic>;
+            String subId = subDoc.id;
+            
+            String categoryName = "Unknown";
+            String catId = subData['categoryId'] ?? '';
+            if (catId.isNotEmpty) {
+              var catDoc = _repository.categories.value.where((c) => c.id == catId).firstOrNull;
+              categoryName = (catDoc?.data() as Map?)?['categoryName'] ?? 'Unknown';
             }
-            String tName = data['TenantName'] ?? 'No Name';
+
+            String resolvedSubName = subData['subItemName'] ?? 'Unnamed';
+            String tName = subData['TenantName'] ?? 'No Name';
+            double totalDue = (summary['total'] as num).toDouble();
+            int arrears = summary['arrearsCount'] ?? 0;
+            
+            // Check if current month is included in pending
+            List pendingMonths = summary['pendingMonths'] ?? [];
+            bool hasCurrentMonth = pendingMonths.any((m) => m['monthYear'].toString().toLowerCase() == _selectedMonthStr.toLowerCase());
+
+            String subtitle = categoryName;
+            if (arrears > 0) {
+              subtitle += " • $arrears Arrears";
+            }
+
             return _buildBillingTile(
               index: index,
               title: "$resolvedSubName ($tName)",
-              subtitle: categoryName,
-              amount: (data['totalAmount'] as num).toDouble(),
+              subtitle: subtitle,
+              amount: totalDue,
               color: dueColor,
               icon: Icons.pending_actions,
+              profilePictureUrl: subData['profilePictureUrl'],
+              onTap: () {
+                try {
+                  // If there is an actual billing record for the selected month, show it
+                  var currentMonthRecord = pendingMonths.where((m) => 
+                    m['isHistory'] == true && 
+                    m['monthYear'].toString().toLowerCase() == _selectedMonthStr.toLowerCase()
+                  ).firstOrNull;
+
+                  if (currentMonthRecord != null) {
+                    UserReportPage.showDetailsDialog(context, {
+                      ...currentMonthRecord['data'],
+                      'docId': currentMonthRecord['data']['docId'],
+                    });
+                  } else if (hasCurrentMonth) {
+                    // Show estimate/Mark as Paid dialog for current month if it's due but not recorded
+                    UserReportPage.showDetailsDialog(context, {
+                      ...subData,
+                      'subItemId': subId,
+                      'subItemName': resolvedSubName,
+                      'TenantName': tName,
+                      'categoryName': categoryName,
+                      'monthYear': _selectedMonthStr,
+                      'totalAmount': (summary['currentMonthBill'] as num).toDouble(),
+                      'electricityBill': (summary['currentMonthBill'] as num).toDouble() - summary['manualDuesTotal'] - summary['servicesTotal'], // Rough estimate
+                      'services': summary['activeServices'] ?? [],
+                      'status': 'Due',
+                    });
+                  } else {
+                    // Just open the unit report page if it's only arrears or ambiguous
+                    Navigator.push(context, MaterialPageRoute(builder: (c) => UserReportPage(subItemId: subId)));
+                  }
+                } catch (e, stack) {
+                  debugPrint("ERROR in admin_home dueList onTap: $e\n$stack");
+                  DatabaseService.showToast(context, "Error: $e", backgroundColor: Colors.red);
+                }
+              },
             );
           },
         );
@@ -1626,65 +1649,4 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
     );
   }
 
-  Future<double> _calculateGrandTotal(List<QueryDocumentSnapshot> occupied, List<QueryDocumentSnapshot> records, List<QueryDocumentSnapshot> categories) async {
-    double grandTotal = 0;
-    
-    for (var subDoc in occupied) {
-      String subId = subDoc.id;
-      
-      // Calculate month estimate (Fixed costs)
-      double estimatedMonthAmount = await _calculateSingleMonthEstimate(subDoc, categories: categories);
-      
-      var summary = await _dbService.calculateFinancialSummary(subId, estimatedMonthAmount, _selectedMonthStr);
-      // Return only the bill for the SELECTED month
-      grandTotal += (summary['currentMonthBill'] as num).toDouble();
-    }
-    return grandTotal;
-  }
-
-  Future<double> _calculateSingleMonthEstimate(QueryDocumentSnapshot subDoc, {List<QueryDocumentSnapshot>? categories}) async {
-    var subData = subDoc.data() as Map<String, dynamic>;
-    String catId = subData['categoryId'] ?? '';
-    if (catId.isEmpty) return 0;
-
-    Map<String, dynamic>? catData;
-    if (categories != null) {
-      try {
-        catData = categories.firstWhere((c) => c.id == catId).data() as Map<String, dynamic>?;
-      } catch (_) {
-        DocumentSnapshot catDoc = await _dbService.getCategoryById(catId);
-        catData = catDoc.data() as Map<String, dynamic>?;
-      }
-    } else {
-      DocumentSnapshot catDoc = await _dbService.getCategoryById(catId);
-      catData = catDoc.data() as Map<String, dynamic>?;
-    }
-    
-    if (catData == null) return 0;
-
-    List categoryServices = catData['assignedServices'] ?? [];
-    List excluded = subData['excludedServices'] ?? [];
-    List overridden = subData['overriddenServices'] ?? [];
-
-    List<Map<String, dynamic>> active = DatabaseService.getEffectiveServices(
-      categoryServices: categoryServices,
-      excludedServices: excluded,
-      overriddenServices: overridden,
-    );
-
-    double servicesSum = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
-    
-    var ed = subData['electricityDetails'];
-    double eBill = 0;
-    if (ed != null && ed['isStopped'] != true) {
-      double last = (ed['lastReading'] as num?)?.toDouble() ?? 0;
-      double present = (ed['presentReading'] as num?)?.toDouble() ?? 0;
-      double rate = (ed['pricePerUnit'] as num?)?.toDouble() ?? 0;
-      eBill = (present - last) * rate;
-    }
-
-    // Return fixed costs only (services + electricity). 
-    // Manual dues are handled by calculateFinancialSummary internally.
-    return servicesSum + eBill;
-  }
 }

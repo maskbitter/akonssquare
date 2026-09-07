@@ -26,6 +26,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
   String? _selectedFilterCategoryId;
   late DateTime _selectedDate;
   bool _isFabVisible = true;
+  final Set<String> _expandedCategoryIds = {};
 
   @override
   bool get wantKeepAlive => true;
@@ -361,11 +362,11 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                   }
 
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
-                    itemCount: categoryDocs.length,
-                    itemBuilder: (context, i) {
-                      var catDoc = categoryDocs[i];
+              return CustomScrollView(
+                slivers: [
+                  ...categoryDocs.asMap().entries.map((entry) {
+                      int i = entry.key;
+                      var catDoc = entry.value;
                       var catData = catDoc.data() as Map<String, dynamic>;
                       String catId = catDoc.id;
                       String catName = catData['categoryName'] ?? 'Unnamed';
@@ -381,926 +382,216 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
 
                           subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
 
-                          // Hide category if no units are occupied in this tab
                           if (status == 'Occupied' && subDocs.isEmpty) {
-                            return const SizedBox.shrink();
+                            return const SliverToBoxAdapter(child: SizedBox.shrink());
                           }
 
-                            double _calculateUnitMonthTotal(QueryDocumentSnapshot doc) {
-                            var existingRecord = historyMap[doc.id];
-                            if (existingRecord != null) {
-                               return ((existingRecord.data() as Map)['totalAmount'] as num).toDouble();
-                            }
-                            var d = doc.data() as Map<String, dynamic>;
-                            var ed = d['electricityDetails'];
-                            double eBillVal = 0;
-                            if (ed != null && ed['isStopped'] != true) {
-                              eBillVal = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
-                            }
-                            List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: d['overriddenServices'] ?? []);
-                            
-                            // Manual dues are now handled by calculateFinancialSummary to ensure all pending ones are counted
-                            return (active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble()) + eBillVal);
+                          double catTotalPayable = 0;
+                          for (var doc in subDocs) {
+                            catTotalPayable += _repository.subItemPayableCache.value[doc.id] ?? 0;
                           }
+                          bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
+                          bool isExpanded = _expandedCategoryIds.contains(catId);
+                          
+                          final Color accentColor = ThemeManager.getCardColor(i);
+                          final Color bgColor = ThemeManager.getCardContainerColor(i);
+                          final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
 
-                          return Builder(
-                            builder: (context) {
-                              double catTotalPayable = 0;
-                              for (var doc in subDocs) {
-                                catTotalPayable += _calculateUnitMonthTotal(doc);
-                              }
-                              bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
-                              
-                              final Color accentColor = ThemeManager.getCardColor(i);
-                              final Color bgColor = ThemeManager.getCardContainerColor(i);
-                              final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
-
-                              return Card(
-                        elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : bgColor,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16), 
-                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                              ? BorderSide(color: accentColor, width: 1.5) 
-                              : BorderSide.none,
-                        ),
-                        child: ExpansionTile(
-                          backgroundColor: Colors.transparent,
-                          collapsedBackgroundColor: Colors.transparent,
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                          iconColor: accentColor,
-                          collapsedIconColor: accentColor,
-                          title: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.category_outlined, color: accentColor, size: 22),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: onBgColor, width: 1) : null,
-                                    ),
-                                    child: Text(
-                                      catName.toUpperCase(),
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w900, 
-                                        color: onBgColor, 
-                                        letterSpacing: 0.5
-                                      ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
-                                    onPressed: () => CategoryDialogs.showCategorySettingsDialog(
-                                      context: context, 
-                                      categoryId: catId, 
-                                      categoryName: catName, 
-                                      dynamicAssignedServices: assignedServices
-                                    ),
-                                  ),
-                                  if (!widget.isOperator) ...[
-                                    const SizedBox(width: 12),
-                                    IconButton(
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                      icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
-                                      onPressed: () => CategoryDialogs.showConfirmDialog(
-                                        context: context, 
-                                        title: "Remove '$catName'?", 
-                                        content: "Are you sure you want to remove this category?", 
-                                        onConfirm: () async { 
-                                          SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                          await _dbService.removeCategory(catId, prefs.getString('username') ?? "Admin"); 
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                          return SliverToBoxAdapter(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              padding: EdgeInsets.only(bottom: isExpanded ? 12 : 0),
+                              decoration: BoxDecoration(
+                                color: isExpanded ? accentColor.withValues(alpha: 0.15) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(24),
                               ),
-                              const SizedBox(height: 4),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              child: Column(
                                 children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 30),
-                                    child: Text(
-                                      "${subDocs.length} units | ${assignedServices.length} Services",
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: onBgColor.withValues(alpha: 0.7),
-                                        fontWeight: FontWeight.bold
-                                      ),
-                                    ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          if (hasElectric) Icon(Icons.electric_bolt, color: context.electric, size: 18),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            "Total: ৳${catTotalPayable.toStringAsFixed(0)}",
-                                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                              fontWeight: FontWeight.w900, 
-                                              color: onBgColor
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          children: [
-                            const Divider(height: 1),
-                            ...subDocs.asMap().entries.map((entry) {
-                              var subDoc = entry.value;
-                              var d = subDoc.data() as Map<String, dynamic>;
-                              String subId = subDoc.id;
-                              String subName = d['subItemName'] ?? 'Unnamed';
-                              String tenant = d['TenantName'] ?? 'No Name';
-                              var ed = d['electricityDetails'];
-                              var existingRecord = historyMap[subId];
-                              double monthTotal = 0;
-                              double servicesTotal = 0;
-                              double eBillAmount = 0;
-                              double mDuesSum = 0;
-                              List? historicalServices;
-
-                              if (existingRecord != null) {
-                                var hData = existingRecord.data() as Map<String, dynamic>;
-                                monthTotal = (hData['totalAmount'] as num).toDouble();
-                                servicesTotal = (hData['houseRentTotal'] as num).toDouble();
-                                eBillAmount = (hData['electricityBill'] as num).toDouble();
-                                mDuesSum = monthTotal - (servicesTotal + eBillAmount);
-                                historicalServices = hData['services'];
-                              } else {
-                                List overridden = d['overriddenServices'] ?? [];
-                                List active = DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: overridden);
-                                servicesTotal = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
-                                if (ed != null && ed['isStopped'] != true) {
-                                  eBillAmount = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
-                                }
-                                // Manual dues are now accounted for by calculateFinancialSummary
-                                monthTotal = servicesTotal + eBillAmount;
-                              }
-
-                              bool isPaid = paidIds.contains(subId);
-                              bool isOccupied = status == 'Occupied';
-
-                              return Builder(
-                                builder: (context) {
-                                  double unitMonthBill = monthTotal;
-                                  
-                                  var summary = _repository.calculateFinancialSummaryLocal(subId, unitMonthBill, _selectedMonthStr);
-                                  List pendingMonths = summary['pendingMonths'] ?? [];
-                                  List summaryManualDues = d['manualDues'] ?? [];
-                                  int arrearsCount = summary['arrearsCount'] ?? 0;
-                                  bool hasAdvance = summaryManualDues.any((m) => (m['amount'] as num).toDouble() < -0.1);
-
-                                  int itemIndex = i + entry.key + 1;
-                                  final Color itemAccentColor = ThemeManager.getCardColor(itemIndex, isSubCard: true);
-                                  final Color itemBgColor = ThemeManager.getCardContainerColor(itemIndex, isSubCard: true);
-                                  final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex, isSubCard: true);
-
-                              List overridden = d['overriddenServices'] ?? [];
-                              List active = historicalServices != null 
-                                  ? List<Map<String, dynamic>>.from(historicalServices)
-                                  : DatabaseService.getEffectiveServices(categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? [], overriddenServices: overridden);
-                              List manualDues = d['manualDues'] ?? [];
-
-                              if (status == 'Vacant') {
-                                return InkWell(
-                                  onLongPress: () {
-                                    HapticFeedback.heavyImpact();
-                                    CategoryDialogs.showSubItemStatusDialog(
-                                      context: context, 
-                                      subItemId: subId, 
-                                      subItemName: subName, 
-                                      currentStatus: 'Vacant', 
-                                      currentTenant: tenant, 
-                                      currentNid: d['nidNumber'] ?? 'No Number',
-                                      electricityDetails: ed
-                                    );
-                                  },
-                                  child: Card(
-                                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : itemBgColor,
+                                  Card(
                                     elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : bgColor,
+                                    margin: EdgeInsets.zero,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12), 
+                                      borderRadius: BorderRadius.circular(16), 
                                       side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                                          ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
+                                          ? BorderSide(color: accentColor, width: 1.5) 
                                           : BorderSide.none,
                                     ),
-                                    child: ExpansionTile(
-                                      backgroundColor: Colors.transparent,
-                                      collapsedBackgroundColor: Colors.transparent,
-                                      shape: const Border(),
-                                      collapsedShape: const Border(),
-                                      tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                                      iconColor: itemAccentColor,
-                                      collapsedIconColor: itemAccentColor,
-                                      title: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(Icons.meeting_room_outlined, color: itemAccentColor, size: 22),
-                                              const SizedBox(width: 8),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
-                                                  borderRadius: BorderRadius.circular(6),
-                                                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
-                                                ),
-                                                child: Text(
-                                                  subName,
-                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                    fontWeight: FontWeight.w900, 
-                                                    color: itemAccentColor, 
-                                                  ),
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              const SizedBox(width: 6),
-                                              PopupMenuButton<String>(
-                                                padding: EdgeInsets.zero,
-                                                constraints: const BoxConstraints(),
-                                                icon: Icon(Icons.more_vert, size: 22, color: itemOnBgColor.withValues(alpha: 0.7)),
-                                                onSelected: (val) async {
-                                                  if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate);
-                                                  if (val == 'stop') {
-                                                    bool isStopping = ed?['isStopped'] != true;
-                                                    if (isStopping) {
-                                                      double last = (ed?['lastReading'] ?? 0).toDouble();
-                                                      double pres = (ed?['presentReading'] ?? 0).toDouble();
-                                                      if (pres > last) {
-                                                        CategoryDialogs.showConfirmDialog(
-                                                          context: context,
-                                                          title: "Confirm Stop Sub-Meter Billing",
-                                                          content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
-                                                          onConfirm: () async {
-                                                            await _dbService.updateSubItemElectricity(subId, {
-                                                              ...ed!,
-                                                              'presentReading': last,
-                                                              'isStopped': true,
-                                                              'updatedAt': FieldValue.serverTimestamp(),
-                                                            }, "Admin");
-                                                          },
-                                                        );
-                                                      } else {
-                                                        await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
-                                                      }
-                                                    } else {
-                                                      await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
-                                                    }
-                                                  } else if (val == 'remove_electric') {
-                                                     CategoryDialogs.showConfirmDialog(
-                                                      context: context, 
-                                                      title: "Remove Sub-Meter?",
-                                                      content: "Are you sure you want to remove the electric meter from this unit? All previous billing history will be preserved, and the current meter reading will be carried forward for future use.", 
-                                                      onConfirm: () async { 
-                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                                        await _dbService.removeSubItemElectricity(subId, prefs.getString('username') ?? "Admin"); 
-                                                      }
-                                                    );
-                                                  } else if (val == 'services') {
-                                                    CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
-                                                  } else if (val == 'dues') {
-                                                    CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? [], monthYear: _selectedMonthStr);
-                                                  } else if (val == 'remove') {
-                                                     CategoryDialogs.showConfirmDialog(
-                                                      context: context, 
-                                                      title: "Remove '$subName'?", 
-                                                      content: "Are you sure you want to remove this $subName?", 
-                                                      onConfirm: () async { 
-                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                                        await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
-                                                      }
-                                                    );
-                                                  }
-                                                },
-                                                itemBuilder: (ctx) => [
-                                                  if (ed != null || !widget.isOperator)
-                                                    PopupMenuItem(
-                                                      value: ed == null ? 'electric' : 'stop', 
-                                                      child: ListTile(
-                                                        leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
-                                                        title: Text(ed == null ? "Add Sub-Meter" : (ed['isStopped'] == true ? "Resume Sub-Meter" : "Stop Sub-Meter")), 
-                                                        dense: true
-                                                      )
-                                                    ),
-                                                  const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
-                                                  if (status == 'Occupied')
-                                                    const PopupMenuItem(value: 'dues', child: ListTile(leading: Icon(Icons.money_off, size: 20, color: Colors.red), title: Text("Adjust Dues/Adv"), dense: true)),
-                                                  if (ed != null && !widget.isOperator)
-                                                    PopupMenuItem(
-                                                      value: 'remove_electric', 
-                                                      child: ListTile(
-                                                        leading: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.error, size: 20),
-                                                        title: Text("Remove Sub-Meter", style: TextStyle(color: Theme.of(context).colorScheme.error)), 
-                                                        dense: true
-                                                      )
-                                                    ),
-                                                  if (!widget.isOperator)
-                                                    PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.only(left: 30),
-                                                child: Text(
-                                                  'Vacant',
-                                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error),
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                "৳${monthTotal.toStringAsFixed(0)}",
-                                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                                  fontWeight: FontWeight.w900, 
-                                                  color: itemOnBgColor, 
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(left: 30, top: 1),
-                                            child: Text(
-                                              "${active.length} Services | Ready for new tenant",
-                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                color: itemOnBgColor.withValues(alpha: 0.8), 
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                    child: InkWell(
+                                      onTap: () {
+                                        DatabaseService.vibrate();
+                                        setState(() {
+                                          if (isExpanded) {
+                                            _expandedCategoryIds.remove(catId);
+                                          } else {
+                                            _expandedCategoryIds.add(catId);
+                                          }
+                                        });
+                                      },
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
-                                              _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
-                                              
-                                            if ((d['notes'] ?? '').toString().isNotEmpty)
-                                              _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
-                                                icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
-                                                onPressed: () => CategoryDialogs.showConfirmDialog(
-                                                  context: context,
-                                                  title: "Remove Note?",
-                                                  content: "Are you sure you want to clear the note for '$subName'?",
-                                                  confirmText: "Clear",
-                                                  onConfirm: () async {
-                                                    SharedPreferences prefs = await SharedPreferences.getInstance();
-                                                    await _dbService.updateSubItemDetails(subId, {'notes': ''}, prefs.getString('username') ?? "Admin");
-                                                  },
-                                                ),
-                                              )),
-                                            
-                                            if (ed != null && ed['isStopped'] != true)
-                                                _buildSectionBox(
-                                                  "Sub-Meter Bills", 
-                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)}", 
-                                                  Icons.electric_bolt, 
-                                                  amount: eBillAmount, 
-                                                  color: context.electric,
-                                                  trailing: IconButton(
-                                                    icon: Icon(Icons.edit_note, color: context.electric, size: 22), 
-                                                    onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate)
-                                                  )
-                                                ),
-
-                                              ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
-
-                                              if (summaryManualDues.isNotEmpty) ...[
-                                                const SizedBox(height: 12),
-                                                Text(
-                                                  "Additional Dues", 
-                                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                    color: Theme.of(context).colorScheme.error, 
-                                                    fontWeight: FontWeight.bold
-                                                  )
-                                                ),
-                                                const SizedBox(height: 4),
-                                                ...summaryManualDues.map((m) {
-                                                  double amt = (m['amount'] as num).toDouble();
-                                                  bool isAdv = amt < 0;
-                                                  return Container(
-                                                    margin: const EdgeInsets.symmetric(vertical: 2),
-                                                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                                                    decoration: BoxDecoration(
-                                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow, 
-                                                      borderRadius: BorderRadius.circular(12), 
-                                                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                                            Row(
+                                              children: [
+                                                Icon(Icons.category_outlined, color: accentColor, size: 22),
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: onBgColor, width: 1) : null,
+                                                  ),
+                                                  child: Text(
+                                                    catName.toUpperCase(),
+                                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                      fontWeight: FontWeight.w900, 
+                                                      color: onBgColor, 
+                                                      letterSpacing: 0.5
                                                     ),
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        Expanded(child: Text(isAdv ? "As An Advance" : m['reason'], style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold))),
-                                                        Text("৳${amt.toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
-                                                      ],
+                                                  ),
+                                                ),
+                                                const Spacer(),
+                                                IconButton(
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints(),
+                                                  icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
+                                                  onPressed: () => CategoryDialogs.showCategorySettingsDialog(
+                                                    context: context, 
+                                                    categoryId: catId, 
+                                                    categoryName: catName, 
+                                                    dynamicAssignedServices: assignedServices
+                                                  ),
+                                                ),
+                                                if (!widget.isOperator) ...[
+                                                  const SizedBox(width: 12),
+                                                  IconButton(
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
+                                                    onPressed: () => CategoryDialogs.showConfirmDialog(
+                                                      context: context, 
+                                                      title: "Remove '$catName'?", 
+                                                      content: "Are you sure you want to remove this category?", 
+                                                      onConfirm: () async { 
+                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                        await _dbService.removeCategory(catId, prefs.getString('username') ?? "Admin"); 
+                                                      },
                                                     ),
-                                                  );
-                                                }),
+                                                  ),
+                                                ],
+                                                const SizedBox(width: 12),
+                                                Icon(
+                                                  isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                                  color: onBgColor.withValues(alpha: 0.7),
+                                                  size: 24,
+                                                ),
                                               ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Padding(
+                                                  padding: const EdgeInsets.only(left: 30),
+                                                  child: Text(
+                                                    "${subDocs.length} units | ${assignedServices.length} Services",
+                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                      color: onBgColor.withValues(alpha: 0.7),
+                                                      fontWeight: FontWeight.bold
+                                                    ),
+                                                  ),
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    if (hasElectric) Icon(Icons.electric_bolt, color: context.electric, size: 18),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      "Total: ৳${catTotalPayable.toStringAsFixed(0)}",
+                                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                                        fontWeight: FontWeight.w900, 
+                                                        color: onBgColor
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ],
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            }
-                              
-                              return InkWell(
-                                    onTap: () {
-                                      String targetMonth = _selectedMonthStr;
-                                      var records = historyMap.values.where((doc) => doc['subItemId'] == subId).toList();
-                                      var recordedDoc = records.isEmpty ? null : records.first;
+                                  if (isExpanded) ...[
+                                    const SizedBox(height: 8),
+                                    ...subDocs.asMap().entries.map((subEntry) {
+                                      int subIdx = subEntry.key;
+                                      var subDoc = subEntry.value;
+                                      var d = subDoc.data() as Map<String, dynamic>;
+                                      String subId = subDoc.id;
+                                      
+                                      // Check if paid for current month
+                                      bool isPaid = paidIds.contains(subId);
+                                      
+                                      int itemIndex = i + subIdx + 1;
+                                      final Color itemAccentColor = ThemeManager.getCardColor(itemIndex, isSubCard: true);
+                                      final Color itemBgColor = ThemeManager.getCardContainerColor(itemIndex, isSubCard: true);
+                                      final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex, isSubCard: true);
 
-                                      Map<String, dynamic> reportData;
-                                      if (recordedDoc != null) {
-                                        reportData = {
-                                          ...recordedDoc.data() as Map<String, dynamic>,
-                                          'docId': recordedDoc.id,
-                                        };
+                                      if (status == 'Vacant') {
+                                        return _buildVacantUnitCard(
+                                          context, subDoc, i, subIdx, 
+                                          itemAccentColor, itemBgColor, itemOnBgColor, 
+                                          assignedServices
+                                        );
                                       } else {
-                                        reportData = {
-                                          'status': 'Due',
-                                          'monthYear': targetMonth,
-                                          'subItemName': subName,
-                                          'TenantName': tenant,
-                                          'subItemId': subId,
-                                          'profilePictureUrl': d['profilePictureUrl'],
-                                          'categoryId': catId,
-                                          'mainCategoryName': catName,
-                                          'manualDues': d['manualDues'] ?? [],
-                                          'nidNumber': d['nidNumber'] ?? '',
-                                          'services': active,
-                                          'electricityDetails': ed,
-                                          'electricityBill': eBillAmount,
-                                          'totalAmount': monthTotal,
-                                          'houseRentTotal': servicesTotal,
-                                          'createdAt': Timestamp.now(),
-                                          'paymentNotes': 'Monthly breakdown (Estimated)',
-                                        };
+                                        return _buildOccupiedUnitCard(
+                                          context, subDoc, i, subIdx, 
+                                          itemAccentColor, itemBgColor, itemOnBgColor, 
+                                          assignedServices, isPaid, historyMap, paidIds, catName
+                                        );
                                       }
-                                      UserReportPage.showDetailsDialog(context, reportData);
-                                    },
-                                    onLongPress: () {
-                                      HapticFeedback.heavyImpact();
-                                      CategoryDialogs.showSubItemStatusDialog(
-                                        context: context, 
-                                        subItemId: subId, 
-                                        subItemName: subName, 
-                                        currentStatus: 'Occupied', 
-                                        currentTenant: tenant, 
-                                        currentNid: d['nidNumber'] ?? 'No Number',
-                                        electricityDetails: ed
-                                      );
-                                    },
-                                    child: Card(
-                                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      color: isPaid 
-                                          ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiaryContainer) 
-                                          : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : itemBgColor),
-                                      elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-                                        shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                        side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                                            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
-                                            : BorderSide.none,
-                                      ),
-                                      child: ExpansionTile(
-                                      backgroundColor: Colors.transparent,
-                                      collapsedBackgroundColor: Colors.transparent,
-                                      shape: const Border(),
-                                      collapsedShape: const Border(),
-                                      tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                                      iconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error,
-                                      collapsedIconColor: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error,
-                                      title: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              if (isOccupied)
-                                                GestureDetector(
-                                                  onTap: d['profilePictureUrl'] != null ? () => _showFullScreenImage(context, d['profilePictureUrl'], "Tenant Profile") : null,
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.only(right: 8),
-                                                    child: CircleAvatar(
-                                                      radius: 14,
-                                                      backgroundImage: d['profilePictureUrl'] != null ? NetworkImage(d['profilePictureUrl']) : null,
-                                                      backgroundColor: Theme.of(context).colorScheme.surface,
-                                                      child: d['profilePictureUrl'] == null ? const Icon(Icons.person, size: 18, color: Colors.grey) : null,
-                                                    ),
-                                                  ),
-                                                ),
-                                              Icon(
-                                                isOccupied ? (isPaid ? Icons.check_circle : Icons.door_front_door_outlined) : Icons.meeting_room_outlined,
-                                                color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? (isPaid ? Colors.green : (isOccupied ? Colors.black : Colors.red)) : (isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error),
-                                                size: 22,
+                                    }),
+                                    if (status == 'Vacant')
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: Center(
+                                          child: TextButton.icon(
+                                            onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
+                                            icon: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary),
+                                            label: Text(
+                                              "Add New $catName", 
+                                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                                color: Theme.of(context).colorScheme.primary,
+                                                fontWeight: FontWeight.bold,
                                               ),
-                                              const SizedBox(width: 8),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
-                                                  borderRadius: BorderRadius.circular(6),
-                                                  border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                                                      ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) 
-                                                      : null,
-                                                ),
-                                                child: Text(
-                                                  subName,
-                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                    fontWeight: FontWeight.w900, 
-                                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : (isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemAccentColor) : Theme.of(context).colorScheme.error), 
-                                                  ),
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              IconButton(
-                                                padding: EdgeInsets.zero,
-                                                constraints: const BoxConstraints(),
-                                                icon: Icon(Icons.edit_note, size: 22, color: itemOnBgColor.withValues(alpha: 0.7)),
-                                                onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
-                                                  context: context, 
-                                                  subItemId: subId, 
-                                                  currentName: subName, 
-                                                  currentTenantName: tenant, 
-                                                  currentNidNumber: d['nidNumber'] ?? 'No Number', 
-                                                  currentNotes: d['notes'] ?? '',
-                                                  currentProfileUrl: d['profilePictureUrl'],
-                                                  currentNidUrl: d['nidPictureUrl'],
-                                                ),
-                                              ),
-                                              if ((d['notes'] ?? '').toString().isNotEmpty)
-                                                Container(
-                                                  margin: const EdgeInsets.only(left: 6),
-                                                  padding: const EdgeInsets.all(3),
-                                                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(4)),
-                                                  child: Icon(Icons.notes, color: Theme.of(context).colorScheme.tertiary, size: 16),
-                                                ),
-                                              if (isOccupied)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(left: 6),
-                                                  child: IconButton(
-                                                    padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
-                                                    icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, size: 24), 
-                                                    onPressed: () => CategoryDialogs.showMarkAsPaidDialog(
-                                                      context: context, 
-                                                      subItemId: subId, 
-                                                      subItemName: subName, 
-                                                      TenantName: tenant, 
-                                                      nidNumber: d['nidNumber'] ?? '', 
-                                                      houseRentTotal: servicesTotal, 
-                                                      electricityBill: eBillAmount, 
-                                                      services: active.cast<Map<String, dynamic>>(), 
-                                                      electricityDetails: ed, 
-                                                      mainCategoryName: catName, 
-                                                      manualDues: d['manualDues'] ?? [],
-                                                      notes: d['notes'] ?? '',
-                                                      profilePictureUrl: d['profilePictureUrl']
-                                                    )
-                                                  ),
-                                                ),
-                                              const SizedBox(width: 6),
-                                              PopupMenuButton<String>(
-                                                padding: EdgeInsets.zero,
-                                                constraints: const BoxConstraints(),
-                                                icon: Icon(Icons.more_vert, size: 22, color: itemOnBgColor.withValues(alpha: 0.7)),
-                                                onSelected: (val) async {
-                                                  if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate);
-                                                  if (val == 'stop') {
-                                                    bool isStopping = ed?['isStopped'] != true;
-                                                    if (isStopping) {
-                                                      double last = (ed?['lastReading'] ?? 0).toDouble();
-                                                      double pres = (ed?['presentReading'] ?? 0).toDouble();
-                                                      if (pres > last) {
-                                                        CategoryDialogs.showConfirmDialog(
-                                                          context: context,
-                                                          title: "Confirm Stop Sub-Meter Billing",
-                                                          content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
-                                                          onConfirm: () async {
-                                                            await _dbService.updateSubItemElectricity(subId, {
-                                                              ...ed!,
-                                                              'presentReading': last,
-                                                              'isStopped': true,
-                                                              'updatedAt': FieldValue.serverTimestamp(),
-                                                            }, "Admin");
-                                                          },
-                                                        );
-                                                      } else {
-                                                        await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
-                                                      }
-                                                    } else {
-                                                      await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
-                                                    }
-                                                  } else if (val == 'remove_electric') {
-                                                     CategoryDialogs.showConfirmDialog(
-                                                      context: context, 
-                                                      title: "Remove Sub-Meter?", 
-                                                      content: "Are you sure you want to remove the electric meter from this unit? All previous billing history will be preserved, and the current meter reading will be carried forward for future use.", 
-                                                      onConfirm: () async { 
-                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                                        await _dbService.removeSubItemElectricity(subId, prefs.getString('username') ?? "Admin"); 
-                                                      }
-                                                    );
-                                                  } else if (val == 'services') {
-                                                     CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
-                                                  } else if (val == 'dues') {
-                                                     CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? [], monthYear: _selectedMonthStr);
-                                                  } else if (val == 'remove') {
-                                                     CategoryDialogs.showConfirmDialog(
-                                                      context: context, 
-                                                      title: "Remove '$subName'?", 
-                                                      content: "Are you sure you want to remove this $subName?", 
-                                                      onConfirm: () async { 
-                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                                        await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
-                                                      }
-                                                    );
-                                                  }
-                                                },
-                                                itemBuilder: (ctx) => [
-                                                  if (ed != null || !widget.isOperator)
-                                                    PopupMenuItem(
-                                                      value: ed == null ? 'electric' : 'stop', 
-                                                      child: ListTile(
-                                                        leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
-                                                        title: Text(ed == null ? "Add Sub-Meter" : (ed['isStopped'] == true ? "Resume Sub-Meter" : "Stop Sub-Meter")), 
-                                                        dense: true
-                                                      )
-                                                    ),
-                                                  const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
-                                                  if (status == 'Occupied')
-                                                    const PopupMenuItem(value: 'dues', child: ListTile(leading: Icon(Icons.money_off, size: 20, color: Colors.red), title: Text("Adjust Dues/Adv"), dense: true)),
-                                                  if (ed != null && !widget.isOperator)
-                                                    PopupMenuItem(
-                                                      value: 'remove_electric', 
-                                                      child: ListTile(
-                                                        leading: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.error, size: 20),
-                                                        title: Text("Remove Sub-Meter", style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                                                        dense: true
-                                                      )
-                                                    ),
-                                                  if (!widget.isOperator)
-                                                    PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.only(left: 30),
-                                                child: Text(
-                                                  isOccupied ? (tenant.isNotEmpty && tenant != 'No Name' ? tenant : 'No Tenant') : 'Vacant',
-                                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                "৳${unitMonthBill.toStringAsFixed(0)}",
-                                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                                  fontWeight: FontWeight.w900, 
-                                                  color: isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor, 
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(left: 30, top: 1),
-                                            child: Builder(
-                                              builder: (context) {
-                                                String statsText = "";
-                                                if (isOccupied) {
-                                                  if (isPaid) {
-                                                    statsText = "${active.length} Services | Payment Clear";
-                                                    if (arrearsCount > 0) statsText = "Arrears Pending | $statsText";
-                                                  } else {
-                                                    statsText = "${active.length} Services | Due";
-                                                    if (arrearsCount > 0) statsText += " + $arrearsCount Months Arrears";
-                                                  }
-                                                  if (hasAdvance) statsText += " (Advance Applied)";
-                                                } else {
-                                                  statsText = "${active.length} Services | Ready for new tenant";
-                                                }
-
-                                                return Text(
-                                                  statsText,
-                                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                    color: isOccupied ? (isPaid ? Theme.of(context).colorScheme.tertiary : itemOnBgColor.withValues(alpha: 0.8)) : itemOnBgColor.withValues(alpha: 0.8), 
-                                                  ),
-                                                );
-                                              }
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
-                                                _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
-
-                                              if (isOccupied && pendingMonths.isNotEmpty)
-                                                _buildSectionBox(
-                                                  "Due Months (Pending)", 
-                                                  "", 
-                                                  Icons.history_toggle_off,
-                                                  color: Theme.of(context).colorScheme.error,
-                                                  customContent: Wrap(
-                                                    spacing: 8,
-                                                    runSpacing: 8,
-                                                    children: pendingMonths.map((m) {
-                                                      String mYear = m['monthYear'];
-                                                      return InkWell(
-                                                        onTap: () {
-                                                          Map<String, dynamic> reportData;
-                                                          if (m['isHistory']) {
-                                                            reportData = m['data'];
-                                                          } else {
-                                                            reportData = {
-                                                              'status': 'Due',
-                                                              'monthYear': mYear,
-                                                              'subItemName': subName,
-                                                              'TenantName': tenant,
-                                                              'subItemId': subId,
-                                                              'profilePictureUrl': d['profilePictureUrl'],
-                                                              'categoryId': catId,
-                                                              'mainCategoryName': catName,
-                                                              'manualDues': d['manualDues'] ?? [],
-                                                              'nidNumber': d['nidNumber'] ?? '',
-                                                              'services': active,
-                                                              'electricityDetails': ed,
-                                                              'electricityBill': eBillAmount,
-                                                              'totalAmount': monthTotal,
-                                                              'houseRentTotal': servicesTotal,
-                                                              'createdAt': Timestamp.now(),
-                                                              'paymentNotes': 'Monthly breakdown (Estimated)',
-                                                            };
-                                                          }
-                                                          UserReportPage.showDetailsDialog(context, reportData);
-                                                        },
-                                                        child: Container(
-                                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                          decoration: BoxDecoration(
-                                                            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
-                                                            borderRadius: BorderRadius.circular(8),
-                                                            border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
-                                                          ),
-                                                          child: Text(
-                                                            mYear,
-                                                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                              color: Theme.of(context).colorScheme.error,
-                                                              fontWeight: FontWeight.bold,
-                                                              decoration: TextDecoration.underline,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      );
-                                                    }).toList(),
-                                                  )
-                                                ),
-                                              
-                                              if ((d['notes'] ?? '').toString().isNotEmpty)
-                                                _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
-                                                  icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
-                                                  onPressed: () => CategoryDialogs.showConfirmDialog(
-                                                    context: context,
-                                                    title: "Remove Note?",
-                                                    content: "Are you sure you want to clear the note for '$subName'?",
-                                                    confirmText: "Clear",
-                                                    onConfirm: () async {
-                                                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                                                      await _dbService.updateSubItemDetails(subId, {'notes': ''}, prefs.getString('username') ?? "Admin");
-                                                    },
-                                                  ),
-                                                )),
-                                              
-                                                  if (ed != null && ed['isStopped'] != true)
-                                                _buildSectionBox(
-                                                  "Sub-Meter Bills", 
-                                                  "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)}", 
-                                                  Icons.electric_bolt, 
-                                                  amount: (existingRecord != null || isPaid) ? 0.0 : eBillAmount, 
-                                                  color: context.electric,
-                                                  trailing: IconButton(
-                                                    icon: Icon(Icons.edit_note, color: context.electric, size: 22), 
-                                                    onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate)
-                                                  )
-                                                ),
-
-                                              ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
-
-                                              if (summaryManualDues.isNotEmpty) ...[
-                                                const SizedBox(height: 12),
-                                                Text(
-                                                  "Additional Dues", 
-                                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                    color: Theme.of(context).colorScheme.error, 
-                                                    fontWeight: FontWeight.bold
-                                                  )
-                                                ),
-                                                const SizedBox(height: 4),
-                                                ...summaryManualDues.map((m) {
-                                                  double amt = (m['amount'] as num).toDouble();
-                                                  bool isAdv = amt < 0;
-                                                  return Container(
-                                                    margin: const EdgeInsets.symmetric(vertical: 2),
-                                                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                                                    decoration: BoxDecoration(
-                                                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow, 
-                                                      borderRadius: BorderRadius.circular(12), 
-                                                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        Expanded(child: Text(isAdv ? "As An Advance" : m['reason'], style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold))),
-                                                        Text("৳${amt.toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
-                                                      ],
-                                                    ),
-                                                  );
-                                                }),
-                                              ],
-                                            ],
-                                          ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                                },
-                              );
-
-
-                            }),
-                            if (status == 'Vacant') ...[
-                              const SizedBox(height: 12),
-                              Center(
-                                child: TextButton.icon(
-                                  onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
-                                  icon: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary),
-                                  label: Text(
-                                    "Add New $catName", 
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
+                                      ),
+                                  ],
+                                ],
                               ),
-                              const SizedBox(height: 12),
-                            ],
-                          ],
-                        ),
-                      );
-                            },
+                            ),
                           );
                         },
                       );
-                    },
-                  );
-                },
+                    }).toList(),
+                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                ],
               );
             },
-          ),
-        ),
-      ],
-    );
-  }
+          );
+        },
+      ),
+    ),
+  ],
+);
+}
 
   Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color? color, Widget? trailing, Widget? customContent}) {
     final effectiveColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
@@ -1831,6 +1122,660 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
           ),
         );
       },
+    );
+  }
+
+  Widget _buildVacantUnitCard(
+    BuildContext context, 
+    QueryDocumentSnapshot subDoc, 
+    int catIdx, 
+    int subIdx, 
+    Color accentColor, 
+    Color bgColor, 
+    Color onBgColor, 
+    List assignedServices
+  ) {
+    var d = subDoc.data() as Map<String, dynamic>;
+    String subId = subDoc.id;
+    String subName = d['subItemName'] ?? 'Unnamed';
+    String tenant = d['TenantName'] ?? 'No Name';
+    var ed = d['electricityDetails'];
+    
+    double monthTotal = _repository.subItemPayableCache.value[subId] ?? 0;
+    List active = DatabaseService.getEffectiveServices(
+      categoryServices: assignedServices, 
+      excludedServices: d['excludedServices'] ?? [], 
+      overriddenServices: d['overriddenServices'] ?? []
+    );
+    List overridden = d['overriddenServices'] ?? [];
+
+    return InkWell(
+      onLongPress: () {
+        HapticFeedback.heavyImpact();
+        CategoryDialogs.showSubItemStatusDialog(
+          context: context, 
+          subItemId: subId, 
+          subItemName: subName, 
+          currentStatus: 'Vacant', 
+          currentTenant: tenant, 
+          currentNid: d['nidNumber'] ?? 'No Number',
+          electricityDetails: ed
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : bgColor,
+        elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12), 
+          side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+              ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
+              : BorderSide.none,
+        ),
+        child: ExpansionTile(
+          backgroundColor: Colors.transparent,
+          collapsedBackgroundColor: Colors.transparent,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+          iconColor: accentColor,
+          collapsedIconColor: accentColor,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.meeting_room_outlined, color: accentColor, size: 22),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(6),
+                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
+                    ),
+                    child: Text(
+                      subName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900, 
+                        color: accentColor, 
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(Icons.more_vert, size: 22, color: onBgColor.withValues(alpha: 0.7)),
+                    onSelected: (val) async {
+                      if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate);
+                      if (val == 'stop') {
+                        bool isStopping = ed?['isStopped'] != true;
+                        if (isStopping) {
+                          double last = (ed?['lastReading'] ?? 0).toDouble();
+                          double pres = (ed?['presentReading'] ?? 0).toDouble();
+                          if (pres > last) {
+                            CategoryDialogs.showConfirmDialog(
+                              context: context,
+                              title: "Confirm Stop Sub-Meter Billing",
+                              content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
+                              onConfirm: () async {
+                                await _dbService.updateSubItemElectricity(subId, {
+                                  ...ed!,
+                                  'presentReading': last,
+                                  'isStopped': true,
+                                  'updatedAt': FieldValue.serverTimestamp(),
+                                }, "Admin");
+                              },
+                            );
+                          } else {
+                            await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
+                          }
+                        } else {
+                          await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
+                        }
+                      } else if (val == 'remove_electric') {
+                          CategoryDialogs.showConfirmDialog(
+                          context: context, 
+                          title: "Remove Sub-Meter?",
+                          content: "Are you sure you want to remove the electric meter from this unit? All previous billing history will be preserved, and the current meter reading will be carried forward for future use.", 
+                          onConfirm: () async { 
+                            SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                            await _dbService.removeSubItemElectricity(subId, prefs.getString('username') ?? "Admin"); 
+                          }
+                        );
+                      } else if (val == 'services') {
+                        CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
+                      } else if (val == 'remove') {
+                          CategoryDialogs.showConfirmDialog(
+                          context: context, 
+                          title: "Remove '$subName'?", 
+                          content: "Are you sure you want to remove this $subName?", 
+                          onConfirm: () async { 
+                            SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                            await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
+                          }
+                        );
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      if (ed != null || !widget.isOperator)
+                        PopupMenuItem(
+                          value: ed == null ? 'electric' : 'stop', 
+                          child: ListTile(
+                            leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
+                            title: Text(ed == null ? "Add Sub-Meter" : (ed['isStopped'] == true ? "Resume Sub-Meter" : "Stop Sub-Meter")), 
+                            dense: true
+                          )
+                        ),
+                      const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
+                      if (ed != null && !widget.isOperator)
+                        PopupMenuItem(
+                          value: 'remove_electric', 
+                          child: ListTile(
+                            leading: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.error, size: 20),
+                            title: Text("Remove Sub-Meter", style: TextStyle(color: Theme.of(context).colorScheme.error)), 
+                            dense: true
+                          )
+                        ),
+                      if (!widget.isOperator)
+                        PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 30),
+                    child: Text(
+                      'Vacant',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
+                  const SizedBox(width: 4),
+                  Text(
+                    "৳${monthTotal.toStringAsFixed(0)}",
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900, 
+                      color: onBgColor, 
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 30, top: 1),
+                child: Text(
+                  "${active.length} Services | Ready for new tenant",
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: onBgColor.withValues(alpha: 0.8), 
+                  ),
+                ),
+              ),
+            ],
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
+                    _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
+                    
+                  if ((d['notes'] ?? '').toString().isNotEmpty)
+                    _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
+                      icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
+                      onPressed: () => CategoryDialogs.showConfirmDialog(
+                        context: context,
+                        title: "Remove Note?",
+                        content: "Are you sure you want to clear the note for '$subName'?",
+                        confirmText: "Clear",
+                        onConfirm: () async {
+                          SharedPreferences prefs = await SharedPreferences.getInstance();
+                          await _dbService.updateSubItemDetails(subId, {'notes': ''}, prefs.getString('username') ?? "Admin");
+                        },
+                      ),
+                    )),
+                  
+                  if (ed != null && ed['isStopped'] != true)
+                      _buildSectionBox(
+                        "Sub-Meter Bills", 
+                        "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)}", 
+                        Icons.electric_bolt, 
+                        amount: (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble(), 
+                        color: context.electric,
+                        trailing: IconButton(
+                          icon: Icon(Icons.edit_note, color: context.electric, size: 22), 
+                          onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate)
+                        )
+                      ),
+
+                    ...active.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOccupiedUnitCard(
+    BuildContext context, 
+    QueryDocumentSnapshot subDoc, 
+    int catIdx, 
+    int subIdx, 
+    Color accentColor, 
+    Color bgColor, 
+    Color onBgColor, 
+    List assignedServices,
+    bool isPaid,
+    Map<String, QueryDocumentSnapshot> historyMap,
+    Set<String> paidIds,
+    String catName
+  ) {
+    var d = subDoc.data() as Map<String, dynamic>;
+    String subId = subDoc.id;
+    String subName = d['subItemName'] ?? 'Unnamed';
+    String tenant = d['TenantName'] ?? 'No Name';
+    var ed = d['electricityDetails'];
+    
+    double monthTotal = _repository.subItemPayableCache.value[subId] ?? 0;
+    var summary = _repository.calculateFinancialSummaryLocal(subId, monthTotal, _selectedMonthStr);
+    List pendingMonths = summary['pendingMonths'] ?? [];
+    int arrearsCount = summary['arrearsCount'] ?? 0;
+    List manualDues = d['manualDues'] ?? [];
+    bool hasAdvance = manualDues.any((m) => (m['amount'] as num).toDouble() < -0.1);
+
+    var existingRecord = historyMap[subId];
+    double eBillAmount = 0;
+    double servicesTotal = 0;
+    List? historicalServices;
+
+    if (existingRecord != null) {
+      var hData = existingRecord.data() as Map<String, dynamic>;
+      servicesTotal = (hData['houseRentTotal'] as num).toDouble();
+      eBillAmount = (hData['electricityBill'] as num).toDouble();
+      historicalServices = hData['services'];
+    } else {
+      List overridden = d['overriddenServices'] ?? [];
+      List active = DatabaseService.getEffectiveServices(
+        categoryServices: assignedServices, 
+        excludedServices: d['excludedServices'] ?? [], 
+        overriddenServices: overridden
+      );
+      servicesTotal = active.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
+      if (ed != null && ed['isStopped'] != true) {
+        eBillAmount = (((ed['presentReading'] ?? 0) as num).toDouble() - ((ed['lastReading'] ?? 0) as num).toDouble()) * ((ed['pricePerUnit'] ?? 0) as num).toDouble();
+      }
+    }
+
+    List activeServices = historicalServices != null 
+        ? List<Map<String, dynamic>>.from(historicalServices)
+        : DatabaseService.getEffectiveServices(
+            categoryServices: assignedServices, 
+            excludedServices: d['excludedServices'] ?? [], 
+            overriddenServices: d['overriddenServices'] ?? []
+          );
+    List overridden = d['overriddenServices'] ?? [];
+
+    return InkWell(
+      onTap: () {
+        var recordedDoc = historyMap[subId];
+        Map<String, dynamic> reportData;
+        if (recordedDoc != null) {
+          reportData = {...recordedDoc.data() as Map<String, dynamic>, 'docId': recordedDoc.id};
+        } else {
+          reportData = {
+            'status': 'Due', 'monthYear': _selectedMonthStr, 'subItemName': subName, 'TenantName': tenant,
+            'subItemId': subId, 'profilePictureUrl': d['profilePictureUrl'], 'categoryId': d['categoryId'],
+            'mainCategoryName': catName, 'manualDues': d['manualDues'] ?? [], 'nidNumber': d['nidNumber'] ?? '',
+            'services': activeServices, 'electricityDetails': ed, 'electricityBill': eBillAmount,
+            'totalAmount': monthTotal, 'houseRentTotal': servicesTotal, 'createdAt': Timestamp.now(),
+            'paymentNotes': 'Monthly breakdown (Estimated)',
+          };
+        }
+        UserReportPage.showDetailsDialog(context, reportData);
+      },
+      onLongPress: () {
+        HapticFeedback.heavyImpact();
+        CategoryDialogs.showSubItemStatusDialog(
+          context: context, subItemId: subId, subItemName: subName, currentStatus: 'Occupied',
+          currentTenant: tenant, currentNid: d['nidNumber'] ?? 'No Number', electricityDetails: ed
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        color: isPaid 
+            ? (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.tertiaryContainer) 
+            : (ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : bgColor),
+        elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+              ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5) 
+              : BorderSide.none,
+        ),
+        child: ExpansionTile(
+          backgroundColor: Colors.transparent,
+          collapsedBackgroundColor: Colors.transparent,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+          iconColor: isPaid ? Theme.of(context).colorScheme.tertiary : accentColor,
+          collapsedIconColor: isPaid ? Theme.of(context).colorScheme.tertiary : accentColor,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: d['profilePictureUrl'] != null ? () => _showFullScreenImage(context, d['profilePictureUrl'], "Tenant Profile") : null,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: CircleAvatar(
+                        radius: 14,
+                        backgroundImage: d['profilePictureUrl'] != null ? NetworkImage(d['profilePictureUrl']) : null,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        child: d['profilePictureUrl'] == null ? const Icon(Icons.person, size: 18, color: Colors.grey) : null,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    isPaid ? Icons.check_circle : Icons.door_front_door_outlined,
+                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? (isPaid ? Colors.green : Colors.black) : (isPaid ? Theme.of(context).colorScheme.tertiary : accentColor),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(6),
+                      border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
+                    ),
+                    child: Text(
+                      subName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900, 
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Colors.black : (isPaid ? Theme.of(context).colorScheme.tertiary : accentColor), 
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(Icons.edit_note, size: 22, color: onBgColor.withValues(alpha: 0.7)),
+                    onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
+                      context: context, subItemId: subId, currentName: subName, currentTenantName: tenant, 
+                      currentNidNumber: d['nidNumber'] ?? 'No Number', currentNotes: d['notes'] ?? '',
+                      currentProfileUrl: d['profilePictureUrl'], currentNidUrl: d['nidPictureUrl'],
+                    ),
+                  ),
+                  if ((d['notes'] ?? '').toString().isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(4)),
+                      child: Icon(Icons.notes, color: Theme.of(context).colorScheme.tertiary, size: 16),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : onBgColor, size: 24), 
+                      onPressed: () => CategoryDialogs.showMarkAsPaidDialog(
+                        context: context, subItemId: subId, subItemName: subName, TenantName: tenant, 
+                        nidNumber: d['nidNumber'] ?? '', houseRentTotal: servicesTotal, electricityBill: eBillAmount, 
+                        services: activeServices.cast<Map<String, dynamic>>(), electricityDetails: ed, 
+                        mainCategoryName: catName, manualDues: d['manualDues'] ?? [],
+                        notes: d['notes'] ?? '', profilePictureUrl: d['profilePictureUrl']
+                      )
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(Icons.more_vert, size: 22, color: onBgColor.withValues(alpha: 0.7)),
+                    onSelected: (val) async {
+                      if (val == 'electric') CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate);
+                      if (val == 'stop') {
+                        bool isStopping = ed?['isStopped'] != true;
+                        if (isStopping) {
+                          double last = (ed?['lastReading'] ?? 0).toDouble();
+                          double pres = (ed?['presentReading'] ?? 0).toDouble();
+                          if (pres > last) {
+                            CategoryDialogs.showConfirmDialog(
+                              context: context,
+                              title: "Confirm Stop Sub-Meter Billing",
+                              content: "There are unused units (${(pres - last).toStringAsFixed(1)}). Stopping will reset Present Reading to Last Reading. Proceed?",
+                              onConfirm: () async {
+                                await _dbService.updateSubItemElectricity(subId, {
+                                  ...ed!,
+                                  'presentReading': last,
+                                  'isStopped': true,
+                                  'updatedAt': FieldValue.serverTimestamp(),
+                                }, "Admin");
+                              },
+                            );
+                          } else {
+                            await _dbService.updateSubItemElectricityStatus(subId, true, "Admin");
+                          }
+                        } else {
+                          await _dbService.updateSubItemElectricityStatus(subId, false, "Admin");
+                        }
+                      } else if (val == 'remove_electric') {
+                          CategoryDialogs.showConfirmDialog(
+                          context: context, title: "Remove Sub-Meter?", 
+                          content: "Are you sure you want to remove the electric meter from this unit? All previous billing history will be preserved, and the current meter reading will be carried forward for future use.", 
+                          onConfirm: () async { 
+                            SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                            await _dbService.removeSubItemElectricity(subId, prefs.getString('username') ?? "Admin"); 
+                          }
+                        );
+                      } else if (val == 'services') {
+                          CategoryDialogs.showSubItemServiceSettingsDialog(context: context, subItemId: subId, subItemName: subName, categoryServices: assignedServices, excludedServices: d['excludedServices'] ?? []);
+                      } else if (val == 'dues') {
+                          CategoryDialogs.showManualDueDialog(context: context, subItemId: subId, subItemName: subName, manualDues: d['manualDues'] ?? [], monthYear: _selectedMonthStr, isOperator: widget.isOperator);
+                      } else if (val == 'remove') {
+                          CategoryDialogs.showConfirmDialog(
+                          context: context, title: "Remove '$subName'?", content: "Are you sure you want to remove this $subName?", 
+                          onConfirm: () async { 
+                            SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                            await _dbService.removeSubItem(subId, prefs.getString('username') ?? "Admin"); 
+                          }
+                        );
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      if (ed != null || !widget.isOperator)
+                        PopupMenuItem(
+                          value: ed == null ? 'electric' : 'stop', 
+                          child: ListTile(
+                            leading: Icon(Icons.electric_bolt, color: ed == null ? Theme.of(context).colorScheme.outline : context.electric, size: 20),
+                            title: Text(ed == null ? "Add Sub-Meter" : (ed['isStopped'] == true ? "Resume Sub-Meter" : "Stop Sub-Meter")), dense: true
+                          )
+                        ),
+                      const PopupMenuItem(value: 'services', child: ListTile(leading: Icon(Icons.settings_suggest_outlined, size: 20), title: Text("Manage Services"), dense: true)),
+                      const PopupMenuItem(value: 'dues', child: ListTile(leading: Icon(Icons.money_off, size: 20, color: Colors.red), title: Text("Adjust Dues/Adv"), dense: true)),
+                      if (ed != null && !widget.isOperator)
+                        PopupMenuItem(
+                          value: 'remove_electric', child: ListTile(
+                            leading: Icon(Icons.electric_bolt, color: Theme.of(context).colorScheme.error, size: 20),
+                            title: Text("Remove Sub-Meter", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true
+                          )
+                        ),
+                      if (!widget.isOperator)
+                        PopupMenuItem(value: 'remove', child: ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20), title: Text("Remove Unit", style: TextStyle(color: Theme.of(context).colorScheme.error)), dense: true)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 30),
+                    child: Text(
+                      tenant.isNotEmpty && tenant != 'No Name' ? tenant : 'No Tenant',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
+                  const SizedBox(width: 4),
+                  Text(
+                    "৳${monthTotal.toStringAsFixed(0)}",
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900, 
+                      color: isPaid ? Theme.of(context).colorScheme.tertiary : onBgColor, 
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 30, top: 1),
+                child: Builder(
+                  builder: (context) {
+                    String statsText = "";
+                    if (isPaid) {
+                      statsText = "${activeServices.length} Services | Payment Clear";
+                      if (arrearsCount > 0) statsText = "Arrears Pending | $statsText";
+                    } else {
+                      statsText = "${activeServices.length} Services | Due";
+                      if (arrearsCount > 0) statsText += " + $arrearsCount Months Arrears";
+                    }
+                    if (hasAdvance) statsText += " (Advance Applied)";
+
+                    return Text(
+                      statsText,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: isPaid ? Theme.of(context).colorScheme.tertiary : onBgColor.withValues(alpha: 0.8), 
+                      ),
+                    );
+                  }
+                ),
+              ),
+            ],
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
+                    _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
+
+                  if (pendingMonths.isNotEmpty)
+                    _buildSectionBox(
+                      "Due Months (Pending)", "", Icons.history_toggle_off,
+                      color: Theme.of(context).colorScheme.error,
+                      customContent: Wrap(
+                        spacing: 8, runSpacing: 8,
+                        children: pendingMonths.map((m) {
+                          String mYear = m['monthYear'];
+                          return InkWell(
+                            onTap: () {
+                              Map<String, dynamic> reportData;
+                              if (m['isHistory']) {
+                                reportData = m['data'];
+                              } else {
+                                reportData = {
+                                  'status': 'Due', 'monthYear': mYear, 'subItemName': subName, 'TenantName': tenant,
+                                  'subItemId': subId, 'profilePictureUrl': d['profilePictureUrl'], 'categoryId': d['categoryId'],
+                                  'mainCategoryName': catName, 'manualDues': d['manualDues'] ?? [], 'nidNumber': d['nidNumber'] ?? '',
+                                  'services': activeServices, 'electricityDetails': ed, 'electricityBill': eBillAmount,
+                                  'totalAmount': monthTotal, 'houseRentTotal': servicesTotal, 'createdAt': Timestamp.now(),
+                                  'paymentNotes': 'Monthly breakdown (Estimated)',
+                                };
+                              }
+                              UserReportPage.showDetailsDialog(context, reportData);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
+                              ),
+                              child: Text(
+                                mYear, style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      )
+                    ),
+                  
+                  if ((d['notes'] ?? '').toString().isNotEmpty)
+                    _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
+                      icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
+                      onPressed: () => CategoryDialogs.showConfirmDialog(
+                        context: context, title: "Remove Note?", content: "Are you sure you want to clear the note for '$subName'?",
+                        confirmText: "Clear", onConfirm: () async {
+                          SharedPreferences prefs = await SharedPreferences.getInstance();
+                          await _dbService.updateSubItemDetails(subId, {'notes': ''}, prefs.getString('username') ?? "Admin");
+                        },
+                      ),
+                    )),
+                  
+                    if (ed != null && ed['isStopped'] != true)
+                    _buildSectionBox(
+                      "Sub-Meter Bills", 
+                      "Used: ${(ed['presentReading'] - ed['lastReading']).toStringAsFixed(1)} units | Meter: ${ed['subMeterNo'] ?? ed['mainSubMeterNo'] ?? 'N/A'}\nLast Update: ${DatabaseService.formatFullDateTime(ed['updatedAt'] as Timestamp?)}\n${DatabaseService.formatDuration(ed['updatedAt'] as Timestamp?)}", 
+                      Icons.electric_bolt, 
+                      amount: (existingRecord != null || isPaid) ? 0.0 : eBillAmount, 
+                      color: context.electric,
+                      trailing: IconButton(
+                        icon: Icon(Icons.edit_note, color: context.electric, size: 22), 
+                        onPressed: () => CategoryDialogs.showElectricityDialog(context: context, subItemId: subId, subItemName: subName, existingData: ed, isOperator: widget.isOperator, initialDate: _selectedDate)
+                      )
+                    ),
+
+                  ...activeServices.map((s) => _buildServiceRow(subId, subName, s, overridden, d['macAddresses'] ?? [])),
+
+                  if (manualDues.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text("Additional Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    ...manualDues.map((m) {
+                      double amt = (m['amount'] as num).toDouble();
+                      bool isAdv = amt < 0;
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow, 
+                          borderRadius: BorderRadius.circular(12), 
+                          border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(child: Text(isAdv ? "As An Advance" : m['reason'], style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold))),
+                            Text("৳${amt.toStringAsFixed(1)}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error)),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

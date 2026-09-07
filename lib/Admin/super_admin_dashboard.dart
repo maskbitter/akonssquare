@@ -22,6 +22,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
   final DatabaseService _dbService = DatabaseService();
   String _appName = "";
   late TabController _tabController;
+  late Stream<QuerySnapshot> _activityLogsStream;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
   final Set<String> _selectedLogIds = {};
 
   @override
@@ -33,6 +36,12 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
         setState(() => _selectedLogIds.clear());
       }
     });
+    _activityLogsStream = _dbService.getActivityLogsStream();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
     _loadAppName();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkRollback());
   }
@@ -40,6 +49,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -392,25 +402,95 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
   }
 
   Widget _buildActivityLogSection() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _dbService.getActivityLogsStream(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-        if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}"));
-        
-        var logs = snapshot.data?.docs ?? [];
-        if (logs.isEmpty) return const Center(child: Text("No activity logs found."));
+    bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
+    
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search logs (Use " " for exact match)',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isNotEmpty 
+                  ? IconButton(icon: const Icon(Icons.clear), onPressed: () => _searchController.clear()) 
+                  : null,
+              filled: true,
+              fillColor: isOutline ? Colors.transparent : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: isOutline ? const BorderSide(color: Colors.black, width: 1.5) : BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: isOutline ? const BorderSide(color: Colors.black, width: 1.5) : BorderSide.none,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _activityLogsStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+              if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}"));
+              
+              var allLogs = snapshot.data?.docs ?? [];
+              if (allLogs.isEmpty) return const Center(child: Text("No activity logs found."));
 
-        return ListView.builder(
-          itemCount: logs.length,
-          padding: const EdgeInsets.all(12),
-          itemBuilder: (context, index) {
-            var doc = logs[index];
-            var data = doc.data() as Map<String, dynamic>;
-            return _buildLogTile(doc.id, data);
-          },
-        );
-      },
+              var filteredLogs = allLogs.where((doc) {
+                var data = doc.data() as Map<String, dynamic>;
+                String actor = (data['actor'] ?? '').toString().toLowerCase();
+                String action = (data['action'] ?? '').toString().toLowerCase();
+                String details = (data['details'] ?? '').toString().toLowerCase();
+                String category = (data['category'] ?? '').toString().toLowerCase();
+                String unitName = (data['unitName'] ?? '').toString().toLowerCase();
+
+                // Check unit fallback for older logs
+                if (unitName.isEmpty) {
+                  final match = RegExp(r"'(.*?)'").firstMatch(details);
+                  if (match != null) {
+                    String extracted = (match.group(1) ?? "").toLowerCase();
+                    if (extracted.isNotEmpty && extracted.length <= 20) unitName = extracted;
+                  }
+                }
+
+                bool isExact = _searchQuery.startsWith('"') && _searchQuery.endsWith('"') && _searchQuery.length > 2;
+                String query = isExact ? _searchQuery.substring(1, _searchQuery.length - 1) : _searchQuery;
+
+                if (isExact) {
+                  return actor == query || 
+                         action == query || 
+                         category == query || 
+                         unitName == query ||
+                         details.split(RegExp(r"\W+")).contains(query);
+                }
+
+                return actor.contains(query) || 
+                       action.contains(query) || 
+                       details.contains(query) || 
+                       category.contains(query) || 
+                       unitName.contains(query);
+              }).toList();
+
+              if (filteredLogs.isEmpty) return const Center(child: Text("No matching logs found."));
+
+              return ListView.builder(
+                key: const PageStorageKey('activity_log_list'),
+                itemCount: filteredLogs.length,
+                padding: const EdgeInsets.all(12),
+                itemBuilder: (context, index) {
+                  var doc = filteredLogs[index];
+                  var data = doc.data() as Map<String, dynamic>;
+                  return _buildLogTile(doc.id, data);
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -423,7 +503,22 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
     String action = data['action'] ?? 'Unknown';
     String details = data['details'] ?? 'No details provided';
     String category = data['category'] ?? 'General';
+    String? unitName = data['unitName'];
     Timestamp? ts = data['timestamp'] as Timestamp?;
+
+    // Fallback logic for older logs
+    String displayUnit = unitName ?? "";
+    if (displayUnit.isEmpty) {
+      final regExp = RegExp(r"'(.*?)'");
+      final match = regExp.firstMatch(details);
+      if (match != null) {
+        String extracted = match.group(1) ?? "";
+        // Basic validation: units are usually short, but can be names like 'Test Case'
+        if (extracted.isNotEmpty && extracted.length <= 20) {
+          displayUnit = extracted;
+        }
+      }
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -491,8 +586,12 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
                     ],
                   ),
                   Text(
-                    DatabaseService.formatFullDateTime(ts),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, color: Theme.of(context).colorScheme.outline),
+                    "${displayUnit.isNotEmpty ? '$displayUnit | ' : ''}${DatabaseService.formatFullDateTime(ts)}",
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontSize: 10, 
+                      color: displayUnit.isNotEmpty ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
+                      fontWeight: displayUnit.isNotEmpty ? FontWeight.bold : FontWeight.normal,
+                    ),
                   ),
                 ],
               ),

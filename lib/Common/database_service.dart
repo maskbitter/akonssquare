@@ -35,12 +35,14 @@ class DatabaseService {
     required String action,
     required String details,
     String? category,
+    String? unitName,
   }) async {
     await _db.collection('activity_log').add({
       'actor': actor,
       'action': action,
       'details': details,
       'category': category,
+      'unitName': unitName,
       'timestamp': FieldValue.serverTimestamp(),
       'clientTimestamp': DateTime.now().toIso8601String(),
     });
@@ -216,6 +218,7 @@ class DatabaseService {
       action: "Add Unit",
       details: "Added unit '$name' to category ID: $categoryId. Status: Vacant",
       category: "Units",
+      unitName: name,
     );
   }
 
@@ -263,6 +266,7 @@ class DatabaseService {
       action: "Change Unit Status",
       details: "Changed status of '$unitName' to '$status'. Tenant: ${data['TenantName']}",
       category: "Units",
+      unitName: unitName,
     );
   }
 
@@ -312,6 +316,7 @@ class DatabaseService {
       action: "Update Unit Details",
       details: "Updated info for unit '$unitName'. Fields changed: ${data.keys.join(', ')}",
       category: "Units",
+      unitName: unitName,
     );
   }
 
@@ -330,6 +335,7 @@ class DatabaseService {
       action: "Update Manual Dues",
       details: "Updated manual dues for '$unitName'. Total entries: ${dues.length}",
       category: "Billing",
+      unitName: unitName,
     );
   }
 
@@ -348,6 +354,7 @@ class DatabaseService {
       action: "Update MAC Addresses",
       details: "Updated MAC addresses for '$unitName'. Devices: ${macs.length}",
       category: "Wifi",
+      unitName: unitName,
     );
   }
 
@@ -414,6 +421,7 @@ class DatabaseService {
       action: "Update Unit Services",
       details: "Modified service exclusions for '$unitName'.",
       category: "Units",
+      unitName: unitName,
     );
   }
 
@@ -432,6 +440,7 @@ class DatabaseService {
       action: "Override Unit Services",
       details: "Updated custom service rates for '$unitName'.",
       category: "Units",
+      unitName: unitName,
     );
   }
 
@@ -450,6 +459,7 @@ class DatabaseService {
       action: "Update Unit Electricity",
       details: "Updated readings for '$unitName'. Present: ${electricityDetails['presentReading']}",
       category: "Electricity",
+      unitName: unitName,
     );
   }
 
@@ -468,6 +478,7 @@ class DatabaseService {
       action: "Toggle Electricity",
       details: "${isStopped ? 'Stopped' : 'Resumed'} electricity billing for '$unitName'",
       category: "Electricity",
+      unitName: unitName,
     );
   }
 
@@ -507,6 +518,7 @@ class DatabaseService {
         action: "Remove Unit Electricity",
         details: "Disconnected meter '$subMeterNo' from '$unitName'. Last reading $presentReading carried forward.",
         category: "Electricity",
+        unitName: unitName,
       );
     }
   }
@@ -819,6 +831,7 @@ class DatabaseService {
       action: status == 'Due' ? "Marked as Due" : "Accept Payment",
       details: "${status == 'Due' ? 'Marked as due' : 'Marked as paid'} for '${data['subItemName']}' month ${data['monthYear']}. Amount: ৳${data['totalAmount']}",
       category: "Billing",
+      unitName: data['subItemName'],
     );
   }
 
@@ -857,6 +870,7 @@ class DatabaseService {
       action: "Update Payment Status",
       details: "Payment status for '${data?['subItemName']}' month ${data?['monthYear']} updated to '$status'",
       category: "Billing",
+      unitName: data?['subItemName'],
     );
   }
 
@@ -1095,6 +1109,7 @@ class DatabaseService {
       action: "Remove Item",
       details: "Removed and archived '$itemDesc' from '$collection'.",
       category: "Removal",
+      unitName: collection == 'sub_items' ? itemDesc : null,
     );
   }
 

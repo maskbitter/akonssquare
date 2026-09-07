@@ -807,7 +807,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                     // Manual Dues/Advances
                     if (manualDues.isNotEmpty) ...[
                       const Divider(height: 12),
-                      Center(child: Text("Manual Dues / Advances:", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold))),
+                      Align(alignment: Alignment.centerLeft, child: Text("Advances/Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold))),
                       const SizedBox(height: 4),
                       ...manualDues.asMap().entries.map((entry) {
                         int idx = entry.key;
@@ -833,7 +833,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                               Expanded(
                                 child: CategoryDialogs._buildRow(
                                   context, 
-                                  "${d['reason']} (${d['monthYear']}):", 
+                                  "${d['reason']}${d['monthYear'] != null && d['monthYear'].toString().isNotEmpty && d['monthYear'].toString() != 'null' ? ' (${d['monthYear']})' : ''}:", 
                                   "৳${amt.abs().toStringAsFixed(1)}", 
                                   color: isAdv ? Colors.green : Colors.red
                                 )
@@ -1146,7 +1146,7 @@ extension BillingServiceDialogs on CategoryDialogs {
     );
   }
 
-  void showManualDueDialog({required BuildContext context, required String subItemId, required String subItemName, required List manualDues, required String monthYear}) {
+  void showManualDueDialog({required BuildContext context, required String subItemId, required String subItemName, required List manualDues, required String monthYear, bool isOperator = false}) {
     final amountController = TextEditingController();
     final reasonController = TextEditingController();
     List<Map<String, dynamic>> currentDues = List<Map<String, dynamic>>.from(manualDues.map((e) => Map<String, dynamic>.from(e)));
@@ -1264,15 +1264,26 @@ extension BillingServiceDialogs on CategoryDialogs {
                           String tag = due['monthYear'] ?? "Global";
                           return ListTile(
                             dense: true,
-                            title: Text("${due['reason']} ${isAdv ? '(Advance)' : ''}"),
-                            subtitle: Text("For: $tag | ${due['date'].toString().split('T')[0]}"),
-                            trailing: Text(
-                              "৳${amt.abs().toStringAsFixed(1)}", 
-                              style: TextStyle(fontWeight: FontWeight.bold, color: isAdv ? Colors.green : Colors.red)
+                            contentPadding: const EdgeInsets.only(left: 8),
+                            title: Text("${due['reason']} ${isAdv ? '(Advance)' : ''}", style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                            subtitle: Text("For: $tag | ${due['date'].toString().split('T')[0]}", style: Theme.of(context).textTheme.bodySmall),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "৳${amt.abs().toStringAsFixed(1)}", 
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: isAdv ? Colors.green : Colors.red)
+                                ),
+                                if (!isOperator)
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                    onPressed: () => setDialogState(() => currentDues.removeAt(index)),
+                                  ),
+                                const SizedBox(width: 8),
+                              ],
                             ),
-                            onLongPress: () {
-                              setDialogState(() => currentDues.removeAt(index));
-                            },
                           );
                         },
                       ),
