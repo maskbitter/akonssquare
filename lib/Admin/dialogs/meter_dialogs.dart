@@ -122,7 +122,7 @@ extension MeterDialogs on CategoryDialogs {
     );
   }
 
-  void showUpdateMainMeterDialog({required BuildContext context, required Map<String, dynamic> data, required String docId}) {
+  void showUpdateMainMeterDialog({required BuildContext context, required Map<String, dynamic> data, required String docId, String? targetMonthYear}) {
     final presentReadingController = TextEditingController(text: data['presentReading'].toString());
     final govtReadingController = TextEditingController(text: data['govtBillReading'].toString());
     final amountController = TextEditingController(text: data['govtBillAmount'].toString());
@@ -168,6 +168,8 @@ extension MeterDialogs on CategoryDialogs {
                 ),
                 const SizedBox(height: 16),
                 Text("Update Main Meter: ${data['meterNo']}", textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                if (targetMonthYear != null)
+                  Text("For: $targetMonthYear", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
               ],
             ),
             content: SizedBox(
@@ -441,6 +443,7 @@ extension MeterDialogs on CategoryDialogs {
                         'govtBillAmount': amt,
                         'lastMonthUnitRate': (data['unitRate'] ?? 0).toDouble(),
                         'unitRate': unitRate,
+                        'targetMonthYear': targetMonthYear, // Crucial for historical save
                       };
                       
                       SharedPreferences prefs = await SharedPreferences.getInstance(); 

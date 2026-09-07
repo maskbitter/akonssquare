@@ -292,7 +292,12 @@ class UserReportPage extends StatelessWidget {
                                       services: (data['services'] as List).cast<Map<String, dynamic>>(), 
                                       electricityDetails: data['electricityDetails'], 
                                       mainCategoryName: data['mainCategoryName'] ?? 'Unknown', 
-                                      manualDues: data['manualDues'] ?? []
+                                      manualDues: data['manualDues'] ?? [],
+                                      profilePictureUrl: data['profilePictureUrl'],
+                                      nidPictureUrl: data['nidPictureUrl'] ?? data['unitNidPictureUrl'],
+                                      occupiedAt: data['occupiedAt'] as Timestamp?,
+                                      createdAt: data['unitCreatedAt'] as Timestamp?,
+                                      status: data['unitStatus'] as String?
                                     );
                                   }
                                 }, 

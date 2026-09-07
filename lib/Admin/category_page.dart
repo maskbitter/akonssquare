@@ -44,6 +44,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
     setState(() {
       _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + delta);
     });
+    _repository.recalculateForMonth(_selectedMonthStr);
   }
 
   void _showAddActionMenu(BuildContext context) {
@@ -265,7 +266,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                   },
                 ),
               ),
-              if (status == 'Occupied') ...[
+              if (status == 'Occupied' || status == 'Vacant') ...[
                 const SizedBox(width: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -377,7 +378,14 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                         builder: (context, allSubItems, child) {
                           var subDocs = allSubItems.where((doc) {
                             var d = doc.data() as Map<String, dynamic>;
-                            return d['categoryId'] == catId && (d['status'] ?? 'Vacant') == status;
+                            if (d['categoryId'] != catId) return false;
+
+                            // Determine historical status
+                            var summary = _repository.subItemSummaryCache.value[doc.id] ?? {};
+                            bool wasVacantInMonth = summary['isVacant'] == true;
+                            
+                            if (status == 'Occupied') return !wasVacantInMonth;
+                            return wasVacantInMonth;
                           }).toList();
 
                           subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
@@ -831,21 +839,32 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                     ),
                     subtitle: Text("${meters.length} total meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(10).withValues(alpha: 0.7))),
                     children: [
-                      _buildMeterExpandableSection(
-                        "Residential Meter", 
-                        resMeters, 
-                        Icons.home_outlined, 
-                        Theme.of(context).colorScheme.primary,
-                        paidUnitsMap,
-                        colorIndex: 11,
-                      ),
-                      _buildMeterExpandableSection(
-                        "Commercial Meter", 
-                        comMeters, 
-                        Icons.business_outlined, 
-                        Theme.of(context).colorScheme.secondary,
-                        paidUnitsMap,
-                        colorIndex: 12,
+                      ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
+                        valueListenable: _repository.mainMeterReadingsHistory,
+                        builder: (context, history, child) {
+                          return Column(
+                            children: [
+                              _buildMeterExpandableSection(
+                                "Residential Meter", 
+                                resMeters, 
+                                Icons.home_outlined, 
+                                Theme.of(context).colorScheme.primary,
+                                paidUnitsMap,
+                                history,
+                                colorIndex: 11,
+                              ),
+                              _buildMeterExpandableSection(
+                                "Commercial Meter", 
+                                comMeters, 
+                                Icons.business_outlined, 
+                                Theme.of(context).colorScheme.secondary,
+                                paidUnitsMap,
+                                history,
+                                colorIndex: 12,
+                              ),
+                            ],
+                          );
+                        }
                       ),
                     ],
                   ),
@@ -859,7 +878,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
     );
   }
 
-  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color, Map<String, double> paidUnitsMap, {int colorIndex = 0}) {
+  Widget _buildMeterExpandableSection(String title, List<QueryDocumentSnapshot> meters, IconData icon, Color color, Map<String, double> paidUnitsMap, Map<String, Map<String, dynamic>> history, {int colorIndex = 0}) {
     bool isOp = widget.isOperator;
     final headerTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold);
     final dataStyle = Theme.of(context).textTheme.bodyMedium;
@@ -924,8 +943,12 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                     ...meters.asMap().entries.map((entry) {
                       int idx = entry.key;
                       var mDoc = entry.value;
-                      var data = mDoc.data() as Map<String, dynamic>;
-                      String meterNo = data['meterNo'] ?? 'N/A';
+                      var baseData = mDoc.data() as Map<String, dynamic>;
+                      String meterNo = baseData['meterNo'] ?? 'N/A';
+                      
+                      // Use history data if available for the selected month, otherwise base data
+                      var data = history[meterNo] ?? baseData;
+
                       double last = (data['lastReading'] ?? 0).toDouble();
                       double pres = (data['presentReading'] ?? last).toDouble();
                       double mainUsed = pres - last;
@@ -948,7 +971,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
 
                       Widget wrapCell(Widget child) {
                         return InkWell(
-                          onTap: () => CategoryDialogs.showUpdateMainMeterDialog(context: context, data: data, docId: mDoc.id),
+                          onTap: () => CategoryDialogs.showUpdateMainMeterDialog(context: context, data: data, docId: mDoc.id, targetMonthYear: _selectedMonthStr),
                           child: Padding(padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), child: Center(child: child)),
                         );
                       }
@@ -1138,10 +1161,16 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
     var d = subDoc.data() as Map<String, dynamic>;
     String subId = subDoc.id;
     String subName = d['subItemName'] ?? 'Unnamed';
-    String tenant = d['TenantName'] ?? 'No Name';
+    
+    // For historically vacant units, don't show current tenant info
+    String tenant = 'No Name';
+    String nid = 'No Number';
+    String? profileUrl;
+    
     var ed = d['electricityDetails'];
     
     double monthTotal = _repository.subItemPayableCache.value[subId] ?? 0;
+    var summary = _repository.calculateFinancialSummaryLocal(subId, monthTotal, _selectedMonthStr);
     List active = DatabaseService.getEffectiveServices(
       categoryServices: assignedServices, 
       excludedServices: d['excludedServices'] ?? [], 
@@ -1298,10 +1327,11 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                   if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                   const SizedBox(width: 4),
                   Text(
-                    "৳${monthTotal.toStringAsFixed(0)}",
+                    summary['isVacant'] == true ? "Was Vacant" : "৳${monthTotal.toStringAsFixed(0)}",
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900, 
                       color: onBgColor, 
+                      fontSize: summary['isVacant'] == true ? 16 : null,
                     ),
                   ),
                 ],
@@ -1323,8 +1353,8 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
-                    _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
+                  if (nid != null && nid != 'No Name' && nid != 'No Number' && nid.toString().isNotEmpty)
+                    _buildSectionBox("Tenant NID", nid, Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
                     
                   if ((d['notes'] ?? '').toString().isNotEmpty)
                     _buildSectionBox("Notes", d['notes'], Icons.note_alt_outlined, trailing: IconButton(
@@ -1381,8 +1411,14 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
     var d = subDoc.data() as Map<String, dynamic>;
     String subId = subDoc.id;
     String subName = d['subItemName'] ?? 'Unnamed';
-    String tenant = d['TenantName'] ?? 'No Name';
     var ed = d['electricityDetails'];
+    var existingRecord = historyMap[subId];
+    
+    // Historical Data Logic
+    String tenant = existingRecord != null ? (existingRecord['TenantName'] ?? 'No Name') : (d['TenantName'] ?? 'No Name');
+    String nid = existingRecord != null ? (existingRecord['nidNumber'] ?? 'No Number') : (d['nidNumber'] ?? 'No Number');
+    String? profileUrl = existingRecord != null ? existingRecord['profilePictureUrl'] : d['profilePictureUrl'];
+    String? nidUrl = existingRecord != null ? existingRecord['nidPictureUrl'] : d['nidPictureUrl'];
     
     double monthTotal = _repository.subItemPayableCache.value[subId] ?? 0;
     var summary = _repository.calculateFinancialSummaryLocal(subId, monthTotal, _selectedMonthStr);
@@ -1391,7 +1427,6 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
     List manualDues = d['manualDues'] ?? [];
     bool hasAdvance = manualDues.any((m) => (m['amount'] as num).toDouble() < -0.1);
 
-    var existingRecord = historyMap[subId];
     double eBillAmount = 0;
     double servicesTotal = 0;
     List? historicalServices;
@@ -1428,15 +1463,17 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
         var recordedDoc = historyMap[subId];
         Map<String, dynamic> reportData;
         if (recordedDoc != null) {
-          reportData = {...recordedDoc.data() as Map<String, dynamic>, 'docId': recordedDoc.id};
+          reportData = {...recordedDoc.data() as Map<String, dynamic>, 'docId': recordedDoc.id, 'occupiedAt': d['occupiedAt'], 'unitCreatedAt': d['createdAt'], 'unitStatus': d['status'], 'unitNidPictureUrl': d['nidPictureUrl']};
         } else {
           reportData = {
             'status': 'Due', 'monthYear': _selectedMonthStr, 'subItemName': subName, 'TenantName': tenant,
-            'subItemId': subId, 'profilePictureUrl': d['profilePictureUrl'], 'categoryId': d['categoryId'],
-            'mainCategoryName': catName, 'manualDues': d['manualDues'] ?? [], 'nidNumber': d['nidNumber'] ?? '',
+            'subItemId': subId, 'profilePictureUrl': profileUrl, 'categoryId': d['categoryId'],
+            'mainCategoryName': catName, 'manualDues': d['manualDues'] ?? [], 'nidNumber': nid,
             'services': activeServices, 'electricityDetails': ed, 'electricityBill': eBillAmount,
             'totalAmount': monthTotal, 'houseRentTotal': servicesTotal, 'createdAt': Timestamp.now(),
             'paymentNotes': 'Monthly breakdown (Estimated)',
+            'occupiedAt': d['occupiedAt'], 'unitCreatedAt': d['createdAt'], 'unitStatus': d['status'],
+            'nidPictureUrl': d['nidPictureUrl'],
           };
         }
         UserReportPage.showDetailsDialog(context, reportData);
@@ -1474,14 +1511,14 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
               Row(
                 children: [
                   GestureDetector(
-                    onTap: d['profilePictureUrl'] != null ? () => _showFullScreenImage(context, d['profilePictureUrl'], "Tenant Profile") : null,
+                    onTap: profileUrl != null ? () => _showFullScreenImage(context, profileUrl, "Tenant Profile") : null,
                     child: Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: CircleAvatar(
                         radius: 14,
-                        backgroundImage: d['profilePictureUrl'] != null ? NetworkImage(d['profilePictureUrl']) : null,
+                        backgroundImage: profileUrl != null ? NetworkImage(profileUrl) : null,
                         backgroundColor: Theme.of(context).colorScheme.surface,
-                        child: d['profilePictureUrl'] == null ? const Icon(Icons.person, size: 18, color: Colors.grey) : null,
+                        child: profileUrl == null ? const Icon(Icons.person, size: 18, color: Colors.grey) : null,
                       ),
                     ),
                   ),
@@ -1513,8 +1550,8 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                     icon: Icon(Icons.edit_note, size: 22, color: onBgColor.withValues(alpha: 0.7)),
                     onPressed: () => CategoryDialogs.showEditSubItemDetailsDialog(
                       context: context, subItemId: subId, currentName: subName, currentTenantName: tenant, 
-                      currentNidNumber: d['nidNumber'] ?? 'No Number', currentNotes: d['notes'] ?? '',
-                      currentProfileUrl: d['profilePictureUrl'], currentNidUrl: d['nidPictureUrl'],
+                      currentNidNumber: nid, currentNotes: d['notes'] ?? '',
+                      currentProfileUrl: profileUrl, currentNidUrl: nidUrl,
                     ),
                   ),
                   if ((d['notes'] ?? '').toString().isNotEmpty)
@@ -1532,10 +1569,12 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                       icon: Icon(isPaid ? Icons.receipt_long : Icons.request_quote_outlined, color: isPaid ? Theme.of(context).colorScheme.tertiary : onBgColor, size: 24), 
                       onPressed: () => CategoryDialogs.showMarkAsPaidDialog(
                         context: context, subItemId: subId, subItemName: subName, TenantName: tenant, 
-                        nidNumber: d['nidNumber'] ?? '', houseRentTotal: servicesTotal, electricityBill: eBillAmount, 
+                        nidNumber: nid, houseRentTotal: servicesTotal, electricityBill: eBillAmount, 
                         services: activeServices.cast<Map<String, dynamic>>(), electricityDetails: ed, 
                         mainCategoryName: catName, manualDues: d['manualDues'] ?? [],
-                        notes: d['notes'] ?? '', profilePictureUrl: d['profilePictureUrl']
+                        notes: d['notes'] ?? '', profilePictureUrl: profileUrl,
+                        nidPictureUrl: existingRecord != null ? existingRecord['nidPictureUrl'] : d['nidPictureUrl'],
+                        occupiedAt: d['occupiedAt'] as Timestamp?, createdAt: d['createdAt'] as Timestamp?, status: d['status']
                       )
                     ),
                   ),
@@ -1632,10 +1671,11 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                   if (ed != null) Icon(Icons.electric_bolt, color: context.electric, size: 18),
                   const SizedBox(width: 4),
                   Text(
-                    "৳${monthTotal.toStringAsFixed(0)}",
+                    summary['isVacant'] == true ? "Was Vacant" : "৳${monthTotal.toStringAsFixed(0)}",
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900, 
                       color: isPaid ? Theme.of(context).colorScheme.tertiary : onBgColor, 
+                      fontSize: summary['isVacant'] == true ? 16 : null,
                     ),
                   ),
                 ],
@@ -1644,6 +1684,15 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                 padding: const EdgeInsets.only(left: 30, top: 1),
                 child: Builder(
                   builder: (context) {
+                    if (summary['isVacant'] == true) {
+                      return Text(
+                        "Unit was vacant during $_selectedMonthStr",
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: onBgColor.withValues(alpha: 0.6),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      );
+                    }
                     String statsText = "";
                     if (isPaid) {
                       statsText = "${activeServices.length} Services | Payment Clear";
@@ -1671,8 +1720,8 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (d['nidNumber'] != null && d['nidNumber'] != 'No Name' && d['nidNumber'].toString().isNotEmpty)
-                    _buildSectionBox("Tenant NID", d['nidNumber'], Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
+                  if (nid != null && nid != 'No Name' && nid != 'No Number' && nid.toString().isNotEmpty)
+                    _buildSectionBox("Tenant NID", nid, Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
 
                   if (pendingMonths.isNotEmpty)
                     _buildSectionBox(

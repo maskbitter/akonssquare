@@ -595,6 +595,10 @@ extension BillingServiceDialogs on CategoryDialogs {
     required List manualDues,
     String? notes,
     String? profilePictureUrl,
+    String? nidPictureUrl,
+    Timestamp? occupiedAt,
+    Timestamp? createdAt,
+    String? status,
   }) {
     final noteController = TextEditingController(); 
     final presentUnitsController = TextEditingController(text: (electricityDetails?['presentReading'] ?? 0).toString());
@@ -633,9 +637,33 @@ extension BillingServiceDialogs on CategoryDialogs {
                 : 'None';
             bool isPaid = currentStatus == 'Paid';
             bool hasDue = currentStatus == 'Due';
+
+            bool isVacant = false;
+            if (currentRecord == null) {
+              if (status == 'Vacant' && monthYear == DatabaseService.getCurrentMonthYear()) {
+                isVacant = true;
+              } else {
+                // Check createdAt
+                if (createdAt != null) {
+                  String createdMY = DatabaseService.formatMonthYear(createdAt.toDate());
+                  if (DatabaseService.compareMonthYear(monthYear, createdMY) < 0) {
+                    isVacant = true;
+                  }
+                }
+
+                if (!isVacant && occupiedAt != null) {
+                  String occMY = DatabaseService.formatMonthYear(occupiedAt.toDate());
+                  if (DatabaseService.compareMonthYear(monthYear, occMY) < 0) {
+                    isVacant = true;
+                  }
+                } else if (!isVacant && status == 'Vacant') {
+                  isVacant = true;
+                }
+              }
+            }
             
-            // Auto-deselect current month if already paid
-            if (isPaid && isCurrentSelected) {
+            // Auto-deselect current month if already paid or vacant
+            if ((isPaid || isVacant) && isCurrentSelected) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 setDialogState(() => isCurrentSelected = false);
               });
@@ -756,7 +784,7 @@ extension BillingServiceDialogs on CategoryDialogs {
 
                     // Current Month Breakdown
                     InkWell(
-                      onTap: isPaid ? null : () => setDialogState(() => isCurrentSelected = !isCurrentSelected),
+                      onTap: (isPaid || isVacant) ? null : () => setDialogState(() => isCurrentSelected = !isCurrentSelected),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -767,14 +795,14 @@ extension BillingServiceDialogs on CategoryDialogs {
                                 activeColor: Theme.of(context).colorScheme.primary,
                                 visualDensity: VisualDensity.compact,
                                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                onChanged: isPaid ? null : (v) => setDialogState(() => isCurrentSelected = v ?? false)
+                                onChanged: (isPaid || isVacant) ? null : (v) => setDialogState(() => isCurrentSelected = v ?? false)
                               ),
                               Expanded(
                                 child: Text(
-                                  "Current Month: $monthYear ${isPaid ? '(Paid)' : ''}", 
+                                  "Current Month: $monthYear ${isPaid ? '(Paid)' : (isVacant ? '(Was Vacant)' : '')}", 
                                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: isPaid ? Colors.grey : null
+                                    color: (isPaid || isVacant) ? Colors.grey : null
                                   )
                                 )
                               ),
@@ -795,6 +823,11 @@ extension BillingServiceDialogs on CategoryDialogs {
                               ],
                             ),
                           ),
+                          if (isVacant && !isPaid)
+                             Padding(
+                               padding: const EdgeInsets.only(left: 48, bottom: 8),
+                               child: Text("Unit was vacant during this month.", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey, fontStyle: FontStyle.italic)),
+                             ),
                         ],
                       ),
                     ),
@@ -1033,6 +1066,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                                 'TenantName': TenantName, 
                                 'nidNumber': nidNumber,
                                 'profilePictureUrl': profilePictureUrl,
+                                'nidPictureUrl': nidPictureUrl,
                                 'monthYear': monthYear, 
                                 'houseRentTotal': houseRentTotal,
                                 'electricityBill': dynamicElecBill,
@@ -1108,6 +1142,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                                   'TenantName': TenantName, 
                                   'nidNumber': nidNumber,
                                   'profilePictureUrl': profilePictureUrl,
+                                  'nidPictureUrl': nidPictureUrl,
                                   'monthYear': monthYear, 
                                   'houseRentTotal': houseRentTotal,
                                   'electricityBill': dynamicElecBill,

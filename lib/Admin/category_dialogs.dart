@@ -21,8 +21,8 @@ class CategoryDialogs {
 
   // --- Forwarding Methods for Meter Dialogs ---
   static void showAddMainMeterDialog(BuildContext context) => const CategoryDialogs().showAddMainMeterDialog(context);
-  static void showUpdateMainMeterDialog({required BuildContext context, required Map<String, dynamic> data, required String docId}) => 
-      const CategoryDialogs().showUpdateMainMeterDialog(context: context, data: data, docId: docId);
+  static void showUpdateMainMeterDialog({required BuildContext context, required Map<String, dynamic> data, required String docId, String? targetMonthYear}) => 
+      const CategoryDialogs().showUpdateMainMeterDialog(context: context, data: data, docId: docId, targetMonthYear: targetMonthYear);
   static void showAddSubMeterDialog(BuildContext context) => const CategoryDialogs().showAddSubMeterDialog(context);
   static void showDeleteMeterDialog({required BuildContext context, required String type, required String meterNo, required VoidCallback onConfirm}) => 
       const CategoryDialogs().showDeleteMeterDialog(context: context, type: type, meterNo: meterNo, onConfirm: onConfirm);
@@ -33,8 +33,8 @@ class CategoryDialogs {
       const CategoryDialogs().showEditGlobalServiceDialog(context: context, serviceId: serviceId, currentName: currentName, currentAmount: currentAmount);
   static void showElectricityDialog({required BuildContext context, required String subItemId, required String subItemName, Map<String, dynamic>? existingData, bool isOperator = false, DateTime? initialDate}) => 
       const CategoryDialogs().showElectricityDialog(context: context, subItemId: subItemId, subItemName: subItemName, existingData: existingData, isOperator: isOperator, initialDate: initialDate);
-  static void showMarkAsPaidDialog({required BuildContext context, required String subItemId, required String subItemName, required String TenantName, required String nidNumber, required double houseRentTotal, required double electricityBill, required List<Map<String, dynamic>> services, required Map<String, dynamic>? electricityDetails, required String mainCategoryName, required List manualDues, String? notes, String? profilePictureUrl}) => 
-      const CategoryDialogs().showMarkAsPaidDialog(context: context, subItemId: subItemId, subItemName: subItemName, TenantName: TenantName, nidNumber: nidNumber, houseRentTotal: houseRentTotal, electricityBill: electricityBill, services: services, electricityDetails: electricityDetails, mainCategoryName: mainCategoryName, manualDues: manualDues, notes: notes, profilePictureUrl: profilePictureUrl);
+  static void showMarkAsPaidDialog({required BuildContext context, required String subItemId, required String subItemName, required String TenantName, required String nidNumber, required double houseRentTotal, required double electricityBill, required List<Map<String, dynamic>> services, required Map<String, dynamic>? electricityDetails, required String mainCategoryName, required List manualDues, String? notes, String? profilePictureUrl, String? nidPictureUrl, Timestamp? occupiedAt, Timestamp? createdAt, String? status}) => 
+      const CategoryDialogs().showMarkAsPaidDialog(context: context, subItemId: subItemId, subItemName: subItemName, TenantName: TenantName, nidNumber: nidNumber, houseRentTotal: houseRentTotal, electricityBill: electricityBill, services: services, electricityDetails: electricityDetails, mainCategoryName: mainCategoryName, manualDues: manualDues, notes: notes, profilePictureUrl: profilePictureUrl, nidPictureUrl: nidPictureUrl, occupiedAt: occupiedAt, createdAt: createdAt, status: status);
   static void showManualDueDialog({required BuildContext context, required String subItemId, required String subItemName, required List manualDues, required String monthYear, bool isOperator = false}) => 
       const CategoryDialogs().showManualDueDialog(context: context, subItemId: subItemId, subItemName: subItemName, manualDues: manualDues, monthYear: monthYear, isOperator: isOperator);
   static void showWifiServiceEditDialog({required BuildContext context, required String subItemId, required String subItemName, required Map<String, dynamic> serviceMap, required List overriddenServices, required List macAddresses}) => 

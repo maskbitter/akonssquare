@@ -244,7 +244,7 @@ class _UpdateProgressDialogState extends State<UpdateProgressDialog> {
         destinationFilename: filename,
         // MUST match the authority in AndroidManifest.xml
         androidProviderAuthority: "com.example.akonssquare.ota_update_provider",
-        usePackageInstaller: false, 
+        usePackageInstaller: true, 
       ).listen(
         (OtaEvent event) {
           print("OTA Progress: Status=${event.status}, Value=${event.value}");
@@ -347,10 +347,10 @@ class _UpdateProgressDialogState extends State<UpdateProgressDialog> {
             ]
           ],
         ),
-        actions: error != null ? [
+        actions: (error != null || progress >= 0.99) ? [
           AppButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text(error != null ? "Cancel" : "Close"),
           ),
         ] : [],
       ),

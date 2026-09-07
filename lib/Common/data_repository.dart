@@ -19,6 +19,9 @@ class DataRepository {
   final ValueNotifier<List<QueryDocumentSnapshot>> mainMeters = ValueNotifier([]);
   final ValueNotifier<List<QueryDocumentSnapshot>> subMeters = ValueNotifier([]);
   
+  // Meter readings history cache
+  final ValueNotifier<Map<String, Map<String, dynamic>>> mainMeterReadingsHistory = ValueNotifier({});
+  
   // Financial calculation cache to prevent UI lag
   final ValueNotifier<Map<String, double>> subItemPayableCache = ValueNotifier({});
   final ValueNotifier<Map<String, Map<String, dynamic>>> subItemSummaryCache = ValueNotifier({});
@@ -74,6 +77,24 @@ class DataRepository {
     _subMeterSub = _db.collection('sub_meters').orderBy('createdAt', descending: true).snapshots().listen((snap) {
       subMeters.value = snap.docs;
     });
+
+    _startMeterReadingsListener();
+  }
+
+  StreamSubscription? _meterReadingsSub;
+  void _startMeterReadingsListener() {
+    _meterReadingsSub?.cancel();
+    _meterReadingsSub = _db.collection('main_meter_readings').where('monthYear', isEqualTo: _currentRecalcMonth).snapshots().listen((snap) {
+      Map<String, Map<String, dynamic>> results = {};
+      for (var doc in snap.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        String? meterNo = data['meterNo'];
+        if (meterNo != null) {
+          results[meterNo] = data;
+        }
+      }
+      mainMeterReadingsHistory.value = results;
+    });
   }
 
   void dispose() {
@@ -92,7 +113,10 @@ class DataRepository {
   }
 
   void recalculateForMonth(String monthYear) {
-    _currentRecalcMonth = monthYear;
+    if (_currentRecalcMonth != monthYear) {
+      _currentRecalcMonth = monthYear;
+      _startMeterReadingsListener();
+    }
     Map<String, double> newCache = {};
     Map<String, Map<String, dynamic>> newSummaryCache = {};
     double gTotal = 0;
@@ -102,22 +126,38 @@ class DataRepository {
 
     // Pre-filter billing history for speed
     var currentMonthRecords = billingHistory.value.where((d) => (d.data() as Map)['monthYear'] == monthYear).toList();
-    Set<String> occupiedIds = subItems.value
-        .where((d) => (d.data() as Map)['status'] == 'Occupied')
-        .map((d) => d.id)
-        .toSet();
+    
+    // Determine historical status: 
+    // A unit is "historically occupied" if:
+    // 1. It has a billing record for that month (Paid or Due)
+    // 2. OR it's currently occupied and looking at current month
+    Set<String> historicallyOccupiedIds = {};
+    for (var doc in currentMonthRecords) {
+      historicallyOccupiedIds.add((doc.data() as Map)['subItemId']);
+    }
+    
+    if (monthYear == DatabaseService.getCurrentMonthYear()) {
+      for (var doc in subItems.value) {
+        if ((doc.data() as Map)['status'] == 'Occupied') {
+          historicallyOccupiedIds.add(doc.id);
+        }
+      }
+    }
 
     for (var subDoc in subItems.value) {
       String subId = subDoc.id;
-      bool isOccupied = occupiedIds.contains(subId);
+      bool wasOccupied = historicallyOccupiedIds.contains(subId);
       
-      double estimatedMonthAmount = _calculateSingleMonthEstimateLocal(subDoc);
+      double estimatedMonthAmount = _calculateSingleMonthEstimateLocal(subDoc, monthYear);
       var summary = calculateFinancialSummaryLocal(subId, estimatedMonthAmount, monthYear);
       
       newCache[subId] = (summary['currentMonthBill'] as num).toDouble();
       newSummaryCache[subId] = summary;
 
-      if (isOccupied) {
+      // Only count in totals if it was actually occupied or has a due record
+      bool wasOccupiedInMonth = summary['isVacant'] != true || wasOccupied;
+
+      if (wasOccupiedInMonth) {
         gTotal += (summary['currentMonthBill'] as num).toDouble();
         dTotal += (summary['total'] as num).toDouble();
       }
@@ -126,7 +166,6 @@ class DataRepository {
     // Calculate Received and Rent from actual records of occupied units
     for (var doc in currentMonthRecords) {
       var data = doc.data() as Map<String, dynamic>;
-      if (!occupiedIds.contains(data['subItemId'])) continue;
       if (data['status'] == 'Due') continue;
 
       rTotal += (data['totalAmount'] as num).toDouble();
@@ -148,10 +187,36 @@ class DataRepository {
     utilityTotalNotifier.value = rTotal - rentSum;
   }
 
-  double _calculateSingleMonthEstimateLocal(QueryDocumentSnapshot subDoc) {
+  double _calculateSingleMonthEstimateLocal(QueryDocumentSnapshot subDoc, String monthYear) {
     var subData = subDoc.data() as Map<String, dynamic>;
     String catId = subData['categoryId'] ?? '';
     if (catId.isEmpty) return 0;
+
+    // Logic: If looking at a specific month, was it occupied then?
+    // If it's currently vacant and we are looking at the current month, estimate is 0.
+    if (subData['status'] == 'Vacant' && monthYear == DatabaseService.getCurrentMonthYear()) {
+      return 0;
+    }
+
+    // If looking at a past month, we check occupiedAt or createdAt
+    // However, the best way to know past state is the billing_history record.
+    // This method is for "Estimation" when no record exists.
+    // If no record exists for monthYear, and it's currently occupied, 
+    // we check if occupiedAt was before or during that month.
+    
+    if (subData['status'] == 'Occupied') {
+      Timestamp? occAt = subData['occupiedAt'] as Timestamp?;
+      if (occAt != null) {
+        String occMY = DatabaseService.formatMonthYear(occAt.toDate());
+        if (DatabaseService.compareMonthYear(monthYear, occMY) < 0) {
+          return 0; // Was vacant before occupation
+        }
+      }
+    } else {
+      // Currently vacant, and looking at some month. 
+      // If it's a past month, and no record exists, it was likely vacant.
+      return 0;
+    }
 
     var catDoc = categories.value.where((c) => c.id == catId).firstOrNull;
     if (catDoc == null) return 0;
@@ -190,9 +255,11 @@ class DataRepository {
     double currentMonthBill = 0;
     List<Map<String, dynamic>> pendingMonths = [];
     Set<String> processedMonths = {};
+    bool isCurrentlyVacantInSelectedMonth = false;
     
     var subDoc = subItems.value.where((s) => s.id == subId).firstOrNull;
-    List manualDues = subDoc != null ? (subDoc.data() as Map)['manualDues'] ?? [] : [];
+    var subData = subDoc?.data() as Map<String, dynamic>?;
+    List manualDues = subData != null ? subData['manualDues'] ?? [] : [];
     double manualDuesTotal = 0;
 
     for (var m in manualDues) {
@@ -202,22 +269,20 @@ class DataRepository {
     // Get active services for estimation details
     List<Map<String, dynamic>> activeServices = [];
     if (subDoc != null) {
-      var subData = subDoc.data() as Map<String, dynamic>;
-      String catId = subData['categoryId'] ?? '';
+      String catId = subData?['categoryId'] ?? '';
       var catDoc = categories.value.where((c) => c.id == catId).firstOrNull;
       if (catDoc != null) {
         var catData = catDoc.data() as Map<String, dynamic>;
         activeServices = DatabaseService.getEffectiveServices(
           categoryServices: catData['assignedServices'] ?? [],
-          excludedServices: subData['excludedServices'] ?? [],
-          overriddenServices: subData['overriddenServices'] ?? [],
+          excludedServices: subData?['excludedServices'] ?? [],
+          overriddenServices: subData?['overriddenServices'] ?? [],
         );
       }
     }
     double servicesTotal = activeServices.fold(0.0, (acc, s) => acc + (s['amount'] as num).toDouble());
 
     for (var doc in historyDocs) {
-      // ... (existing loop)
       var data = doc.data() as Map<String, dynamic>;
       String my = data['monthYear'].toString().trim().toLowerCase();
       double amt = (data['totalAmount'] as num).toDouble();
@@ -232,6 +297,7 @@ class DataRepository {
           'monthYear': data['monthYear'],
           'data': {...data, 'docId': doc.id},
           'isHistory': true,
+          'isVacant': false,
         });
       } else if (data['status'] == 'Paid' && my == currentMonthYear.trim().toLowerCase()) {
         totalPayable += amt;
@@ -240,12 +306,46 @@ class DataRepository {
     }
 
     if (!processedMonths.contains(currentMonthYear.trim().toLowerCase())) {
-      totalOutstanding += currentMonthAmount;
-      currentMonthBill = currentMonthAmount;
-      pendingMonths.add({
-        'monthYear': currentMonthYear,
-        'isHistory': false,
-      });
+      // Check if it was vacant in this month
+      if (subData != null) {
+        String status = subData['status'] ?? 'Vacant';
+        if (status == 'Vacant' && currentMonthYear == DatabaseService.getCurrentMonthYear()) {
+          isCurrentlyVacantInSelectedMonth = true;
+        } else {
+          // Check createdAt
+          Timestamp? created = subData['createdAt'] as Timestamp?;
+          if (created != null) {
+            String createdMY = DatabaseService.formatMonthYear(created.toDate());
+            if (DatabaseService.compareMonthYear(currentMonthYear, createdMY) < 0) {
+              isCurrentlyVacantInSelectedMonth = true;
+            }
+          }
+
+          if (!isCurrentlyVacantInSelectedMonth && status == 'Occupied') {
+            Timestamp? occAt = subData['occupiedAt'] as Timestamp?;
+            if (occAt != null) {
+              String occMY = DatabaseService.formatMonthYear(occAt.toDate());
+              if (DatabaseService.compareMonthYear(currentMonthYear, occMY) < 0) {
+                isCurrentlyVacantInSelectedMonth = true;
+              }
+            }
+          } else if (!isCurrentlyVacantInSelectedMonth && status == 'Vacant') {
+            isCurrentlyVacantInSelectedMonth = true;
+          }
+        }
+      }
+
+      if (isCurrentlyVacantInSelectedMonth) {
+        currentMonthBill = 0;
+      } else {
+        totalOutstanding += currentMonthAmount;
+        currentMonthBill = currentMonthAmount;
+        pendingMonths.add({
+          'monthYear': currentMonthYear,
+          'isHistory': false,
+          'isVacant': false,
+        });
+      }
     }
 
     totalOutstanding += manualDuesTotal;
@@ -275,6 +375,7 @@ class DataRepository {
       'manualDuesTotal': manualDuesTotal,
       'servicesTotal': servicesTotal,
       'activeServices': activeServices,
+      'isVacant': isCurrentlyVacantInSelectedMonth,
     };
   }
 }

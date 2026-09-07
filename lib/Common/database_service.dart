@@ -576,12 +576,46 @@ class DatabaseService {
     
     await _db.collection('main_meters').doc(docId).update(data);
 
+    // Save to monthly history
+    String meterNo = data['meterNo'] ?? '';
+    String monthYear = getCurrentMonthYear(); // Default to current month if not specified in data
+    if (data.containsKey('targetMonthYear')) {
+      monthYear = data['targetMonthYear'];
+    }
+
+    if (meterNo.isNotEmpty) {
+      await _db.collection('main_meter_readings').doc("${meterNo}_$monthYear").set({
+        ...data,
+        'meterNo': meterNo,
+        'monthYear': monthYear,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'updatedBy': actor,
+      }, SetOptions(merge: true));
+    }
+
     await logActivity(
       actor: actor,
       action: "Update Main Meter",
-      details: "Updated readings for main meter '${data['meterNo']}'",
+      details: "Updated readings for main meter '$meterNo' for month $monthYear",
       category: "Electricity",
     );
+  }
+
+  Stream<QuerySnapshot> getMainMeterReadingsStream(String monthYear) {
+    return _db.collection('main_meter_readings').where('monthYear', isEqualTo: monthYear).snapshots();
+  }
+
+  Future<Map<String, Map<String, dynamic>>> getMainMeterReadingsByMonth(String monthYear) async {
+    var snap = await _db.collection('main_meter_readings').where('monthYear', isEqualTo: monthYear).get();
+    Map<String, Map<String, dynamic>> results = {};
+    for (var doc in snap.docs) {
+      var data = doc.data() as Map<String, dynamic>;
+      String? meterNo = data['meterNo'];
+      if (meterNo != null) {
+        results[meterNo] = data;
+      }
+    }
+    return results;
   }
 
   Future<void> incrementMainMeterPaidUnits(String meterNo, double units) async {
@@ -897,14 +931,18 @@ class DatabaseService {
     Set<String> processedMonths = {};
     List manualDues = [];
     double manualDuesTotal = 0;
+    bool isCurrentlyVacantInSelectedMonth = false;
 
-    if (subItemData != null) {
-      manualDues = subItemData['manualDues'] ?? [];
-    } else {
+    Map<String, dynamic>? currentSubData = subItemData;
+    if (currentSubData == null) {
       DocumentSnapshot subSnap = await _db.collection('sub_items').doc(subId).get();
       if (subSnap.exists) {
-        manualDues = (subSnap.data() as Map<String, dynamic>)['manualDues'] ?? [];
+        currentSubData = subSnap.data() as Map<String, dynamic>;
       }
+    }
+
+    if (currentSubData != null) {
+      manualDues = currentSubData['manualDues'] ?? [];
     }
 
     for (var m in manualDues) {
@@ -944,12 +982,47 @@ class DatabaseService {
 
     // 2. Add current month estimation if not already recorded
     if (!processedMonths.contains(currentMonthYear.trim().toLowerCase())) {
-      totalOutstanding += currentMonthAmount;
-      currentMonthBill = currentMonthAmount;
-      pendingMonths.add({
-        'monthYear': currentMonthYear,
-        'isHistory': false,
-      });
+      // Check if it was vacant in this month
+      if (currentSubData != null) {
+        String status = currentSubData['status'] ?? 'Vacant';
+        if (status == 'Vacant' && currentMonthYear == DatabaseService.getCurrentMonthYear()) {
+          isCurrentlyVacantInSelectedMonth = true;
+        } else {
+          // Check createdAt
+          Timestamp? created = currentSubData['createdAt'] as Timestamp?;
+          if (created != null) {
+            String createdMY = formatMonthYear(created.toDate());
+            if (compareMonthYear(currentMonthYear, createdMY) < 0) {
+              isCurrentlyVacantInSelectedMonth = true;
+            }
+          }
+          
+          if (!isCurrentlyVacantInSelectedMonth && status == 'Occupied') {
+            Timestamp? occAt = currentSubData['occupiedAt'] as Timestamp?;
+            if (occAt != null) {
+              String occMY = formatMonthYear(occAt.toDate());
+              if (compareMonthYear(currentMonthYear, occMY) < 0) {
+                isCurrentlyVacantInSelectedMonth = true;
+              }
+            }
+          } else if (!isCurrentlyVacantInSelectedMonth && status == 'Vacant') {
+            // If it's vacant now, and we are looking at a month where no record exists, 
+            // and it's not the current month, it was likely vacant.
+            isCurrentlyVacantInSelectedMonth = true;
+          }
+        }
+      }
+
+      if (isCurrentlyVacantInSelectedMonth) {
+        currentMonthBill = 0;
+      } else {
+        totalOutstanding += currentMonthAmount;
+        currentMonthBill = currentMonthAmount;
+        pendingMonths.add({
+          'monthYear': currentMonthYear,
+          'isHistory': false,
+        });
+      }
     }
 
     // 3. Add all unrecorded manual dues/advances
@@ -971,6 +1044,7 @@ class DatabaseService {
       'pendingMonths': pendingMonths,
       'manualDues': manualDues,
       'arrearsCount': arrearsCount,
+      'isVacant': isCurrentlyVacantInSelectedMonth,
     };
   }
 
