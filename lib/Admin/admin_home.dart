@@ -1522,9 +1522,10 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                       'TenantName': tName,
                       'categoryName': categoryName,
                       'monthYear': _selectedMonthStr,
-                      'totalAmount': (summary['currentMonthBill'] as num).toDouble(),
-                      'electricityBill': (summary['currentMonthBill'] as num).toDouble() - summary['manualDuesTotal'] - summary['servicesTotal'], // Rough estimate
+                      'totalAmount': (summary['total'] as num).toDouble(),
+                      'electricityBill': (summary['currentMonthBill'] as num).toDouble() - (summary['servicesTotal'] as num).toDouble(), 
                       'services': summary['activeServices'] ?? [],
+                      'manualDues': subData['manualDues'] ?? [],
                       'status': 'Due',
                     });
                   } else {

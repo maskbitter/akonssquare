@@ -48,6 +48,9 @@ class UserReportPage extends StatelessWidget {
         }
       }
       double rentAndServicesSubtotal = rentAmount + otherServices.fold(0.0, (sum, s) => sum + DatabaseService.parseNum(s['amount']).toDouble());
+      
+      List manualDues = data['manualDues'] is List ? data['manualDues'] : [];
+      double manualDuesTotal = manualDues.fold(0.0, (sum, m) => sum + DatabaseService.parseNum(m is Map ? m['amount'] : 0).toDouble());
 
       String status = data['status'] ?? 'Paid';
       bool isDue = status == 'Due';
@@ -151,6 +154,15 @@ class UserReportPage extends StatelessWidget {
                     "৳${rentAndServicesSubtotal.toStringAsFixed(2)}",
                     isBold: true,
                   ),
+
+                  if (manualDuesTotal != 0)
+                    _buildDetailRow(
+                      context,
+                      manualDuesTotal < 0 ? "Advance Adjusted" : "Previous Dues",
+                      "৳${manualDuesTotal.abs().toStringAsFixed(2)}",
+                      valueColor: manualDuesTotal < 0 ? Colors.green : Colors.red,
+                      isBold: true,
+                    ),
 
                   if (ed != null || electricityBill > 0) ...[
                     const SizedBox(height: 12),

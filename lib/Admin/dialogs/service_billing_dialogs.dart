@@ -622,7 +622,8 @@ extension BillingServiceDialogs on CategoryDialogs {
               var data = d.data() as Map;
               String status = data['status']?.toString() ?? 'Paid';
               String my = data['monthYear']?.toString().trim() ?? "";
-              return status == 'Due' && my != monthYear.trim();
+              // Only show dues from months PRIOR to the selected month
+              return status == 'Due' && DatabaseService.compareMonthYear(my, monthYear) < 0;
             }).toList();
 
             QueryDocumentSnapshot? currentRecord = allRecords.where((d) => 
@@ -649,6 +650,31 @@ extension BillingServiceDialogs on CategoryDialogs {
             // Calculations for Payable
             double currentMonthTotal = houseRentTotal + dynamicElecBill;
             
+            // Filter manual dues/advances based on selected month
+            List<Map<String, dynamic>> filteredManualDues = [];
+            for (int i = 0; i < manualDues.length; i++) {
+              var d = manualDues[i] as Map;
+              double amt = (d['amount'] as num).toDouble();
+              bool isAdv = amt < 0;
+              String? dMonthYear = d['monthYear']?.toString();
+              
+              bool shouldShow = false;
+              if (dMonthYear == null || dMonthYear == 'null' || dMonthYear.isEmpty) {
+                shouldShow = true; // Always show if no specific month assigned
+              } else {
+                int cmp = DatabaseService.compareMonthYear(dMonthYear, monthYear);
+                if (isAdv) {
+                  shouldShow = (cmp == 0); // Advances: only show for the selected month
+                } else {
+                  shouldShow = (cmp < 0); // Dues: only show for previous months
+                }
+              }
+
+              if (shouldShow) {
+                filteredManualDues.add({...Map<String, dynamic>.from(d), 'originalIndex': i});
+              }
+            }
+
             double selectedArrearsSum = 0;
             for (var d in otherDues) {
               if (selectedMonthIds.contains(d.id)) {
@@ -657,9 +683,10 @@ extension BillingServiceDialogs on CategoryDialogs {
             }
 
             double selectedManualAdjustmentsSum = 0;
-            for (int i = 0; i < manualDues.length; i++) {
-              if (selectedManualDueIndices.contains(i)) {
-                selectedManualAdjustmentsSum += (manualDues[i]['amount'] as num).toDouble();
+            for (var fd in filteredManualDues) {
+              int originalIdx = fd['originalIndex'];
+              if (selectedManualDueIndices.contains(originalIdx)) {
+                selectedManualAdjustmentsSum += (fd['amount'] as num).toDouble();
               }
             }
 
@@ -804,20 +831,19 @@ extension BillingServiceDialogs on CategoryDialogs {
                       }),
                     ],
 
-                    // Manual Dues/Advances
-                    if (manualDues.isNotEmpty) ...[
+                    // Manual Dues/Advances (Filtered)
+                    if (filteredManualDues.isNotEmpty) ...[
                       const Divider(height: 12),
                       Align(alignment: Alignment.centerLeft, child: Text("Advances/Dues", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold))),
                       const SizedBox(height: 4),
-                      ...manualDues.asMap().entries.map((entry) {
-                        int idx = entry.key;
-                        var d = entry.value as Map;
-                        double amt = (d['amount'] as num).toDouble();
+                      ...filteredManualDues.map((fd) {
+                        int originalIdx = fd['originalIndex'];
+                        double amt = (fd['amount'] as num).toDouble();
                         bool isAdv = amt < 0;
-                        bool isChecked = selectedManualDueIndices.contains(idx);
+                        bool isChecked = selectedManualDueIndices.contains(originalIdx);
                         return InkWell(
                           onTap: () => setDialogState(() {
-                            if (isChecked) selectedManualDueIndices.remove(idx); else selectedManualDueIndices.add(idx);
+                            if (isChecked) selectedManualDueIndices.remove(originalIdx); else selectedManualDueIndices.add(originalIdx);
                           }),
                           child: Row(
                             children: [
@@ -827,13 +853,13 @@ extension BillingServiceDialogs on CategoryDialogs {
                                 visualDensity: VisualDensity.compact,
                                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 onChanged: (v) => setDialogState(() {
-                                  if (v == true) selectedManualDueIndices.add(idx); else selectedManualDueIndices.remove(idx);
+                                  if (v == true) selectedManualDueIndices.add(originalIdx); else selectedManualDueIndices.remove(originalIdx);
                                 })
                               ),
                               Expanded(
                                 child: CategoryDialogs._buildRow(
                                   context, 
-                                  "${d['reason']}${d['monthYear'] != null && d['monthYear'].toString().isNotEmpty && d['monthYear'].toString() != 'null' ? ' (${d['monthYear']})' : ''}:", 
+                                  "${fd['reason']}${fd['monthYear'] != null && fd['monthYear'].toString().isNotEmpty && fd['monthYear'].toString() != 'null' ? ' (${fd['monthYear']})' : ''}:", 
                                   "৳${amt.abs().toStringAsFixed(1)}", 
                                   color: isAdv ? Colors.green : Colors.red
                                 )
@@ -1152,12 +1178,39 @@ extension BillingServiceDialogs on CategoryDialogs {
     List<Map<String, dynamic>> currentDues = List<Map<String, dynamic>>.from(manualDues.map((e) => Map<String, dynamic>.from(e)));
     bool isLoading = false;
     bool isAdvance = false;
+    int? editingIndex;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
+
+          Future<bool> confirmAction(String action, String message) async {
+            return await showDialog<bool>(
+              context: context,
+              builder: (c) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                title: Text("Confirm $action"),
+                content: Text(message),
+                actions: [
+                  AppButton(
+                    onPressed: () => Navigator.pop(c, false),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                      elevation: 0,
+                    ),
+                    child: const Text("Cancel"),
+                  ),
+                  AppButton(
+                    onPressed: () => Navigator.pop(c, true),
+                    child: const Text("Confirm"),
+                  ),
+                ],
+              ),
+            ) ?? false;
+          }
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             title: Column(
@@ -1225,25 +1278,58 @@ extension BillingServiceDialogs on CategoryDialogs {
                   const SizedBox(height: 12),
                   AppDialogActions(
                     actions: [
-                      AppButton(
-                        onPressed: () {
-                          double? amt = double.tryParse(amountController.text);
-                          String reason = reasonController.text.trim();
-                          if (amt != null && reason.isNotEmpty) {
+                      if (editingIndex != null)
+                        AppButton(
+                          onPressed: () {
                             setDialogState(() {
-                              double finalAmt = isAdvance ? -amt.abs() : amt.abs();
-                              currentDues.add({
-                                'amount': finalAmt, 
-                                'reason': reason, 
-                                'date': DateTime.now().toIso8601String(),
-                                'monthYear': monthYear, // Tagging with month
-                              });
+                              editingIndex = null;
                               amountController.clear();
                               reasonController.clear();
                             });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                            elevation: 0,
+                          ),
+                          child: const Text("Cancel Edit"),
+                        ),
+                      AppButton(
+                        onPressed: () async {
+                          double? amt = double.tryParse(amountController.text);
+                          String reason = reasonController.text.trim();
+                          if (amt != null && reason.isNotEmpty) {
+                            String action = editingIndex == null ? "Add" : "Update";
+                            String type = isAdvance ? "Advance" : "Due";
+                            bool confirmed = await confirmAction("$action $type", "Are you sure you want to $action this $type item?");
+                            
+                            if (confirmed) {
+                              setDialogState(() {
+                                double finalAmt = isAdvance ? -amt.abs() : amt.abs();
+                                Map<String, dynamic> item = {
+                                  'amount': finalAmt, 
+                                  'reason': reason, 
+                                  'date': editingIndex == null ? DateTime.now().toIso8601String() : currentDues[editingIndex!]['date'],
+                                  'monthYear': monthYear, 
+                                };
+
+                                if (editingIndex == null) {
+                                  currentDues.add(item);
+                                } else {
+                                  currentDues[editingIndex!] = item;
+                                  editingIndex = null;
+                                }
+                                
+                                amountController.clear();
+                                reasonController.clear();
+                              });
+                            }
                           }
                         },
-                        child: Text(isAdvance ? "Add Advance Item" : "Add Due Item"),
+                        child: Text(editingIndex == null 
+                          ? (isAdvance ? "Add Advance Item" : "Add Due Item")
+                          : "Update Item"
+                        ),
                       ),
                     ],
                   ),
@@ -1274,13 +1360,42 @@ extension BillingServiceDialogs on CategoryDialogs {
                                   "৳${amt.abs().toStringAsFixed(1)}", 
                                   style: TextStyle(fontWeight: FontWeight.bold, color: isAdv ? Colors.green : Colors.red)
                                 ),
-                                if (!isOperator)
+                                if (!isOperator) ...[
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: const Icon(Icons.edit_outlined, color: Colors.blue, size: 20),
+                                    onPressed: () {
+                                      setDialogState(() {
+                                        editingIndex = index;
+                                        isAdvance = amt < 0;
+                                        amountController.text = amt.abs().toString();
+                                        reasonController.text = due['reason'];
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 4),
                                   IconButton(
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                     icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                                    onPressed: () => setDialogState(() => currentDues.removeAt(index)),
+                                    onPressed: () async {
+                                      bool confirmed = await confirmAction("Delete", "Are you sure you want to delete this item?");
+                                      if (confirmed) {
+                                        setDialogState(() {
+                                          if (editingIndex == index) {
+                                            editingIndex = null;
+                                            amountController.clear();
+                                            reasonController.clear();
+                                          } else if (editingIndex != null && editingIndex! > index) {
+                                            editingIndex = editingIndex! - 1;
+                                          }
+                                          currentDues.removeAt(index);
+                                        });
+                                      }
+                                    },
                                   ),
+                                ],
                                 const SizedBox(width: 8),
                               ],
                             ),
@@ -1312,10 +1427,13 @@ extension BillingServiceDialogs on CategoryDialogs {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: isLoading ? null : () async {
-                      setDialogState(() => isLoading = true);
-                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                      await CategoryDialogs._dbService.updateSubItemManualDues(subItemId, currentDues, prefs.getString('username') ?? "Admin");
-                      if (context.mounted) Navigator.pop(ctx);
+                      bool confirmed = await confirmAction("Save Changes", "Are you sure you want to save all manual adjustments for $subItemName?");
+                      if (confirmed) {
+                        setDialogState(() => isLoading = true);
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        await CategoryDialogs._dbService.updateSubItemManualDues(subItemId, currentDues, prefs.getString('username') ?? "Admin");
+                        if (context.mounted) Navigator.pop(ctx);
+                      }
                     },
                     child: const Text("Save"),
                   ),
