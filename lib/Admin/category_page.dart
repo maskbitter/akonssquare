@@ -25,7 +25,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
   final DataRepository _repository = DataRepository();
   String? _selectedFilterCategoryId;
   late DateTime _selectedDate;
-  bool _isFabVisible = true;
+  final ValueNotifier<bool> _isFabVisible = ValueNotifier<bool>(true);
   final Set<String> _expandedCategoryIds = {};
 
   @override
@@ -35,6 +35,12 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
   void initState() {
     super.initState();
     _selectedDate = DateTime.now();
+  }
+
+  @override
+  void dispose() {
+    _isFabVisible.dispose();
+    super.dispose();
   }
 
   String get _selectedMonthStr => DatabaseService.formatMonthYear(_selectedDate);
@@ -195,9 +201,9 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                 NotificationListener<UserScrollNotification>(
                   onNotification: (notification) {
                     if (notification.direction == ScrollDirection.idle) {
-                      if (!_isFabVisible) setState(() => _isFabVisible = true);
+                      if (!_isFabVisible.value) _isFabVisible.value = true;
                     } else {
-                      if (_isFabVisible) setState(() => _isFabVisible = false);
+                      if (_isFabVisible.value) _isFabVisible.value = false;
                     }
                     return true;
                   },
@@ -213,10 +219,16 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                   Positioned(
                     right: 16,
                     bottom: 16,
-                    child: AnimatedScale(
-                      scale: _isFabVisible ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutBack,
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _isFabVisible,
+                      builder: (context, visible, child) {
+                        return AnimatedScale(
+                          scale: visible ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutBack,
+                          child: child,
+                        );
+                      },
                       child: FloatingActionButton.extended(
                         onPressed: () => _showAddActionMenu(context),
                         icon: const Icon(Icons.add),
@@ -326,11 +338,11 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                             AppButton.icon(
                               onPressed: () => CategoryDialogs.showCreateCategoryDialog(context),
                               icon: const Icon(Icons.add),
-                              child: const Text("Create First Category"),
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
+                              child: const Text("Create First Category"),
                             ),
                           ],
                         ),
@@ -362,249 +374,251 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                     }
                   }
 
+                  return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+                    valueListenable: _repository.subItems,
+                    builder: (context, allSubItems, child) {
+                      // Pre-group and sort subitems once
+                      Map<String, List<QueryDocumentSnapshot>> subItemsByCat = {};
+                      for (var doc in allSubItems) {
+                        var d = doc.data() as Map<String, dynamic>;
+                        String cId = d['categoryId'] ?? '';
+                        String currentStatus = d['status'] ?? 'Vacant';
+                        
+                        if (status == 'Occupied' && currentStatus != 'Occupied') continue;
+                        if (status == 'Vacant' && currentStatus != 'Vacant') continue;
+                        
+                        subItemsByCat.putIfAbsent(cId, () => []).add(doc);
+                      }
+                      
+                      subItemsByCat.forEach((key, value) {
+                        value.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
+                      });
 
-              return CustomScrollView(
-                slivers: [
-                  ...categoryDocs.asMap().entries.map((entry) {
-                      int i = entry.key;
-                      var catDoc = entry.value;
-                      var catData = catDoc.data() as Map<String, dynamic>;
-                      String catId = catDoc.id;
-                      String catName = catData['categoryName'] ?? 'Unnamed';
-                      List assignedServices = catData['assignedServices'] ?? [];
+                      return CustomScrollView(
+                        slivers: [
+                          SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, i) {
+                                var catDoc = categoryDocs[i];
+                                var catData = catDoc.data() as Map<String, dynamic>;
+                                String catId = catDoc.id;
+                                String catName = catData['categoryName'] ?? 'Unnamed';
+                                List assignedServices = catData['assignedServices'] ?? [];
+                                
+                                var subDocs = subItemsByCat[catId] ?? [];
+                                if (status == 'Occupied' && subDocs.isEmpty) return const SizedBox.shrink();
 
-                      return SliverToBoxAdapter(
-                        key: ValueKey(catId),
-                        child: ValueListenableBuilder<List<QueryDocumentSnapshot>>(
-                          valueListenable: _repository.subItems,
-                          builder: (context, allSubItems, child) {
-                            var subDocs = allSubItems.where((doc) {
-                              var d = doc.data() as Map<String, dynamic>;
-                              if (d['categoryId'] != catId) return false;
+                                double catTotalPayable = 0;
+                                bool hasElectric = false;
+                                for (var doc in subDocs) {
+                                  catTotalPayable += _repository.subItemPayableCache.value[doc.id] ?? 0;
+                                  if (!hasElectric && (doc.data() as Map<String, dynamic>)['electricityDetails'] != null) {
+                                    hasElectric = true;
+                                  }
+                                }
+                                
+                                bool isExpanded = _expandedCategoryIds.contains(catId);
+                                final Color accentColor = ThemeManager.getCardColor(i);
+                                final Color bgColor = ThemeManager.getCardContainerColor(i);
+                                final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
 
-                              // Use current status for tab filtering as requested
-                              String currentStatus = d['status'] ?? 'Vacant';
-                              
-                              if (status == 'Occupied') return currentStatus == 'Occupied';
-                              return currentStatus == 'Vacant';
-                            }).toList();
-
-                            subDocs.sort((a, b) => ((a.data() as Map)['subItemName'] ?? '').compareTo((b.data() as Map)['subItemName'] ?? ''));
-
-                            if (status == 'Occupied' && subDocs.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-
-                            double catTotalPayable = 0;
-                            for (var doc in subDocs) {
-                              catTotalPayable += _repository.subItemPayableCache.value[doc.id] ?? 0;
-                            }
-                            bool hasElectric = subDocs.any((doc) => (doc.data() as Map<String, dynamic>)['electricityDetails'] != null);
-                            bool isExpanded = _expandedCategoryIds.contains(catId);
-                            
-                            final Color accentColor = ThemeManager.getCardColor(i);
-                            final Color bgColor = ThemeManager.getCardContainerColor(i);
-                            final Color onBgColor = ThemeManager.getCardOnContainerColor(i);
-
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                              padding: EdgeInsets.only(bottom: isExpanded ? 12 : 0),
-                              decoration: BoxDecoration(
-                                color: isExpanded 
-                                    ? (ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                                        ? ThemeManager.outlineBackground 
-                                        : Theme.of(context).colorScheme.surfaceContainerHighest) 
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              child: Column(
-                                children: [
-                                  Card(
-                                    elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
-                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : bgColor,
-                                    margin: EdgeInsets.zero,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16), 
-                                      side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                                          ? BorderSide(color: accentColor, width: 1.5) 
-                                          : BorderSide.none,
-                                    ),
-                                    child: InkWell(
-                                      onTap: () {
-                                        DatabaseService.vibrate();
-                                        setState(() {
-                                          if (isExpanded) {
-                                            _expandedCategoryIds.remove(catId);
-                                          } else {
-                                            _expandedCategoryIds.add(catId);
-                                          }
-                                        });
-                                      },
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  padding: EdgeInsets.only(bottom: isExpanded ? 12 : 0),
+                                  decoration: BoxDecoration(
+                                    color: isExpanded 
+                                        ? (ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                            ? ThemeManager.outlineBackground 
+                                            : Theme.of(context).colorScheme.surfaceContainerHighest) 
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Card(
+                                        elevation: ThemeManager.appThemeNotifier.value == "Outline Theme" ? 0 : 2,
+                                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : bgColor,
+                                        margin: EdgeInsets.zero,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16), 
+                                          side: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                                              ? BorderSide(color: accentColor, width: 1.5) 
+                                              : BorderSide.none,
+                                        ),
+                                        child: InkWell(
+                                          onTap: () {
+                                            DatabaseService.vibrate();
+                                            setState(() {
+                                              if (isExpanded) {
+                                                _expandedCategoryIds.remove(catId);
+                                              } else {
+                                                _expandedCategoryIds.add(catId);
+                                              }
+                                            });
+                                          },
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Icon(Icons.category_outlined, color: accentColor, size: 22),
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                  decoration: BoxDecoration(
-                                                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
-                                                    borderRadius: BorderRadius.circular(6),
-                                                    border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: onBgColor, width: 1) : null,
-                                                  ),
-                                                  child: Text(
-                                                    catName.toUpperCase(),
-                                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                      fontWeight: FontWeight.w900, 
-                                                      color: onBgColor, 
-                                                      letterSpacing: 0.5
-                                                    ),
-                                                  ),
-                                                ),
-                                                const Spacer(),
-                                                IconButton(
-                                                  padding: EdgeInsets.zero,
-                                                  constraints: const BoxConstraints(),
-                                                  icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
-                                                  onPressed: () => CategoryDialogs.showCategorySettingsDialog(
-                                                    context: context, 
-                                                    categoryId: catId, 
-                                                    categoryName: catName, 
-                                                    dynamicAssignedServices: assignedServices
-                                                  ),
-                                                ),
-                                                if (!widget.isOperator) ...[
-                                                  const SizedBox(width: 12),
-                                                  IconButton(
-                                                    padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
-                                                    icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
-                                                    onPressed: () => CategoryDialogs.showConfirmDialog(
-                                                      context: context, 
-                                                      title: "Remove '$catName'?", 
-                                                      content: "Are you sure you want to remove this category?", 
-                                                      onConfirm: () async { 
-                                                        SharedPreferences prefs = await SharedPreferences.getInstance(); 
-                                                        await _dbService.removeCategory(catId, prefs.getString('username') ?? "Admin"); 
-                                                      },
-                                                    ),
-                                                  ),
-                                                ],
-                                                const SizedBox(width: 12),
-                                                Icon(
-                                                  isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                                  color: onBgColor,
-                                                  size: 24,
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Padding(
-                                                  padding: const EdgeInsets.only(left: 30),
-                                                  child: Text(
-                                                    "${subDocs.length} units | ${assignedServices.length} Services",
-                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                      color: onBgColor,
-                                                      fontWeight: FontWeight.bold
-                                                    ),
-                                                  ),
-                                                ),
                                                 Row(
                                                   children: [
-                                                    if (hasElectric) Icon(Icons.electric_bolt, color: context.electric, size: 18),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      "Total: ৳${catTotalPayable.toStringAsFixed(2)}",
-                                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                                        fontWeight: FontWeight.w900, 
-                                                        color: onBgColor
+                                                    Icon(Icons.category_outlined, color: accentColor, size: 22),
+                                                    const SizedBox(width: 8),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+                                                        borderRadius: BorderRadius.circular(6),
+                                                        border: ThemeManager.appThemeNotifier.value == "Outline Theme" ? Border.all(color: onBgColor, width: 1) : null,
                                                       ),
+                                                      child: Text(
+                                                        catName.toUpperCase(),
+                                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                          fontWeight: FontWeight.w900, 
+                                                          color: onBgColor, 
+                                                          letterSpacing: 0.5
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const Spacer(),
+                                                    IconButton(
+                                                      padding: EdgeInsets.zero,
+                                                      constraints: const BoxConstraints(),
+                                                      icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
+                                                      onPressed: () => CategoryDialogs.showCategorySettingsDialog(
+                                                        context: context, 
+                                                        categoryId: catId, 
+                                                        categoryName: catName, 
+                                                        dynamicAssignedServices: assignedServices
+                                                      ),
+                                                    ),
+                                                    if (!widget.isOperator) ...[
+                                                      const SizedBox(width: 12),
+                                                      IconButton(
+                                                        padding: EdgeInsets.zero,
+                                                        constraints: const BoxConstraints(),
+                                                        icon: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.error, size: 20), 
+                                                        onPressed: () => CategoryDialogs.showConfirmDialog(
+                                                          context: context, 
+                                                          title: "Remove '$catName'?", 
+                                                          content: "Are you sure you want to remove this category?", 
+                                                          onConfirm: () async { 
+                                                            SharedPreferences prefs = await SharedPreferences.getInstance(); 
+                                                            await _dbService.removeCategory(catId, prefs.getString('username') ?? "Admin"); 
+                                                          },
+                                                        ),
+                                                      ),
+                                                    ],
+                                                    const SizedBox(width: 12),
+                                                    Icon(
+                                                      isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                                      color: onBgColor,
+                                                      size: 24,
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Padding(
+                                                      padding: const EdgeInsets.only(left: 30),
+                                                      child: Text(
+                                                        "${subDocs.length} units | ${assignedServices.length} Services",
+                                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                          color: onBgColor,
+                                                          fontWeight: FontWeight.bold
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Row(
+                                                      children: [
+                                                        if (hasElectric) Icon(Icons.electric_bolt, color: context.electric, size: 18),
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                          "Total: ৳${catTotalPayable.toStringAsFixed(2)}",
+                                                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                                            fontWeight: FontWeight.w900, 
+                                                            color: onBgColor
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                   ],
                                                 ),
                                               ],
                                             ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  if (isExpanded) ...[
-                                    const SizedBox(height: 8),
-                                    ...subDocs.asMap().entries.map((subEntry) {
-                                      int subIdx = subEntry.key;
-                                      var subDoc = subEntry.value;
-                                      var d = subDoc.data() as Map<String, dynamic>;
-                                      String subId = subDoc.id;
-                                      
-                                      // Check if paid for current month
-                                      bool isPaid = paidIds.contains(subId);
-                                      
-                                      int itemIndex = i + subIdx + 1;
-                                      final Color itemAccentColor = ThemeManager.getCardColor(itemIndex, isSubCard: true);
-                                      final Color itemBgColor = ThemeManager.getCardContainerColor(itemIndex, isSubCard: true);
-                                      final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex, isSubCard: true);
-
-                                      if (status == 'Vacant') {
-                                        return _buildVacantUnitCard(
-                                          context, subDoc, i, subIdx, 
-                                          itemAccentColor, itemBgColor, itemOnBgColor, 
-                                          assignedServices
-                                        );
-                                      } else {
-                                        return _buildOccupiedUnitCard(
-                                          context, subDoc, i, subIdx, 
-                                          itemAccentColor, itemBgColor, itemOnBgColor, 
-                                          assignedServices, isPaid, historyMap, paidIds, catName
-                                        );
-                                      }
-                                    }),
-                                    if (status == 'Vacant')
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 8),
-                                        child: Center(
-                                          child: TextButton.icon(
-                                            onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
-                                            icon: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary),
-                                            label: Text(
-                                              "Add New $catName", 
-                                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                                color: Theme.of(context).colorScheme.primary,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
                                           ),
                                         ),
                                       ),
-                                  ],
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    }).toList(),
+                                      if (isExpanded) ...[
+                                        const SizedBox(height: 8),
+                                        ...subDocs.asMap().entries.map((subEntry) {
+                                          int subIdx = subEntry.key;
+                                          var subDoc = subEntry.value;
+                                          String subId = subDoc.id;
+                                          bool isPaid = paidIds.contains(subId);
+                                          
+                                          int itemIndex = i + subIdx + 1;
+                                          final Color itemAccentColor = ThemeManager.getCardColor(itemIndex, isSubCard: true);
+                                          final Color itemBgColor = ThemeManager.getCardContainerColor(itemIndex, isSubCard: true);
+                                          final Color itemOnBgColor = ThemeManager.getCardOnContainerColor(itemIndex, isSubCard: true);
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                ],
+                                          if (status == 'Vacant') {
+                                            return _buildVacantUnitCard(
+                                              context, subDoc, i, subIdx, 
+                                              itemAccentColor, itemBgColor, itemOnBgColor, 
+                                              assignedServices
+                                            );
+                                          } else {
+                                            return _buildOccupiedUnitCard(
+                                              context, subDoc, i, subIdx, 
+                                              itemAccentColor, itemBgColor, itemOnBgColor, 
+                                              assignedServices, isPaid, historyMap, paidIds, catName
+                                            );
+                                          }
+                                        }),
+                                        if (status == 'Vacant')
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 8),
+                                            child: Center(
+                                              child: TextButton.icon(
+                                                onPressed: () => CategoryDialogs.showAddSubItemDialog(context: context, categoryId: catId, categoryName: catName),
+                                                icon: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary),
+                                                label: Text(
+                                                  "Add New $catName", 
+                                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ],
+                                  ),
+                                );
+                              },
+                              childCount: categoryDocs.length,
+                            ),
+                          ),
+                          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                        ],
+                      );
+                    }
+                  );
+                }
               );
             },
-          );
-        },
-      ),
-    ),
-  ],
-);
-}
+          )
+        ),
+      ],
+    );
+  }
 
   Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color? color, Widget? trailing, Widget? customContent}) {
     final effectiveColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
@@ -1175,7 +1189,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
     var ed = d['electricityDetails'];
     
     double monthTotal = _repository.subItemPayableCache.value[subId] ?? 0;
-    var summary = _repository.calculateFinancialSummaryLocal(subId, monthTotal, _selectedMonthStr);
+    var summary = _repository.subItemSummaryCache.value[subId] ?? _repository.calculateFinancialSummaryLocal(subId, monthTotal, _selectedMonthStr);
     List active = DatabaseService.getEffectiveServices(
       categoryServices: assignedServices, 
       excludedServices: d['excludedServices'] ?? [], 
@@ -1431,7 +1445,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
     Map<String, dynamic>? hData = existingRecord?.data() as Map<String, dynamic>?;
     
     double monthTotal = _repository.subItemPayableCache.value[subId] ?? 0;
-    var summary = _repository.calculateFinancialSummaryLocal(subId, monthTotal, _selectedMonthStr);
+    var summary = _repository.subItemSummaryCache.value[subId] ?? _repository.calculateFinancialSummaryLocal(subId, monthTotal, _selectedMonthStr);
 
     // Historical Data Logic
     String tenant = hData != null 
