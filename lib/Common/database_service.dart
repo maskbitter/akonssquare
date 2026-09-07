@@ -690,44 +690,18 @@ class DatabaseService {
     });
   }
 
-  Future<void> updateRequiredVersion(String newVersion) async {
-    // Only update if the new version is higher or if the document doesn't exist/is empty
-    DocumentSnapshot snap = await _db.collection('app_config').doc('settings').get();
-    bool shouldUpdate = true;
+  Future<void> updateRequiredVersion(String newVersion, {String? downloadUrl}) async {
+    Map<String, dynamic> updateData = {
+      'requiredVersion': newVersion,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': DateTime.now().toIso8601String(),
+    };
     
-    if (snap.exists) {
-      String currentServerV = snap['requiredVersion'] ?? "";
-      if (currentServerV.isNotEmpty) {
-        try {
-          // Compare versions (e.g., 1.0.0+7 vs 1.0.0+6)
-          List<String> currentParts = currentServerV.split('+');
-          List<String> nextParts = newVersion.split('+');
-          
-          int currentMain = int.tryParse(currentParts[0].replaceAll('.', '')) ?? 0;
-          int nextMain = int.tryParse(nextParts[0].replaceAll('.', '')) ?? 0;
-          
-          if (nextMain < currentMain) {
-            shouldUpdate = false;
-          } else if (nextMain == currentMain && nextParts.length > 1 && currentParts.length > 1) {
-            int currentBuild = int.tryParse(currentParts[1]) ?? 0;
-            int nextBuild = int.tryParse(nextParts[1]) ?? 0;
-            if (nextBuild <= currentBuild) shouldUpdate = false;
-          }
-        } catch (e) {
-          // If parsing fails, allow update if it's just different
-          shouldUpdate = currentServerV != newVersion;
-        }
-      }
+    if (downloadUrl != null && downloadUrl.isNotEmpty) {
+      updateData['downloadUrl'] = downloadUrl;
     }
 
-    if (shouldUpdate) {
-      await _db.collection('app_config').doc('settings').set({
-        'requiredVersion': newVersion,
-        'downloadUrl': snap.exists ? (snap['downloadUrl'] ?? "") : "", 
-        'updatedAt': FieldValue.serverTimestamp(),
-        'clientTimestamp': DateTime.now().toIso8601String(),
-      }, SetOptions(merge: true));
-    }
+    await _db.collection('app_config').doc('settings').set(updateData, SetOptions(merge: true));
   }
 
   Future<void> updatePopupStatus(bool isEnabled) async {

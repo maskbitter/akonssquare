@@ -19,10 +19,10 @@ $counterPath = "android/app/build_counter.txt"
 Write-Host "`n>>> [START] AkonsSquare Unified Automation Process" -ForegroundColor Magenta
 Write-Host "==========================================================" -ForegroundColor Magenta
 
-# 1. Read Current Version from build_config.dart
+# 1. Read Current Version from pubspec.yaml (Source of Truth)
 function Get-FullVersion {
-    $config = Get-Content "lib/Common/build_config.dart" -Raw
-    if ($config -match "const String appVersion = `"([^`"]+)`"") {
+    $pubspec = Get-Content "pubspec.yaml" -Raw
+    if ($pubspec -match "version: ([\d\.\+]+)") {
         return $Matches[1]
     }
     return ""
@@ -46,9 +46,8 @@ if ($bnOutput -match "^\d+$") {
 $newBN = $oldBN + 1
 Set-Content $counterPath $newBN.ToString()
 
-# Update local build_config.dart with new BN
-$configContent = Get-Content "lib/Common/build_config.dart" -Raw
-$newConfig = $configContent -replace 'const int buildNumber = \d+;', "const int buildNumber = $newBN;"
+# Update local build_config.dart with new BN and Version from pubspec
+$newConfig = "const int buildNumber = $newBN;`r`nconst String appVersion = `"$currentVersion`";"
 Set-Content "lib/Common/build_config.dart" $newConfig
 
 Write-Host ">>> Preparing Build: Version $currentVersion (BN$newBN)" -ForegroundColor Cyan
