@@ -5,6 +5,9 @@ import 'package:akons_square/Common/theme_manager.dart';
 import 'package:akons_square/Common/data_repository.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Common/app_animations.dart';
+import 'package:akons_square/Common/share_helper.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -17,378 +20,499 @@ class _ReportsPageState extends State<ReportsPage> {
   final DatabaseService _dbService = DatabaseService();
   final DataRepository _repository = DataRepository();
   
-  String _selectedReportType = "Financial";
+  // Filter States
   DateTime _selectedDate = DateTime.now();
   String? _selectedCategoryId;
-  String? _selectedUnitId;
+  String? _selectedStatus; // Paid, Due, Advance
   String? _selectedMainMeter;
   String? _selectedSubMeter;
+  String _searchQuery = "";
+  String _dateMode = "Monthly"; // Monthly, Yearly, Custom
+  int _selectedYear = DateTime.now().year;
+  DateTimeRange? _customDateRange;
+  
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _horizontalScroll = ScrollController();
 
-  final List<String> _reportTypes = ["Financial", "Electricity", "Occupancy", "Activity"];
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim().toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _horizontalScroll.dispose();
+    super.dispose();
+  }
 
   String get _selectedMonthStr => DatabaseService.formatMonthYear(_selectedDate);
 
-  void _moveMonth(int delta) {
-    setState(() {
-      _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + delta);
-    });
+  void _showFilterSheet(bool isOutline) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        decoration: BoxDecoration(
+          color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2)))),
+            Text("Advanced Filters", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+            
+            // Status Filter
+            Text("Payment Status", style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: ["All", "Paid", "Due"].map((s) {
+                bool isSelected = (_selectedStatus ?? "All") == s;
+                return ChoiceChip(
+                  label: Text(s),
+                  selected: isSelected,
+                  onSelected: (val) {
+                    setState(() => _selectedStatus = (s == "All" ? null : s));
+                    Navigator.pop(ctx);
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            
+            // Category Filter
+            Text("Main Category", style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: 8),
+            ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+              valueListenable: _repository.categories,
+              builder: (context, categories, _) {
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text("All"),
+                      selected: _selectedCategoryId == null,
+                      onSelected: (_) { setState(() => _selectedCategoryId = null); Navigator.pop(ctx); },
+                    ),
+                    ...categories.map((c) {
+                      String name = (c.data() as Map)['categoryName'] ?? 'Unit';
+                      return ChoiceChip(
+                        label: Text(name),
+                        selected: _selectedCategoryId == c.id,
+                        onSelected: (_) { setState(() => _selectedCategoryId = c.id); Navigator.pop(ctx); },
+                      );
+                    }),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            
+            // Meter Filters
+            Row(
+              children: [
+                Expanded(
+                  child: ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+                    valueListenable: _repository.mainMeters,
+                    builder: (context, meters, _) {
+                      return _buildDropdown<String?>(
+                        value: _selectedMainMeter,
+                        hint: "Main Meter",
+                        items: [
+                          const DropdownMenuItem(value: null, child: Text("All Main")),
+                          ...meters.map((m) => DropdownMenuItem(value: (m.data() as Map)['meterNo'], child: Text((m.data() as Map)['meterNo'] ?? ''))),
+                        ],
+                        onChanged: (v) { setState(() => _selectedMainMeter = v); Navigator.pop(ctx); },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+                    valueListenable: _repository.subMeters,
+                    builder: (context, meters, _) {
+                      return _buildDropdown<String?>(
+                        value: _selectedSubMeter,
+                        hint: "Sub-Meter",
+                        items: [
+                          const DropdownMenuItem(value: null, child: Text("All Sub")),
+                          ...meters.map((m) => DropdownMenuItem(value: (m.data() as Map)['subMeterNo'], child: Text((m.data() as Map)['subMeterNo'] ?? ''))),
+                        ],
+                        onChanged: (v) { setState(() => _selectedSubMeter = v); Navigator.pop(ctx); },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedStatus = null;
+                    _selectedCategoryId = null;
+                    _selectedMainMeter = null;
+                    _selectedSubMeter = null;
+                    _dateMode = "Monthly";
+                    _selectedDate = DateTime.now();
+                    _customDateRange = null;
+                    _searchController.clear();
+                  });
+                  Navigator.pop(ctx);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.errorContainer, foregroundColor: Theme.of(context).colorScheme.error),
+                child: const Text("Reset All Filters"),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _shareReportSummary(List<Map<String, dynamic>> records) {
+    if (records.isEmpty) return;
+    
+    double total = records.fold(0.0, (sum, r) => sum + r['total']);
+    int paid = records.where((r) => r['status'] == 'Paid').length;
+    int due = records.length - paid;
+
+    String summary = "*AkonsSquare Report Summary (${_dateMode == "Yearly" ? _selectedYear : _selectedMonthStr})*\n"
+        "----------------------------------\n"
+        "Total Records: ${records.length}\n"
+        "Paid: $paid | Due: $due\n"
+        "Grand Total: ৳${total.toStringAsFixed(2)}\n\n"
+        "Preview:\n";
+
+    for (var i = 0; i < (records.length > 5 ? 5 : records.length); i++) {
+      var r = records[i];
+      summary += "• ${r['unitName']} (${r['tenantName']}): ৳${r['total'].toStringAsFixed(2)} [${r['status']}]\n";
+    }
+
+    if (records.length > 5) summary += "...and ${records.length - 5} more records.\n";
+    
+    summary += "\nGenerated on: ${DateFormat('dd-MMM-yyyy HH:mm').format(DateTime.now())}";
+    
+    Share.share(summary);
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isOutline = ThemeManager.appThemeNotifier.value == "Outline Theme";
 
-    return Column(
-      children: [
-        _buildFilterBar(isOutline),
-        Expanded(
-          child: _buildReportContent(isOutline),
-        ),
-      ],
+    return Scaffold(
+      backgroundColor: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
+      body: Column(
+        children: [
+          _buildSearchAndFilterHeader(isOutline),
+          Expanded(child: _buildReportTable(isOutline)),
+        ],
+      ),
     );
   }
 
-  Widget _buildFilterBar(bool isOutline) {
+  Widget _buildSearchAndFilterHeader(bool isOutline) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
-        color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surfaceContainerLow,
+        color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.surface,
         border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.5))),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            // Report Type Selector
-            _buildDropdown<String>(
-              value: _selectedReportType,
-              items: _reportTypes.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: (v) => setState(() => _selectedReportType = v!),
-              icon: Icons.analytics_outlined,
-            ),
-            const SizedBox(width: 8),
-            // Month Selector
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Theme.of(context).dividerColor),
-              ),
-              child: Row(
-                children: [
-                  IconButton(icon: const Icon(Icons.chevron_left, size: 20), onPressed: () => _moveMonth(-1)),
-                  Text(_selectedMonthStr, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  IconButton(icon: const Icon(Icons.chevron_right, size: 20), onPressed: () => _moveMonth(1)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Category Filter
-            ValueListenableBuilder<List<QueryDocumentSnapshot>>(
-              valueListenable: _repository.categories,
-              builder: (context, categories, _) {
-                return _buildDropdown<String?>(
-                  value: _selectedCategoryId,
-                  hint: "All Categories",
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text("All Categories")),
-                    ...categories.map((c) => DropdownMenuItem(value: c.id, child: Text((c.data() as Map)['categoryName'] ?? 'Unit'))),
-                  ],
-                  onChanged: (v) => setState(() {
-                    _selectedCategoryId = v;
-                    _selectedUnitId = null;
-                  }),
-                  icon: Icons.category_outlined,
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdown<T>({required T value, required List<DropdownMenuItem<T>> items, required ValueChanged<T?> onChanged, String? hint, IconData? icon}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          hint: hint != null ? Text(hint, style: const TextStyle(fontSize: 12)) : null,
-          items: items,
-          onChanged: onChanged,
-          icon: icon != null ? Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary) : null,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReportContent(bool isOutline) {
-    switch (_selectedReportType) {
-      case "Financial":
-        return _buildFinancialReport(isOutline);
-      case "Electricity":
-        return _buildElectricityReport(isOutline);
-      case "Occupancy":
-        return _buildOccupancyReport(isOutline);
-      case "Activity":
-        return _buildActivityReport(isOutline);
-      default:
-        return const Center(child: Text("Select a report type"));
-    }
-  }
-
-  Widget _buildFinancialReport(bool isOutline) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _dbService.getBillingHistoryByMonth(_selectedMonthStr),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        var docs = snapshot.data!.docs;
-        
-        // Filter by category if selected
-        if (_selectedCategoryId != null) {
-          // This requires fetching sub_items to know their category, or joining.
-          // For simplicity in UI, we can filter the list if we have the categoryId in the billing doc.
-          // Looking at DB schema, billing_history doesn't have categoryId directly usually, but let's check.
-          docs = docs.where((d) {
-             var data = d.data() as Map<String, dynamic>;
-             // In many implementations, we might need to cross-ref.
-             return true; 
-          }).toList();
-        }
-
-        double totalReceived = 0;
-        double totalDue = 0;
-        int paidCount = 0;
-        int dueCount = 0;
-
-        for (var d in docs) {
-          var data = d.data() as Map<String, dynamic>;
-          double amt = (data['totalAmount'] as num?)?.toDouble() ?? 0;
-          if (data['status'] == 'Paid') {
-            totalReceived += amt;
-            paidCount++;
-          } else {
-            totalDue += amt;
-            dueCount++;
-          }
-        }
-
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _buildSummaryCard("Financial Overview", [
-              _buildStat("Received", "৳${totalReceived.toStringAsFixed(2)}", Colors.green),
-              _buildStat("Due", "৳${totalDue.toStringAsFixed(2)}", Colors.red),
-              _buildStat("Total", "৳${(totalReceived + totalDue).toStringAsFixed(2)}", Colors.blue),
-            ]),
-            const SizedBox(height: 20),
-            Text("Collection Details", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            ...docs.map((d) {
-              var data = d.data() as Map<String, dynamic>;
-              bool isPaid = data['status'] == 'Paid';
-              return Card(
-                elevation: 0,
-                color: isOutline ? ThemeManager.outlineBackground : (isPaid ? Colors.green.withOpacity(0.05) : Colors.red.withOpacity(0.05)),
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: isOutline ? BorderSide(color: isPaid ? Colors.green : Colors.red) : BorderSide.none,
-                ),
-                child: ListTile(
-                  title: Text(data['subItemName'] ?? 'Unit', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text("Tenant: ${data['TenantName'] ?? 'N/A'}"),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text("৳${(data['totalAmount'] as num?)?.toDouble().toStringAsFixed(2)}", style: TextStyle(fontWeight: FontWeight.w900, color: isPaid ? Colors.green : Colors.red)),
-                      Text(isPaid ? "Paid" : "Due", style: TextStyle(fontSize: 10, color: isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
-                    ],
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: "Search NID, Tenant, Unit...",
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: isOutline ? const BorderSide() : BorderSide.none),
+                    filled: !isOutline,
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                   ),
                 ),
-              );
-            }),
-          ],
-        );
-      },
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => _showFilterSheet(isOutline),
+                icon: Badge(
+                  isLabelVisible: _selectedStatus != null || _selectedCategoryId != null,
+                  child: const Icon(Icons.filter_list_rounded),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (_dateMode == "Monthly")
+                Row(
+                  children: [
+                    IconButton(icon: const Icon(Icons.arrow_back_ios, size: 14), onPressed: () => setState(() => _selectedDate = DateTime(_selectedDate.year, _selectedDate.month - 1))),
+                    Text(_selectedMonthStr, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                    IconButton(icon: const Icon(Icons.arrow_forward_ios, size: 14), onPressed: () => setState(() => _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + 1))),
+                  ],
+                )
+              else if (_dateMode == "Yearly")
+                Row(
+                  children: [
+                    IconButton(icon: const Icon(Icons.arrow_back_ios, size: 14), onPressed: () => setState(() => _selectedYear--)),
+                    Text("Year: $_selectedYear", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                    IconButton(icon: const Icon(Icons.arrow_forward_ios, size: 14), onPressed: () => setState(() => _selectedYear++)),
+                  ],
+                )
+              else
+                InkWell(
+                  onTap: _pickCustomDateRange,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3), borderRadius: BorderRadius.circular(8)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.date_range, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          _customDateRange == null 
+                            ? "Select Date Range" 
+                            : "${DateFormat('dd/MM/yy').format(_customDateRange!.start)} - ${DateFormat('dd/MM/yy').format(_customDateRange!.end)}",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              
+              Row(
+                children: [
+                  _buildModeChip("Monthly"),
+                  _buildModeChip("Yearly"),
+                  _buildModeChip("Custom"),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildElectricityReport(bool isOutline) {
+  Widget _buildModeChip(String mode) {
+    bool isSelected = _dateMode == mode;
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: InkWell(
+        onTap: () => setState(() => _dateMode = mode),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor),
+          ),
+          child: Text(mode, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.grey)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickCustomDateRange() async {
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: _customDateRange,
+    );
+    if (range != null) setState(() => _customDateRange = range);
+  }
+
+  Widget _buildReportTable(bool isOutline) {
+    Query query = _dbService.getBillingHistoryCollection();
+    
+    // Server side filtering where possible
+    if (_dateMode == "Monthly") {
+      query = query.where('monthYear', isEqualTo: _selectedMonthStr);
+    }
+
     return StreamBuilder<QuerySnapshot>(
-      stream: _dbService.getMainMetersStream(),
+      stream: query.snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        var mainMeters = snapshot.data!.docs;
+        
+        return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+          valueListenable: _repository.subItems,
+          builder: (context, subItemsList, _) {
+            return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+              valueListenable: _repository.categories,
+              builder: (context, categoriesList, _) {
+                
+                // DATA JOINING & FILTERING
+                var rawRecords = snapshot.data!.docs.map((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  String subId = data['subItemId'] ?? '';
+                  
+                  var subItem = subItemsList.where((i) => i.id == subId).firstOrNull;
+                  var subItemData = subItem?.data() as Map<String, dynamic>?;
+                  
+                  String catId = data['categoryId'] ?? subItemData?['categoryId'] ?? '';
+                  var category = categoriesList.where((c) => c.id == catId).firstOrNull;
+                  String catName = (category?.data() as Map?)?['categoryName'] ?? 'N/A';
+                  
+                  String tenantNid = (data['nidNumber'] ?? subItemData?['nidNumber'] ?? 'N/A').toString();
+                  String tenantName = data['TenantName'] ?? subItemData?['TenantName'] ?? 'N/A';
+                  String unitName = data['subItemName'] ?? subItemData?['subItemName'] ?? 'N/A';
+                  
+                  var ed = data['electricityDetails'] ?? {};
+                  double eBill = DatabaseService.parseNum(data['electricityBill']).toDouble();
+                  String sm = (ed['subMeterNo'] ?? '').toString();
+                  String mm = (ed['mainMeterNo'] ?? '').toString();
+                  
+                  List services = data['services'] is List ? data['services'] : [];
+                  double rent = 0;
+                  double others = 0;
+                  for (var s in services) {
+                    if (s is Map) {
+                      String sName = s['name'].toString().toLowerCase();
+                      double sAmt = DatabaseService.parseNum(s['amount']).toDouble();
+                      if (sName.contains('rent')) rent += sAmt;
+                      else others += sAmt;
+                    }
+                  }
+                  
+                  List manualDues = data['manualDues'] is List ? data['manualDues'] : [];
+                  double adj = manualDues.fold(0.0, (sum, m) => sum + DatabaseService.parseNum(m is Map ? m['amount'] : 0).toDouble());
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text("Main Meter Audit", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            ...mainMeters.map((mDoc) {
-              var mData = mDoc.data() as Map<String, dynamic>;
-              double last = (mData['lastReading'] as num?)?.toDouble() ?? 0;
-              double pres = (mData['presentReading'] as num?)?.toDouble() ?? 0;
-              double used = pres - last;
-              
-              return Card(
-                elevation: 0,
-                color: isOutline ? ThemeManager.outlineBackground : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                  Timestamp? recordDate = data['paidAt'] ?? data['createdAt'];
+
+                  return {
+                    'monthYear': data['monthYear'] ?? _selectedMonthStr,
+                    'catName': catName,
+                    'catId': catId,
+                    'unitName': unitName,
+                    'tenantName': tenantName,
+                    'nid': tenantNid,
+                    'rent': rent,
+                    'services': others,
+                    'electricity': eBill,
+                    'adj': adj,
+                    'total': DatabaseService.parseNum(data['totalAmount']).toDouble(),
+                    'status': data['status'] ?? 'N/A',
+                    'paidBy': data['paidBy'] ?? 'System',
+                    'date': recordDate,
+                    'sm': sm,
+                    'mm': mm,
+                    'searchString': "${tenantName} ${tenantNid} ${unitName} ${catName} ${sm} ${mm}".toLowerCase(),
+                  };
+                }).toList();
+
+                // CLIENT SIDE FILTERING
+                var records = rawRecords;
+
+                if (_dateMode == "Yearly") {
+                  records = records.where((r) => r['monthYear'].toString().contains(_selectedYear.toString())).toList();
+                } else if (_dateMode == "Custom" && _customDateRange != null) {
+                  records = records.where((r) {
+                    if (r['date'] == null) return false;
+                    DateTime d = (r['date'] as Timestamp).toDate();
+                    return d.isAfter(_customDateRange!.start.subtract(const Duration(days: 1))) && 
+                           d.isBefore(_customDateRange!.end.add(const Duration(days: 1)));
+                  }).toList();
+                }
+                
+                if (_selectedCategoryId != null) {
+                  records = records.where((r) => r['catId'] == _selectedCategoryId).toList();
+                }
+                if (_selectedStatus != null) {
+                  records = records.where((r) => r['status'] == _selectedStatus).toList();
+                }
+                if (_selectedMainMeter != null) {
+                  records = records.where((r) => r['mm'] == _selectedMainMeter).toList();
+                }
+                if (_selectedSubMeter != null) {
+                  records = records.where((r) => r['sm'] == _selectedSubMeter).toList();
+                }
+                if (_searchQuery.isNotEmpty) {
+                  records = records.where((r) => r['searchString'].toString().contains(_searchQuery)).toList();
+                }
+
+                records.sort((a, b) {
+                  if (a['date'] == null || b['date'] == null) return 0;
+                  return b['date'].compareTo(a['date']);
+                });
+
+                if (records.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.receipt_long_outlined, size: 64, color: Theme.of(context).colorScheme.outline.withOpacity(0.5)),
+                        const SizedBox(height: 16),
+                        const Text("No matching records found for this period.", style: TextStyle(fontStyle: FontStyle.italic)),
+                        if (_searchQuery.isNotEmpty) Text("Searching for: '$_searchQuery'", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                      ],
+                    ),
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("Meter: ${mData['meterNo']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(8)),
-                            child: Text("Main", style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("${records.length} Records Found", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+                              Text("Grand Total: ৳${records.fold(0.0, (sum, r) => sum + r['total']).toStringAsFixed(2)}", style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900)),
+                            ],
+                          ),
+                          IconButton(
+                            onPressed: () => _shareReportSummary(records),
+                            icon: const Icon(Icons.share_outlined, size: 20, color: Colors.blue),
+                            tooltip: "Share Summary",
                           ),
                         ],
                       ),
-                      const Divider(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildMiniStat("Last", last.toStringAsFixed(2)),
-                          _buildMiniStat("Present", pres.toStringAsFixed(2)),
-                          _buildMiniStat("Used", used.toStringAsFixed(2), color: Colors.blue, bold: true),
-                        ],
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          controller: _horizontalScroll,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: _buildReportTableWidget(context, records, isOutline),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      Text("Govt. Bill Info", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary)),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildMiniStat("Bill Unit", ((mData['govtBillReading'] ?? 0) - (mData['lastGovtReading'] ?? 0)).toStringAsFixed(2)),
-                          _buildMiniStat("Bill Amt", "৳${(mData['govtBillAmount'] ?? 0).toStringAsFixed(2)}"),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: 20),
-            Text("Sub-Meter Summary", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            ValueListenableBuilder<List<QueryDocumentSnapshot>>(
-              valueListenable: _repository.subMeters,
-              builder: (context, subMeters, _) {
-                return Column(
-                  children: subMeters.map((sDoc) {
-                    var sData = sDoc.data() as Map<String, dynamic>;
-                    double last = (sData['lastReading'] as num?)?.toDouble() ?? 0;
-                    double pres = (sData['presentReading'] as num?)?.toDouble() ?? 0;
-                    return ListTile(
-                      dense: true,
-                      title: Text("SM: ${sData['subMeterNo']}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text("Main: ${sData['mainMeterNo']}"),
-                      trailing: Text("${(pres - last).toStringAsFixed(2)} Units", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildOccupancyReport(bool isOutline) {
-    return ValueListenableBuilder<List<QueryDocumentSnapshot>>(
-      valueListenable: _repository.subItems,
-      builder: (context, units, _) {
-        int occupied = units.where((u) => (u.data() as Map)['status'] == 'Occupied').length;
-        int vacant = units.where((u) => (u.data() as Map)['status'] == 'Vacant').length;
-        
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _buildSummaryCard("Occupancy Stats", [
-              _buildStat("Occupied", "$occupied", Colors.green),
-              _buildStat("Vacant", "$vacant", Colors.orange),
-              _buildStat("Total Units", "${units.length}", Colors.blue),
-            ]),
-            const SizedBox(height: 20),
-            Text("Unit Breakdown", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            ...units.map((uDoc) {
-              var uData = uDoc.data() as Map<String, dynamic>;
-              bool isOccupied = uData['status'] == 'Occupied';
-              return ListTile(
-                leading: Icon(isOccupied ? Icons.person : Icons.meeting_room, color: isOccupied ? Colors.green : Colors.grey),
-                title: Text(uData['subItemName'] ?? 'Unit', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(isOccupied ? (uData['TenantName'] ?? 'N/A') : "Vacant"),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isOccupied ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    uData['status'] ?? 'N/A', 
-                    style: TextStyle(color: isOccupied ? Colors.green : Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)
-                  ),
-                ),
-              );
-            }),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildActivityReport(bool isOutline) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _dbService.getActivityLogsStream(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        var logs = snapshot.data!.docs.take(50).toList(); // Show last 50
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: logs.length,
-          itemBuilder: (context, index) {
-            var data = logs[index].data() as Map<String, dynamic>;
-            return Card(
-              elevation: 0,
-              color: isOutline ? ThemeManager.outlineBackground : Colors.grey.withOpacity(0.05),
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              child: ListTile(
-                dense: true,
-                leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                  child: Icon(Icons.history, size: 16, color: Theme.of(context).colorScheme.secondary),
-                ),
-                title: Text(data['action'] ?? 'Action', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(data['details'] ?? ''),
-                    const SizedBox(height: 2),
-                    Text(
-                      "By: ${data['actor']} | ${DatabaseService.formatFullDateTime(data['timestamp'] as Timestamp?)}",
-                      style: const TextStyle(fontSize: 9, color: Colors.grey),
                     ),
                   ],
-                ),
-              ),
+                );
+              },
             );
           },
         );
@@ -396,43 +520,93 @@ class _ReportsPageState extends State<ReportsPage> {
     );
   }
 
-  Widget _buildSummaryCard(String title, List<Widget> stats) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+  Widget _buildReportTableWidget(BuildContext context, List<Map<String, dynamic>> records, bool isOutline) {
+    final headerStyle = Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white);
+    final dataStyle = Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11);
+
+    return Table(
+      defaultColumnWidth: const IntrinsicColumnWidth(),
+      border: TableBorder.all(color: Theme.of(context).dividerColor.withOpacity(0.2), width: 0.5, borderRadius: BorderRadius.circular(8)),
+      children: [
+        // Header Row
+        TableRow(
+          decoration: BoxDecoration(color: isOutline ? Colors.black : Theme.of(context).colorScheme.primary),
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: stats,
-            ),
-          ],
+            "#", "Month", "Main Cat", "Unit", "Tenant Name", "NID", "Rent", "Services", "Electric", "Adj/Due", "Total", "Status", "Paid By", "Date"
+          ].map((h) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Center(child: Text(h, style: headerStyle)),
+          )).toList(),
+        ),
+        // Data Rows
+        ...records.asMap().entries.map((entry) {
+          int index = entry.key;
+          var r = entry.value;
+          bool isPaid = r['status'] == 'Paid';
+          Color statusColor = isPaid ? Colors.green : Colors.red;
+
+          return TableRow(
+            decoration: BoxDecoration(color: index % 2 == 0 ? Colors.transparent : (isOutline ? Colors.black12 : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.1))),
+            children: [
+              _cell("${index + 1}", dataStyle),
+              _cell(r['monthYear'], dataStyle),
+              _cell(r['catName'], dataStyle, bold: true),
+              _cell(r['unitName'], dataStyle, bold: true),
+              _cell(r['tenantName'], dataStyle),
+              _cell(r['nid'], dataStyle),
+              _cell("৳${r['rent'].toStringAsFixed(2)}", dataStyle),
+              _cell("৳${r['services'].toStringAsFixed(2)}", dataStyle),
+              _cell("৳${r['electricity'].toStringAsFixed(2)}", dataStyle),
+              _cell("৳${r['adj'].toStringAsFixed(2)}", dataStyle, color: r['adj'] > 0 ? Colors.red : null),
+              _cell("৳${r['total'].toStringAsFixed(2)}", dataStyle, bold: true, color: Theme.of(context).colorScheme.primary),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                    child: Text(r['status'], style: dataStyle?.copyWith(color: statusColor, fontWeight: FontWeight.bold, fontSize: 9)),
+                  ),
+                ),
+              ),
+              _cell(r['paidBy'], dataStyle),
+              _cell(DatabaseService.formatFullDateTime(r['date'] as Timestamp?), dataStyle),
+            ],
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _cell(String text, TextStyle? style, {bool bold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Center(
+        child: Text(
+          text, 
+          textAlign: TextAlign.center,
+          style: style?.copyWith(fontWeight: bold ? FontWeight.bold : FontWeight.normal, color: color ?? style.color),
         ),
       ),
     );
   }
 
-  Widget _buildStat(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(value, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: color)),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ],
-    );
-  }
-
-  Widget _buildMiniStat(String label, String value, {Color? color, bool bold = false}) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-        Text(value, style: TextStyle(fontWeight: bold ? FontWeight.bold : FontWeight.normal, color: color)),
-      ],
+  Widget _buildDropdown<T>({
+    required T value,
+    required String hint,
+    required List<DropdownMenuItem<T>> items,
+    required void Function(T?) onChanged,
+  }) {
+    return DropdownButtonFormField<T>(
+      value: value,
+      items: items,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: hint,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
     );
   }
 }

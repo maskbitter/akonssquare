@@ -918,7 +918,12 @@ class DatabaseService {
   Stream<QuerySnapshot> getAllBillingRecordsStream(String subItemId) {
     return _db.collection('billing_history')
         .where('subItemId', isEqualTo: subItemId)
+        .orderBy('createdAt', descending: true)
         .snapshots();
+  }
+
+  CollectionReference getBillingHistoryCollection() {
+    return _db.collection('billing_history');
   }
 
   Future<Map<String, dynamic>> calculateFinancialSummary(String subId, double currentMonthAmount, String currentMonthYear, {Map<String, dynamic>? subItemData}) async {
