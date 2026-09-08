@@ -1,2 +1,2 @@
-const int buildNumber = 869;
-const String appVersion = "1.0.1+33";
+const int buildNumber = 874;
+const String appVersion = "1.0.1+34";

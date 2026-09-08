@@ -510,54 +510,56 @@ class _UserDashboardState extends State<UserDashboard> {
             bool isPrevPaid = paidMonths.contains(prevMonthYear.toLowerCase());
             
             List<String> pendingMonths = []; 
-            // Add all Due months from history
-            List<String> rawHistoryDueMonths = historyDocs
-                .where((doc) => (doc.data() as Map)['status'] == 'Due')
-                .map((doc) => doc['monthYear'].toString())
-                .toList();
-            
-            pendingMonths.addAll(rawHistoryDueMonths);
-            
-            // Sort pending months chronologically
-            pendingMonths.sort((a, b) => parseMY(a).compareTo(parseMY(b)));
-
-            // Total Outstanding: Sum of recorded Dues + Current Estimated Month + Missing Months (Arrears)
-            double totalOutstanding = 0;
-            Set<String> processedMonths = {};
-            
-            // 1. Sum recorded dues
+            // 1. Add recorded Due months from history
             for (var doc in historyDocs) {
               var data = doc.data() as Map;
-              String my = data['monthYear'].toString().trim().toLowerCase();
+              if (data['status'] == 'Due') {
+                String my = data['monthYear'].toString();
+                if (!pendingMonths.contains(my)) pendingMonths.add(my);
+              }
+            }
+
+            // 2. Add months from Manual Dues if not already paid
+            for (var d in manualDues) {
+              if (d is Map && d['monthYear'] != null) {
+                String my = d['monthYear'].toString();
+                if (!paidMonths.contains(my.toLowerCase()) && !pendingMonths.contains(my)) {
+                  pendingMonths.add(my);
+                }
+              }
+            }
+
+            // 3. Add current month if not recorded/paid
+            if (!paidMonths.contains(currentMonthYear.toLowerCase()) && !pendingMonths.contains(currentMonthYear)) {
+              // Only add if there are active charges or manual dues for current month
+              bool hasCurrentManual = manualDues.any((d) => d is Map && d['monthYear'] == currentMonthYear);
+              if (activeServices.isNotEmpty || hasCurrentManual || electricityBill > 0) {
+                pendingMonths.add(currentMonthYear);
+              }
+            }
+            
+            pendingMonths.sort((a, b) => parseMY(a).compareTo(parseMY(b)));
+
+            // Total Outstanding Calculation
+            double totalOutstanding = 0;
+            
+            // 1. Recorded Dues
+            for (var doc in historyDocs) {
+              var data = doc.data() as Map;
               if (data['status'] == 'Due') {
                 totalOutstanding += (data['totalAmount'] as num).toDouble();
               }
-              processedMonths.add(my);
             }
 
-            // 2. Add current month if it's not already paid/recorded
-            if (!processedMonths.contains(currentMonthYear.toLowerCase())) {
-               double currentMonthEstimate = servicesSum + electricityBill + mDuesSum;
-               totalOutstanding += currentMonthEstimate;
-               processedMonths.add(currentMonthYear.toLowerCase());
-            }
+            // 2. All Manual Dues (that are not yet in a recorded 'Due' bill)
+            double allManualDuesSum = manualDues.fold(0.0, (acc, d) => acc + (d is Map ? (d['amount'] as num).toDouble() : 0.0));
+            totalOutstanding += allManualDuesSum;
 
-            // 3. Add missing months (Arrears)
-            Timestamp? occupiedAt = subData['occupiedAt'] as Timestamp?;
-            if (occupiedAt != null) {
-              DateTime current = DateTime(occupiedAt.toDate().year, occupiedAt.toDate().month);
-              DateTime limit = DateTime(nowTime.year, nowTime.month);
-              while (current.isBefore(limit)) {
-                String mYear = "${months[current.month - 1]}-${current.year.toString().substring(2)}";
-                if (!processedMonths.contains(mYear.toLowerCase())) {
-                   totalOutstanding += servicesSum;
-                   if (!pendingMonths.contains(mYear)) pendingMonths.add(mYear);
-                }
-                current = DateTime(current.year, current.month + 1);
-              }
+            // 3. Current Month Services & Electricity (if not yet recorded as a bill)
+            bool currentRecorded = historyDocs.any((doc) => (doc.data() as Map)['monthYear'].toString().toLowerCase() == currentMonthYear.toLowerCase());
+            if (!currentRecorded) {
+               totalOutstanding += (servicesSum + electricityBill);
             }
-            
-            pendingMonths.sort((a, b) => parseMY(a).compareTo(parseMY(b)));
 
             void showUnpaidDetails(String month) {
               try {
@@ -568,8 +570,8 @@ class _UserDashboardState extends State<UserDashboard> {
                   try {
                     List<String> parts = my.split('-');
                     if (parts.length < 2) return null;
-                    int m = months.indexOf(parts[0]) + 1;
-                    if (m < 1) return null;
+                    int mIdx = months.indexWhere((mx) => mx.toLowerCase() == parts[0].trim().toLowerCase());
+                    int m = mIdx == -1 ? 1 : mIdx + 1;
                     int y = 2000 + (int.tryParse(parts[1]) ?? 0);
                     return DateTime(y, m);
                   } catch (e) {
@@ -601,6 +603,28 @@ class _UserDashboardState extends State<UserDashboard> {
                     ...recordedDoc.data() as Map<String, dynamic>,
                     'docId': recordedDoc.id,
                   });
+                } else {
+                  // Include ALL manual dues for estimated/arrear months to show total outstanding
+                  List targetManualDues = List.from(manualDues);
+                  double targetMDTotal = targetManualDues.fold(0.0, (acc, d) => acc + (d is Map ? (d['amount'] as num).toDouble() : 0.0));
+                  
+                  bool isCurrent = month.toLowerCase() == currentMonthYear.toLowerCase();
+                  
+                  Map<String, dynamic> estData = {
+                    'monthYear': month,
+                    'subItemId': widget.subItemId,
+                    'subItemName': subName,
+                    'TenantName': TenantName,
+                    'profilePictureUrl': subData['profilePictureUrl'],
+                    'status': 'Due',
+                    'services': activeServices,
+                    'electricityBill': isCurrent ? electricityBill : 0,
+                    'electricityDetails': isCurrent ? ed : null,
+                    'manualDues': targetManualDues,
+                    'totalAmount': servicesSum + (isCurrent ? electricityBill : 0) + targetMDTotal,
+                    'createdAt': Timestamp.now(),
+                  };
+                  UserReportPage.showDetailsDialog(context, estData);
                 }
               } catch (e, stack) {
                 debugPrint("ERROR in showUnpaidDetails: $e\n$stack");

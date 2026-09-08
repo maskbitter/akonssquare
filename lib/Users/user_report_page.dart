@@ -36,12 +36,15 @@ class UserReportPage extends StatelessWidget {
       double electricityBill = DatabaseService.parseNum(data['electricityBill']).toDouble();
       
       double rentAmount = 0;
+      List<Map<String, dynamic>> rentServices = [];
       List<Map<String, dynamic>> otherServices = [];
       for (var s in services) {
         if (s is Map) {
           String sName = (s['name'] ?? '').toString().toLowerCase();
           if (sName.contains('rent')) {
-            rentAmount += DatabaseService.parseNum(s['amount']).toDouble();
+            double amt = DatabaseService.parseNum(s['amount']).toDouble();
+            rentAmount += amt;
+            rentServices.add(Map<String, dynamic>.from(s));
           } else {
             otherServices.add(Map<String, dynamic>.from(s));
           }
@@ -140,7 +143,11 @@ class UserReportPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    _buildDetailRow(context, "House Rent", "৳${rentAmount.toStringAsFixed(2)}"),
+                    if (rentServices.isEmpty && rentAmount > 0)
+                      _buildDetailRow(context, "House Rent", "৳${rentAmount.toStringAsFixed(2)}")
+                    else
+                      ...rentServices.map((s) => _buildDetailRow(context, s['name'] ?? "Rent", "৳${DatabaseService.parseNum(s['amount']).toDouble().toStringAsFixed(2)}")),
+
                     if (filterType == null) ...[
                       ...otherServices.map((s) {
                         String name = s['name'] ?? 'Service';
@@ -249,7 +256,7 @@ class UserReportPage extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          "৳${(filterType == 'rent' ? rentAmount : (filterType == 'utility' ? totalAmount - rentAmount : totalAmount)).toStringAsFixed(2)}", 
+                          "৳${(filterType == 'rent' ? rentAmount : (filterType == 'utility' ? (rentAndServicesSubtotal + electricityBill + manualDuesTotal) - rentAmount : (rentAndServicesSubtotal + electricityBill + manualDuesTotal))).toStringAsFixed(2)}", 
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)
                         ),
                       ],
