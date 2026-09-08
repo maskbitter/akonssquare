@@ -5,6 +5,7 @@ import 'package:akons_square/Common/database_service.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:akons_square/Admin/category_dialogs.dart';
+import 'package:akons_square/Common/app_animations.dart';
 
 class UserReportPage extends StatelessWidget {
   final String subItemId;
@@ -65,7 +66,7 @@ class UserReportPage extends StatelessWidget {
         paidTime = DatabaseService.formatFullDateTime(data['createdAt']);
       }
 
-      showDialog(
+      AppAnimations.showSmoothDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: isOutline ? ThemeManager.outlineBackground : Colors.white,

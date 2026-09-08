@@ -6,7 +6,7 @@ extension BillingServiceDialogs on CategoryDialogs {
     final amountController = TextEditingController();
     bool isLoading = false;
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -194,7 +194,7 @@ extension BillingServiceDialogs on CategoryDialogs {
     final amountController = TextEditingController(text: currentAmount.toStringAsFixed(2));
     bool isLoading = false;
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setST) => AlertDialog(
@@ -295,7 +295,7 @@ extension BillingServiceDialogs on CategoryDialogs {
     DateTime selectedDate = initialDate ?? DateTime(now.year, now.month - 1);
     final List<String> months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
@@ -611,7 +611,7 @@ extension BillingServiceDialogs on CategoryDialogs {
     Set<int> selectedManualDueIndices = {};
     bool isCurrentSelected = true;
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
         return StreamBuilder<QuerySnapshot>(
@@ -1215,14 +1215,14 @@ extension BillingServiceDialogs on CategoryDialogs {
     bool isAdvance = false;
     int? editingIndex;
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
 
           Future<bool> confirmAction(String action, String message) async {
-            return await showDialog<bool>(
+            return await AppAnimations.showSmoothDialog<bool>(
               context: context,
               builder: (c) => AlertDialog(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -1498,7 +1498,7 @@ extension BillingServiceDialogs on CategoryDialogs {
     final macController = TextEditingController();
     bool isLoading = false;
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
@@ -1585,7 +1585,7 @@ extension BillingServiceDialogs on CategoryDialogs {
                         Text("MAC Addresses (${currentMacs.length})", style: Theme.of(context).textTheme.titleMedium),
                         TextButton.icon(
                           onPressed: () {
-                              showDialog(
+                              AppAnimations.showSmoothDialog(
                                 context: context,
                                 builder: (macCtx) => AlertDialog(
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1772,7 +1772,7 @@ extension BillingServiceDialogs on CategoryDialogs {
   }
 
   void showGlobalMacListDialog({required BuildContext context}) {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -1910,7 +1910,7 @@ extension BillingServiceDialogs on CategoryDialogs {
   void _showEditMacDialog({required BuildContext context, required String subItemId, required String oldMac, required String oldSn, required VoidCallback onSuccess}) {
     final macController = TextEditingController(text: oldMac);
     final snController = TextEditingController(text: oldSn);
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -2021,7 +2021,7 @@ extension BillingServiceDialogs on CategoryDialogs {
   }
 
   void showUserMacDetailsDialog({required BuildContext context, required String subItemName, required List macAddresses, required Map<String, dynamic> wifiService}) {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -2132,7 +2132,7 @@ extension BillingServiceDialogs on CategoryDialogs {
     bool isLoading = false;
     List<String> currentExcluded = List<String>.from(excludedServices);
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -2232,7 +2232,7 @@ extension BillingServiceDialogs on CategoryDialogs {
   void showEditSubItemServiceDialog({required BuildContext context, required String subItemId, required String subItemName, required Map<String, dynamic> serviceMap, required List overriddenServices}) {
     final nameController = TextEditingController(text: serviceMap['name']); 
     final amountController = TextEditingController(text: serviceMap['amount'].toString());
-    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
+    AppAnimations.showSmoothDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
       return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)), 
         title: Column(
@@ -2328,7 +2328,7 @@ extension BillingServiceDialogs on CategoryDialogs {
     IconData? icon,
   }) {
     final effectiveConfirmColor = confirmColor ?? Theme.of(context).colorScheme.error;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),

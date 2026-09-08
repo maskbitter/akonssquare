@@ -12,6 +12,7 @@ import 'package:akons_square/Common/theme_manager.dart';
 import 'package:akons_square/main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:akons_square/Common/share_helper.dart';
+import 'package:akons_square/Common/app_animations.dart';
 import 'dart:async';
 
 class OperatorDashboard extends StatefulWidget {
@@ -96,7 +97,7 @@ class _OperatorDashboardState extends State<OperatorDashboard> {
   }
 
   void _showLogoutConfirmationDialog() {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(

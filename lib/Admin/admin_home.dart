@@ -8,6 +8,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Users/user_report_page.dart';
+import 'package:akons_square/Common/app_animations.dart';
 
 import 'package:akons_square/Common/data_repository.dart';
 
@@ -160,14 +161,23 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
                                   ],
                                 ),
                               ),
-                              _buildFinancialHeader(categories, services),
+                              AppAnimations.monthTransitionSwitcher(
+                                monthKey: _selectedMonthStr,
+                                child: _buildFinancialHeader(categories, services),
+                              ),
                             ],
 
                             if (settings['showElectricity']!)
-                              _buildElectricitySection(settings),
+                              AppAnimations.monthTransitionSwitcher(
+                                monthKey: _selectedMonthStr,
+                                child: _buildElectricitySection(settings),
+                              ),
 
                             if (settings['showCategory']!)
-                              _buildCategorySection(settings),
+                              AppAnimations.monthTransitionSwitcher(
+                                monthKey: _selectedMonthStr,
+                                child: _buildCategorySection(settings),
+                              ),
                             
                             const SizedBox(height: 10),
                           ],
@@ -1007,6 +1017,7 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
 
         return Column(
           children: [
+            _buildUpdateHint(ThemeManager.appThemeNotifier.value == "Outline Theme", "দ্রষ্টব্য: বিস্তারিত তথ্য বা রিডিং আপডেট করতে 'Manage > Meters' ট্যাবে যান।"),
             if (showMainVsSub)
               _buildUnifiedMeterTable(
                 title: "Main Meter Vs Sub Meter",
@@ -1658,4 +1669,32 @@ class _AdminHomeState extends State<AdminHome> with AutomaticKeepAliveClientMixi
     );
   }
 
+  Widget _buildUpdateHint(bool isOutline, String message) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isOutline ? ThemeManager.outlineBackground : Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)) : null,
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 16, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontStyle: FontStyle.italic,
+                fontSize: 10,
+                color: isOutline ? Colors.black87 : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

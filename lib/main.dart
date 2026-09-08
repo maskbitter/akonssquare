@@ -12,6 +12,7 @@ import 'package:akons_square/Common/theme_manager.dart';
 import 'package:flutter/services.dart';
 import 'package:akons_square/Common/build_config.dart';
 import 'package:akons_square/Common/game_zone.dart';
+import 'package:akons_square/Common/app_animations.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:akons_square/Common/firebase_options.dart';
@@ -139,7 +140,7 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
     if (!isUserLoggedIn) return;
 
     _dialogShowing = true;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false, 
       builder: (ctx) => PopScope(
@@ -286,7 +287,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showOfflineDialog() {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => PopScope(
@@ -360,7 +361,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showErrorDialog(String message) {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => AlertDialog(
@@ -419,7 +420,7 @@ class _LoginPageState extends State<LoginPage> {
 
     final passController = TextEditingController(); bool isAuthenticating = false;
     if (!mounted) return;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
@@ -522,7 +523,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showHiddenLoginDialog() {
     final uC = TextEditingController(); final pC = TextEditingController(); bool isVerifying = false;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
@@ -641,7 +642,7 @@ class _LoginPageState extends State<LoginPage> {
   void _showMasterKeyDialog() {
     final keyController = TextEditingController();
     bool isLoading = false;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
@@ -960,7 +961,7 @@ class _LoginPageState extends State<LoginPage> {
                                               String dUrl = (configSnap.data!.data() as Map<String, dynamic>?)?['downloadUrl'] ?? "";
                                               if (dUrl.isNotEmpty) {
                                                 UpdateManager.instance.startUpdate(dUrl);
-                                                showDialog(
+                                                AppAnimations.showSmoothDialog(
                                                   context: context,
                                                   barrierDismissible: false,
                                                   builder: (context) => const UpdateProgressDialog(),

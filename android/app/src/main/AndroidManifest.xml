@@ -38,10 +38,10 @@
 
         <!-- Required for PackageInstaller method result handling on Android 14+ -->
         <receiver
-            android:name="sk.fourq.otaupdate.OtaUpdateReceiver"
+            android:name="sk.fourq.otaupdate.InstallResultReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="sk.fourq.ota_update.INSTALL_COMPLETE" />
+                <action android:name="com.example.akonssquare.ACTION_INSTALL_COMPLETE" />
             </intent-filter>
         </receiver>
 

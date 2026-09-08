@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Users/user_report_page.dart';
+import 'package:akons_square/Common/app_animations.dart';
 
 import 'package:akons_square/Common/data_repository.dart';
 
@@ -304,9 +305,11 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
         ),
         const Divider(height: 1),
         Expanded(
-          child: ValueListenableBuilder<List<QueryDocumentSnapshot>>(
-            valueListenable: _repository.categories,
-            builder: (context, allCategories, child) {
+          child: AppAnimations.monthTransitionSwitcher(
+            monthKey: _selectedMonthStr,
+            child: ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+              valueListenable: _repository.categories,
+              builder: (context, allCategories, child) {
               var categoryDocs = allCategories.toList();
               categoryDocs.sort((a, b) => ((a.data() as Map)['categoryName'] ?? '').compareTo((b.data() as Map)['categoryName'] ?? ''));
               if (_selectedFilterCategoryId != null) {
@@ -609,16 +612,17 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
                           const SliverToBoxAdapter(child: SizedBox(height: 80)),
                         ],
                       );
-                    }
+                    },
                   );
-                }
+                },
               );
             },
-          )
+          ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildSectionBox(String title, String content, IconData icon, {double? amount, Color? color, Widget? trailing, Widget? customContent}) {
     final effectiveColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
@@ -930,6 +934,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
         ),
         subtitle: Text("${meters.length} meters found", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : onBgColor.withValues(alpha: 0.7))),
         children: [
+          _buildUpdateHint(isOutline, "দ্রষ্টব্য: মেইন মিটারের রিডিং বা সরকারি বিল আপডেট করতে তালিকার যেকোনো ঘরে ক্লিক করুন।"),
           if (meters.isEmpty) 
             Padding(
               padding: const EdgeInsets.all(16), 
@@ -1084,6 +1089,7 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
             ),
             subtitle: Text("${subMeters.length} sub-meters registered", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isOutline ? Colors.black : ThemeManager.getCardOnContainerColor(13).withValues(alpha: 0.7))),
             children: [
+              _buildUpdateHint(isOutline, "দ্রষ্টব্য: সাব-মিটারের রিডিং সরাসরি এখান থেকে আপডেট করা যায় না। ইউনিটের বিল (Mark as Paid/Due) করার সময় রিডিং স্বয়ংক্রিয়ভাবে আপডেট হয়।"),
               if (subMeters.isEmpty) 
                 Padding(
                   padding: const EdgeInsets.all(16), 
@@ -1916,5 +1922,34 @@ class _CategoryPageState extends State<CategoryPage> with AutomaticKeepAliveClie
 
   void _showFullScreenImage(BuildContext context, String imageUrl, String title) {
     AppImageHelper.showInteractiveImage(context, url: imageUrl, title: title);
+  }
+
+  Widget _buildUpdateHint(bool isOutline, String message) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isOutline ? ThemeManager.outlineBackground : Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: isOutline ? Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)) : null,
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 16, color: isOutline ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontStyle: FontStyle.italic,
+                fontSize: 10,
+                color: isOutline ? Colors.black87 : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

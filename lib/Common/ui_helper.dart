@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:ota_update/ota_update.dart';
 import 'package:akons_square/main.dart';
 import 'package:akons_square/Common/update_manager.dart';
+import 'package:akons_square/Common/app_animations.dart';
 import 'dart:io';
 
 class MacAddressFormatter extends TextInputFormatter {
@@ -382,7 +383,7 @@ class GlobalUpdateOverlay extends StatelessWidget {
                 color: Colors.white,
                 child: InkWell(
                   onTap: () {
-                    showDialog(
+                    AppAnimations.showSmoothDialog(
                       context: context,
                       barrierDismissible: false,
                       builder: (context) => const UpdateProgressDialog(),
@@ -438,7 +439,7 @@ void showUpdateDialog({
   required String remoteVersion,
   required String downloadUrl,
 }) {
-  showDialog(
+  AppAnimations.showSmoothDialog(
     context: context,
     builder: (ctx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -509,7 +510,7 @@ void showUpdateDialog({
                 // Use UpdateManager to start the update
                 UpdateManager.instance.startUpdate(downloadUrl);
                 
-                showDialog(
+                AppAnimations.showSmoothDialog(
                   context: context,
                   barrierDismissible: false,
                   builder: (context) => const UpdateProgressDialog(),
@@ -530,7 +531,7 @@ void showUpdateLogoutDialog({
   required String downloadUrl,
   required VoidCallback onLogout,
 }) {
-  showDialog(
+  AppAnimations.showSmoothDialog(
     context: context,
     builder: (ctx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -592,7 +593,7 @@ void showUpdateLogoutDialog({
                 // Use UpdateManager to start the update
                 UpdateManager.instance.startUpdate(downloadUrl);
                 
-                showDialog(
+                AppAnimations.showSmoothDialog(
                   context: context,
                   barrierDismissible: false,
                   builder: (context) => const UpdateProgressDialog(),
@@ -624,7 +625,7 @@ void showUpdateLogoutDialog({
 
 class AppImageHelper {
   static void showInteractiveImage(BuildContext context, {String? url, File? file, required String title}) {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,

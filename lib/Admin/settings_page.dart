@@ -14,6 +14,7 @@ import 'package:akons_square/Common/theme_manager.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Common/share_helper.dart';
 import 'package:akons_square/Admin/category_dialogs.dart';
+import 'package:akons_square/Common/app_animations.dart';
 
 import 'package:akons_square/Admin/archive_viewer_page.dart';
 
@@ -231,7 +232,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showInfoDialog(BuildContext context, String title, String msg) {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -893,7 +894,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _showThemeSelectionDialog(BuildContext context) {
     String local = ThemeManager.appThemeNotifier.value;
-    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setST) {
+    AppAnimations.showSmoothDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setST) {
       return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Column(
@@ -978,7 +979,7 @@ class _SettingsPageState extends State<SettingsPage> {
       const Color(0xFFFAF0E6), // Linen
     ];
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setST) => AlertDialog(
@@ -1059,7 +1060,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final uC = TextEditingController(text: currentData?['username'] ?? '');
     final pC = TextEditingController(text: currentData?['password'] ?? '');
     String role = currentData?['role'] ?? 'operator';
-    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setST) {
+    AppAnimations.showSmoothDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (context, setST) {
       return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Column(
@@ -1149,7 +1150,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _confirmRemove(String docId, String username) {
-    showDialog(context: context, builder: (ctx) => AlertDialog(
+    AppAnimations.showSmoothDialog(context: context, builder: (ctx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: Column(
         children: [

@@ -11,6 +11,7 @@ import 'package:akons_square/Users/user_report_page.dart';
 import 'package:akons_square/main.dart';
 import 'package:akons_square/Common/share_helper.dart';
 import 'package:akons_square/Admin/category_dialogs.dart';
+import 'package:akons_square/Common/app_animations.dart';
 import 'dart:async';
 
 class UserDashboard extends StatefulWidget {
@@ -108,7 +109,7 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   void _showLogoutConfirmationDialog() {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(

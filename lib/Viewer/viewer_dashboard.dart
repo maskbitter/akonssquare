@@ -10,6 +10,7 @@ import 'package:akons_square/Common/theme_manager.dart';
 import 'package:akons_square/main.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:akons_square/Common/share_helper.dart';
+import 'package:akons_square/Common/app_animations.dart';
 import 'dart:async';
 
 class ViewerDashboard extends StatefulWidget {
@@ -177,7 +178,7 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
                           );
                         } else {
                           // Show old logout dialog
-                          showDialog(
+                          AppAnimations.showSmoothDialog(
                             context: context,
                             builder: (ctx) => AlertDialog(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),

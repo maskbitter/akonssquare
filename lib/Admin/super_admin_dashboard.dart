@@ -10,6 +10,8 @@ import 'package:akons_square/Common/update_guard.dart';
 import 'package:akons_square/Common/theme_manager.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Common/share_helper.dart';
+import 'package:akons_square/Common/app_animations.dart';
+import 'package:akons_square/Admin/reports_page.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -30,7 +32,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       if (_tabController.index != 1 && _selectedLogIds.isNotEmpty) {
         setState(() => _selectedLogIds.clear());
@@ -67,7 +69,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
     if (!hasSnapshot) return;
 
     if (!mounted) return;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
@@ -129,7 +131,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
 
   void _showRollbackProgressDialog() {
     final progressNotifier = ValueNotifier<double>(0.0);
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogCtx) => AlertDialog(
@@ -187,7 +189,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
   }
 
   void _showLogoutConfirmationDialog() {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -311,6 +313,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
           tabs: const [
             Tab(icon: Icon(Icons.admin_panel_settings), text: "Permissions"),
             Tab(icon: Icon(Icons.history), text: "Activity Log"),
+            Tab(icon: Icon(Icons.analytics_outlined), text: "Reports"),
             Tab(icon: Icon(Icons.settings), text: "Settings"),
           ],
         ),
@@ -395,6 +398,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
         children: [
           SingleChildScrollView(child: _buildPermissionManagerSection()),
           _buildActivityLogSection(),
+          const ReportsPage(),
           const SettingsPage(),
         ],
       ),
@@ -638,7 +642,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
   }
 
   void _showBatchDeleteConfirm() {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -699,7 +703,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
     final detailsCtrl = TextEditingController(text: data['details']);
     final categoryCtrl = TextEditingController(text: data['category']);
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Edit Activity Log"),
@@ -733,7 +737,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with SingleTi
   }
 
   void _showDeleteLogConfirm(String logId) {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Delete Log?"),

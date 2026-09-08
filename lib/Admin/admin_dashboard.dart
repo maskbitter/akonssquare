@@ -15,6 +15,7 @@ import 'package:akons_square/Common/theme_manager.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Common/update_guard.dart';
 import 'package:akons_square/Common/build_config.dart';
+import 'package:akons_square/Common/app_animations.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -48,7 +49,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     if (!hasSnapshot) return;
 
     if (!mounted) return;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
@@ -114,7 +115,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   void _showRollbackProgressDialog() {
     final progressNotifier = ValueNotifier<double>(0.0);
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogCtx) => AlertDialog(
@@ -248,7 +249,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   void _showLogoutConfirmationDialog() {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(

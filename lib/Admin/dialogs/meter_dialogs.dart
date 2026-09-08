@@ -6,7 +6,7 @@ extension MeterDialogs on CategoryDialogs {
     String meterType = 'Residential';
     bool isLoading = false;
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
@@ -130,7 +130,7 @@ extension MeterDialogs on CategoryDialogs {
     
     bool isLoading = false;
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
@@ -333,7 +333,7 @@ extension MeterDialogs on CategoryDialogs {
                       bool syncGovt = false;
 
                       if (prevSavedMain > 0 && last != prevSavedMain) {
-                        syncMain = await showDialog(
+                        syncMain = await AppAnimations.showSmoothDialog(
                           context: context,
                           builder: (c) => AlertDialog(
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -381,7 +381,7 @@ extension MeterDialogs on CategoryDialogs {
                       }
 
                       if (prevSavedGovt > 0 && govt != prevSavedGovt) {
-                        syncGovt = await showDialog(
+                        syncGovt = await AppAnimations.showSmoothDialog(
                           context: context,
                           builder: (c) => AlertDialog(
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -469,7 +469,7 @@ extension MeterDialogs on CategoryDialogs {
     String? selectedMainMeter;
     bool isLoading = false;
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
@@ -588,7 +588,7 @@ extension MeterDialogs on CategoryDialogs {
     required String meterNo,
     required VoidCallback onConfirm,
   }) {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),

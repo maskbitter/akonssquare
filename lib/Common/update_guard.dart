@@ -9,6 +9,7 @@ import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Common/build_config.dart';
 import 'package:akons_square/Common/update_manager.dart';
 import 'package:akons_square/main.dart';
+import 'package:akons_square/Common/app_animations.dart';
 
 class UpdateGuard extends StatefulWidget {
   final Widget child;
@@ -65,7 +66,7 @@ class _UpdateGuardState extends State<UpdateGuard> {
     await prefs.clear();
     
     if (mounted) {
-      showDialog(
+      AppAnimations.showSmoothDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
@@ -192,7 +193,7 @@ class _UpdateGuardState extends State<UpdateGuard> {
     if (UpdateManager.instance.hasActiveUpdate) return;
 
     _isPopupShowing = true;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
@@ -257,7 +258,7 @@ class _UpdateGuardState extends State<UpdateGuard> {
                           UpdateManager.instance.startUpdate(dUrl);
 
                           // Show the progress dialog directly
-                          showDialog(
+                          AppAnimations.showSmoothDialog(
                             context: context,
                             barrierDismissible: false,
                             builder: (context) => const UpdateProgressDialog(),

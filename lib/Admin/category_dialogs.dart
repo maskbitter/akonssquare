@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:akons_square/Common/ui_helper.dart';
 import 'package:akons_square/Common/storage_service.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:akons_square/Common/app_animations.dart';
 import 'dart:io';
 
 part 'dialogs/meter_dialogs.dart';
@@ -51,7 +52,7 @@ class CategoryDialogs {
 
   // --- Shared Private Helper Methods ---
   static void _showValidationWarning(BuildContext context, String message) {
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -104,7 +105,7 @@ class CategoryDialogs {
     else if (type == 'Service') typeLabel = "Service";
     else if (type.contains('Meter')) typeLabel = "Meter";
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -169,7 +170,7 @@ class CategoryDialogs {
   static void showCreateCategoryDialog(BuildContext context) {
     final controller = TextEditingController();
     bool isLoading = false;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
@@ -251,7 +252,7 @@ class CategoryDialogs {
   static void showAddSubItemDialog({required BuildContext context, required String categoryId, required String categoryName}) {
     final subItemController = TextEditingController(); 
     bool isLoading = false;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
         return AlertDialog(
@@ -343,7 +344,7 @@ class CategoryDialogs {
        return {'name': s.toString(), 'amount': 0};
      }).toList();
 
-     showDialog(
+     AppAnimations.showSmoothDialog(
        context: context,
        builder: (ctx) => StatefulBuilder(
          builder: (context, setDialogState) {
@@ -520,7 +521,7 @@ class CategoryDialogs {
     bool isLoading = false;
     final ImagePicker picker = ImagePicker();
 
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
@@ -711,7 +712,7 @@ class CategoryDialogs {
       bool isLoading = false;
       final ImagePicker picker = ImagePicker();
 
-      showDialog(
+      AppAnimations.showSmoothDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => StatefulBuilder(
@@ -902,7 +903,7 @@ else {
       }
 
       if (eBillAmount > 0) {
-        showDialog(
+        AppAnimations.showSmoothDialog(
           context: context,
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),

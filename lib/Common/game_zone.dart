@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:akons_square/Common/theme_manager.dart';
+import 'package:akons_square/Common/app_animations.dart';
 
 class GameZonePage extends StatefulWidget {
   const GameZonePage({super.key});
@@ -293,7 +294,7 @@ class _MemoryMatchGameState extends State<MemoryMatchGame> {
     }
 
     if (!mounted) return;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => AlertDialog(
@@ -427,7 +428,7 @@ class _TapBlitzGameState extends State<TapBlitzGame> {
 
   void _showResult() {
     if (!mounted) return;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Game Over"),
@@ -565,7 +566,7 @@ class _ColorMatchGameState extends State<ColorMatchGame> {
       await p.setInt('color_best', bestScore);
     }
     if (!mounted) return;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => AlertDialog(
@@ -695,7 +696,7 @@ class _WhackAMoleGameState extends State<WhackAMoleGame> {
 
   void _showResult() {
     if (!mounted) return;
-    showDialog(
+    AppAnimations.showSmoothDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Game Over"),
