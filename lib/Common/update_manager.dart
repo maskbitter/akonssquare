@@ -105,9 +105,14 @@ class UpdateManager extends ChangeNotifier {
         status == OtaStatus.ALREADY_RUNNING_ERROR;
   }
 
-  void pauseUpdate() {
+  void pauseUpdate() async {
     if (_status == AppUpdateStatus.downloading) {
       _subscription?.cancel();
+      try {
+        await OtaUpdate().cancel();
+      } catch (e) {
+        print("UpdateManager: Error canceling native update during pause: $e");
+      }
       _status = AppUpdateStatus.paused;
       notifyListeners();
     }
