@@ -100,6 +100,9 @@ extension MeterDialogs on CategoryDialogs {
                           'govtBillAmount': 0.0,
                           'unitRate': 0.0,
                           'lastMonthUnitRate': 0.0,
+                          'presentReadingUpdatedAt': null,
+                          'govtBillReadingUpdatedAt': null,
+                          'govtBillAmountUpdatedAt': null,
                         }, prefs.getString('username') ?? "Admin");
                         if (context.mounted) Navigator.pop(ctx);
                       } catch (e) {
@@ -216,6 +219,14 @@ extension MeterDialogs on CategoryDialogs {
                       isDense: true
                     ),
                   ),
+                  if (data['presentReadingUpdatedAt'] != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2, left: 12, bottom: 8),
+                      child: Text(
+                        "Last changed: ${CategoryDialogs._formatTimestamp(data['presentReadingUpdatedAt'] as Timestamp?)}",
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline, fontSize: 10),
+                      ),
+                    ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text("Govt. Bill Details", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
@@ -234,6 +245,14 @@ extension MeterDialogs on CategoryDialogs {
                       isDense: true
                     ),
                   ),
+                  if (data['govtBillReadingUpdatedAt'] != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2, left: 12, bottom: 4),
+                      child: Text(
+                        "Last changed: ${CategoryDialogs._formatTimestamp(data['govtBillReadingUpdatedAt'] as Timestamp?)}",
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline, fontSize: 10),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: amountController,
@@ -248,6 +267,14 @@ extension MeterDialogs on CategoryDialogs {
                       isDense: true
                     ),
                   ),
+                  if (data['govtBillAmountUpdatedAt'] != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2, left: 12, bottom: 4),
+                      child: Text(
+                        "Last changed: ${CategoryDialogs._formatTimestamp(data['govtBillAmountUpdatedAt'] as Timestamp?)}",
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline, fontSize: 10),
+                      ),
+                    ),
                   CategoryDialogs._buildReadOnlyRow(context, "Govt. Bill Unit", govtBillUnit.toStringAsFixed(2)),
                   CategoryDialogs._buildReadOnlyRow(context, "Last Month Unit Rate", "৳${lastMonthRate.toStringAsFixed(2)}"),
                   CategoryDialogs._buildReadOnlyRow(context, "This Month Unit Rate", "৳${thisMonthRate.toStringAsFixed(2)}"),
@@ -445,6 +472,16 @@ extension MeterDialogs on CategoryDialogs {
                         'unitRate': unitRate,
                         'targetMonthYear': targetMonthYear, // Crucial for historical save
                       };
+
+                      if (pres != (data['presentReading'] ?? 0).toDouble()) {
+                        updateData['presentReadingUpdatedAt'] = FieldValue.serverTimestamp();
+                      }
+                      if (govt != (data['govtBillReading'] ?? 0).toDouble()) {
+                        updateData['govtBillReadingUpdatedAt'] = FieldValue.serverTimestamp();
+                      }
+                      if (amt != (data['govtBillAmount'] ?? 0).toDouble()) {
+                        updateData['govtBillAmountUpdatedAt'] = FieldValue.serverTimestamp();
+                      }
                       
                       SharedPreferences prefs = await SharedPreferences.getInstance(); 
                       String actor = prefs.getString('username') ?? "Admin";
