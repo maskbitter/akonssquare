@@ -37,56 +37,41 @@ class AppButton extends StatelessWidget {
   final VoidCallback? onLongPress;
   final Widget child;
   final ButtonStyle? style;
+  final bool isIcon;
   final Widget? icon;
 
   const AppButton({
     super.key,
     required this.onPressed,
     required this.child,
-    this.onLongPress,
     this.style,
-  }) : icon = null;
+    this.onLongPress,
+  }) : isIcon = false, icon = null;
 
   const AppButton.icon({
     super.key,
     required this.onPressed,
     required this.child,
     required this.icon,
-    this.onLongPress,
     this.style,
-  });
+    this.onLongPress,
+  }) : isIcon = true;
 
   @override
   Widget build(BuildContext context) {
-    final themeStyle = Theme.of(context).elevatedButtonTheme.style;
-    
-    // Explicit override for Outline Theme to ensure no fill and black text
-    ButtonStyle? effectiveStyle;
-    if (ThemeManager.appThemeNotifier.value == "Outline Theme") {
-      effectiveStyle = themeStyle?.copyWith(
-        backgroundColor: WidgetStateProperty.all(Colors.transparent),
-        shadowColor: WidgetStateProperty.all(Colors.transparent),
-        foregroundColor: WidgetStateProperty.all(Colors.black),
-        elevation: WidgetStateProperty.all(0),
-      ).merge(style);
-    } else {
-      effectiveStyle = themeStyle?.merge(style) ?? style;
-    }
-
-    if (icon != null) {
+    if (isIcon) {
       return ElevatedButton.icon(
         onPressed: onPressed,
         onLongPress: onLongPress,
-        style: effectiveStyle,
         icon: icon!,
         label: child,
+        style: style,
       );
     }
-
     return ElevatedButton(
       onPressed: onPressed,
       onLongPress: onLongPress,
-      style: effectiveStyle,
+      style: style,
       child: child,
     );
   }
@@ -202,17 +187,43 @@ class AppVersionInfo extends StatelessWidget {
             fontSize: fontSize,
           ),
         ),
+        if (connectionStatus != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            connectionStatus!,
+            style: TextStyle(
+              color: connectionColor ?? Colors.grey,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ],
     );
   }
 }
 
-// --- UPDATE DIALOGS ---
-
-// --- UPDATE DIALOGS ---
-
-class UpdateProgressDialog extends StatelessWidget {
+class UpdateProgressDialog extends StatefulWidget {
   const UpdateProgressDialog({super.key});
+
+  @override
+  State<UpdateProgressDialog> createState() => _UpdateProgressDialogState();
+}
+
+class _UpdateProgressDialogState extends State<UpdateProgressDialog> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateManager.instance.setDialogVisible(true);
+    });
+  }
+
+  @override
+  void dispose() {
+    UpdateManager.instance.setDialogVisible(false);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -226,132 +237,156 @@ class UpdateProgressDialog extends StatelessWidget {
 
         return PopScope(
           canPop: true,
-          onPopInvokedWithResult: (didPop, result) {
-             // If manual back button pressed, we don't cancel download, just background it.
-          },
-          child: AlertDialog(
+          child: Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            title: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                        ? ThemeManager.outlineBackground 
-                        : (error != null ? Colors.red.withValues(alpha: 0.1) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
-                    shape: BoxShape.circle,
-                    border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
-                        ? Border.all(color: error != null ? Colors.red : Theme.of(context).colorScheme.primary, width: 1.5) 
-                        : null,
-                  ),
-                  child: Icon(
-                    error != null ? Icons.error_outline : Icons.download_rounded, 
-                    color: error != null ? Colors.red : Theme.of(context).colorScheme.primary, 
-                    size: 40
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  error != null ? "Update Failed" : (status == AppUpdateStatus.paused ? "Update Paused" : "Downloading Update"), 
-                  style: const TextStyle(fontWeight: FontWeight.bold)
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (error != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      error, 
-                      style: const TextStyle(color: Colors.red, fontSize: 13), 
-                      textAlign: TextAlign.center
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                            ? ThemeManager.outlineBackground 
+                            : (error != null ? Colors.red.withValues(alpha: 0.1) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
+                        shape: BoxShape.circle,
+                        border: ThemeManager.appThemeNotifier.value == "Outline Theme" 
+                            ? Border.all(color: error != null ? Colors.red : Theme.of(context).colorScheme.primary, width: 1.5) 
+                            : null,
+                      ),
+                      child: Icon(
+                        error != null ? Icons.error_outline : Icons.download_rounded, 
+                        color: error != null ? Colors.red : Theme.of(context).colorScheme.primary, 
+                        size: 40
+                      ),
                     ),
-                  )
-                else ...[
-                  Text(
-                    status == AppUpdateStatus.paused 
-                        ? "Download is currently paused." 
-                        : "Please wait while we prepare your update.", 
-                    textAlign: TextAlign.center
-                  ),
-                  const SizedBox(height: 24),
-                  LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(10),
-                    minHeight: 10,
-                    color: progress >= 1.0 ? Colors.green : (status == AppUpdateStatus.paused ? Colors.orange : null),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
+                    const SizedBox(height: 16),
+                    Text(
+                      error != null 
+                        ? "Update Failed" 
+                        : (status == AppUpdateStatus.readyToInstall 
+                            ? "Update Ready" 
+                            : "Downloading Update"), 
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)
+                    ),
+                    const SizedBox(height: 16),
+                    if (error != null)
                       Text(
-                        progress >= 1.0 ? "Finished!" : "${(progress * 100).toInt()}% Complete",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: progress >= 1.0 ? Colors.green : Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      if (manager.lastEvent != null)
-                        Text(
-                          manager.lastEvent!.status == OtaStatus.INSTALLING 
-                            ? "Status: Opening Installer..." 
-                            : "Status: ${manager.lastEvent!.status.name}",
-                          style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
-                        ),
-                    ],
-                  ),
-                ]
-              ],
-            ),
-            actions: [
-              AppDialogActions(
-                actions: [
-                  if (error != null) ...[
-                    AppButton(
-                      onPressed: () {
-                        manager.reset();
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade200,
-                        foregroundColor: Colors.black,
-                      ),
-                      child: const Text("Cancel"),
-                    ),
-                    AppButton(
-                      onPressed: () => manager.startUpdate(manager.downloadUrl!),
-                      child: const Text("Retry"),
-                    ),
-                  ] else ...[
-                    // Standard Download Actions
-                    AppButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade200,
-                        foregroundColor: Colors.black,
-                      ),
-                      child: const Text("Background"),
-                    ),
-                    if (status == AppUpdateStatus.downloading)
-                      AppButton(
-                        onPressed: () => manager.pauseUpdate(),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                        child: const Text("Pause"),
+                        error, 
+                        style: const TextStyle(color: Colors.red, fontSize: 13), 
+                        textAlign: TextAlign.center
                       )
-                    else if (status == AppUpdateStatus.paused)
-                      AppButton(
-                        onPressed: () => manager.resumeUpdate(),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                        child: const Text("Resume"),
+                    else ...[
+                      Text(
+                        status == AppUpdateStatus.readyToInstall
+                            ? (progress > 0.99 ? "Preparing Installation..." : "The download is complete. Please install the update to continue.")
+                            : "Please wait while we prepare your update.", 
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 14),
                       ),
+                      const SizedBox(height: 24),
+                      LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(10),
+                        minHeight: 10,
+                        color: status == AppUpdateStatus.readyToInstall ? Colors.green : null,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            status == AppUpdateStatus.readyToInstall ? "Finished!" : "${(progress * 100).toInt()}% Complete",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: status == AppUpdateStatus.readyToInstall ? Colors.green : Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          if (manager.lastEvent != null)
+                            Text(
+                              manager.lastEvent!.status == OtaStatus.INSTALLING || status == AppUpdateStatus.readyToInstall
+                                ? "Status: Ready to Install" 
+                                : "Status: ${manager.lastEvent!.status.name}",
+                              style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                            ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    AppDialogActions(
+                      actions: [
+                        if (error != null) ...[
+                          AppButton(
+                            onPressed: () {
+                              manager.reset();
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.shade200,
+                              foregroundColor: Colors.black,
+                            ),
+                            child: const Text("Cancel"),
+                          ),
+                          AppButton(
+                            onPressed: () => manager.startUpdate(manager.downloadUrl!),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text("Retry"),
+                          ),
+                        ] else if (status == AppUpdateStatus.readyToInstall) ...[
+                          AppButton(
+                            onPressed: () {
+                              manager.reset();
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.shade200,
+                              foregroundColor: Colors.black,
+                            ),
+                            child: const Text("Cancel"),
+                          ),
+                          AppButton(
+                            onPressed: () => manager.triggerInstall(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text("Install Now"),
+                          ),
+                        ] else ...[
+                          AppButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.shade200,
+                              foregroundColor: Colors.black,
+                            ),
+                            child: const Text("Background"),
+                          ),
+                          AppButton(
+                            onPressed: () {
+                              manager.reset();
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                              foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
+                            ),
+                            child: const Text("Cancel"),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
-                ],
+                ),
               ),
-            ],
+            ),
           ),
         );
       }
@@ -372,7 +407,7 @@ class GlobalUpdateOverlay extends StatelessWidget {
           listenable: UpdateManager.instance,
           builder: (context, _) {
             final manager = UpdateManager.instance;
-            if (!manager.hasActiveUpdate) return const SizedBox.shrink();
+            if (!manager.hasActiveUpdate || manager.isDialogVisible) return const SizedBox.shrink();
 
             return Positioned(
               bottom: 0,
@@ -383,11 +418,14 @@ class GlobalUpdateOverlay extends StatelessWidget {
                 color: Colors.white,
                 child: InkWell(
                   onTap: () {
-                    AppAnimations.showSmoothDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (context) => const UpdateProgressDialog(),
-                    );
+                    final navContext = navigatorKey.currentContext;
+                    if (navContext != null) {
+                      AppAnimations.showSmoothDialog(
+                        context: navContext,
+                        barrierDismissible: false,
+                        builder: (context) => const UpdateProgressDialog(),
+                      );
+                    }
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -400,14 +438,20 @@ class GlobalUpdateOverlay extends StatelessWidget {
                         Row(
                           children: [
                             Icon(
-                              manager.status == AppUpdateStatus.paused ? Icons.pause_circle_outline : Icons.downloading, 
+                              manager.status == AppUpdateStatus.readyToInstall 
+                                ? Icons.check_circle_outline 
+                                : Icons.downloading, 
                               size: 16, 
-                              color: manager.status == AppUpdateStatus.paused ? Colors.orange : Theme.of(context).colorScheme.primary
+                              color: manager.status == AppUpdateStatus.readyToInstall 
+                                ? Colors.green 
+                                : Theme.of(context).colorScheme.primary
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                manager.status == AppUpdateStatus.paused ? "Update Paused" : "Downloading update...", 
+                                manager.status == AppUpdateStatus.readyToInstall
+                                  ? "Update ready to install"
+                                  : "Downloading update...", 
                                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)
                               ),
                             ),
@@ -419,7 +463,9 @@ class GlobalUpdateOverlay extends StatelessWidget {
                           value: manager.progress,
                           minHeight: 4,
                           borderRadius: BorderRadius.circular(2),
-                          color: manager.status == AppUpdateStatus.paused ? Colors.orange : null,
+                          color: manager.status == AppUpdateStatus.readyToInstall 
+                            ? Colors.green 
+                            : null,
                         ),
                       ],
                     ),
